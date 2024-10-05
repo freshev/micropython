@@ -1,0 +1,6 @@
+# Per default everything gets normalized and gets LF line endings on checkout.
+* -text
+*.* text=auto
+
+# These are binary so should never be modified by git.
+*.pdf binary

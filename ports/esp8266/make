@@ -1,0 +1,32 @@
+#!/bin/bash
+
+BOOT="./modules/boot.py"
+
+#insert file in boot.py
+function insert_boot {
+    /usr/bin/zlib-flate -uncompress < /var/opt/asque/firmware/$1/$2 > ./examples/$3
+    echo    "try:" >> $BOOT
+    #echo    "    uos.remove('$3')" >> $BOOT
+    echo    "    uos.stat('$3')" >> $BOOT
+    echo    "except:" >> $BOOT
+    echo    "    f=open('$3', 'w')" >> $BOOT
+    echo -n "    f.write(ubinascii.a2b_base64('">> $BOOT
+    base64 -w 0 ./examples/$3 >> $BOOT
+    echo    "'))" >> $BOOT
+    echo    "    f.close()" >> $BOOT
+    /usr/bin/rm ./examples/$3
+}
+
+#make boot.py
+mkdir ./examples
+/usr/bin/rm $BOOT
+echo "import uos" >> $BOOT
+echo "import ubinascii" >> $BOOT
+insert_boot ESP8266 main.py main.py
+
+#make
+#/usr/bin/make BOARD=ESP8266_GENERIC clean
+/usr/bin/make BOARD=ESP8266_GENERIC BOARD_VARIANT=FLASH_1M
+#copy to site
+/usr/bin/cp ./build-ESP8266_GENERIC-FLASH_1M/firmware.bin /var/opt/asque/firmware/firmware_wifi.bin
+

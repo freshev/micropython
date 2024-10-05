@@ -1,0 +1,7 @@
+build
+.vscode
+hex
+
+modules/settings.py
+modules/filesys.py
+modules/uota.py

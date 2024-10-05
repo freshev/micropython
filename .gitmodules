@@ -1,0 +1,19 @@
+[submodule "lib/lwip"]
+	path = lib/lwip
+	url = https://github.com/lwip-tcpip/lwip.git
+[submodule "lib/stm32lib"]
+	path = lib/stm32lib
+	url = https://github.com/micropython/stm32lib
+	branch = work-F0-1.9.0+F4-1.16.0+F7-1.7.0+G0-1.5.1+G4-1.3.0+H7-1.6.0+L0-1.11.2+L1-1.10.3+L4-1.17.0+WB-1.10.0+WL-1.1.0
+[submodule "lib/mbedtls"]
+	path = lib/mbedtls
+	url = https://github.com/ARMmbed/mbedtls.git
+[submodule "lib/micropython-lib"]
+	path = lib/micropython-lib
+	url = https://github.com/micropython/micropython-lib.git
+[submodule "lib/protobuf-c"]
+	path = lib/protobuf-c
+	url = https://github.com/protobuf-c/protobuf-c.git
+[submodule "lib/btstack"]
+	path = lib/btstack
+	url = https://github.com/bluekitchen/btstack.git
