@@ -130,7 +130,7 @@ Featured:
 6. [`I2C`](#I2C): I2C hardware implementation
 7. [`SPI`](#SPI): SPI hardware implementation
 8. [`CC1101`](#CC1101): CC1101 module support over SPI
-9. [`DHT`](#DHT): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
+9. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
 10. [`umqtt`](#umqtt): umqtt support via frozen module
 11. [`urequests`](#urequests): urequests support via frozen module
 12. [Notes](#Notes)
@@ -529,8 +529,8 @@ Version: November 12, 2010 for Arduino platform.
 * `ba2hex(ba)`: returns hex string for `ba` bytearray parameter (340 bytes maximum).
   * Returns hex string
 
-### `DHT1` ###
-DHT series temperature and humidity sensor module
+### `dht` ###
+DHT series temperature and humidity sensor module.  
 Originally written by Adafruit Industries [https://www.adafruit.com](https://www.adafruit.com)
 
 #### Methods
