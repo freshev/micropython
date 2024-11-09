@@ -539,14 +539,17 @@ Originally written by Adafruit Industries [https://www.adafruit.com](https://www
   * `type`: Sensor type. One of DHT11, DHT12, DHT21, DHT22 or AM2301(the same as DHT21);
   * Returns DHT object.
 
-* `readTemperature(S=true, force=true)`: read sensor temperature.
+* `get_type()`: sensor type, defined in constructor.
+  * Returns sensor type as integer: 11 - for DHT11, 12 - for DHT12, etc.
+
+* `read_temperature(S=true, force=true)`: read sensor temperature.
   * `S`: Scale.  
      - true = Fahrenheit  
      - false = Celcius;
   * `force`: force read data from sensor;
   * Returns temperature as float or `nan` if reading failed.
 
-* `readHumidity(force=true)`: read sensor humidity.
+* `read_humidity(force=true)`: read sensor humidity.
   * `force`: force read data from sensor;
   * Returns humidity as float or `nan` if reading failed.
 

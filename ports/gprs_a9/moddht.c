@@ -265,7 +265,7 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t moddht_readTemperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
+STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
     // ========================================
     // Read temperature.
     // Args:
@@ -312,10 +312,10 @@ STATIC mp_obj_t moddht_readTemperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t
     return mp_obj_new_float(f);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(moddht_readTemperature_obj, moddht_readTemperature);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(moddht_read_temperature_obj, moddht_read_temperature);
 
 
-STATIC mp_obj_t moddht_readHumidity(mp_obj_t self_in, mp_obj_t force_in) {
+STATIC mp_obj_t moddht_read_humidity(mp_obj_t self_in, mp_obj_t force_in) {
     // ========================================
     // Read hunidity.
     // Args:
@@ -342,14 +342,22 @@ STATIC mp_obj_t moddht_readHumidity(mp_obj_t self_in, mp_obj_t force_in) {
     }
     return mp_obj_new_float(f);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(moddht_readHumidity_obj, moddht_readHumidity);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(moddht_read_humidity_obj, moddht_read_humidity);
+
+STATIC mp_obj_t moddht_get_type(mp_obj_t self_in) {
+    dht_obj_t * self = self_in;
+    return mp_obj_new_int(self->_type);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_get_type_obj, &moddht_get_type);
+
 
 // -------
 // Locals
 // -------
 STATIC const mp_rom_map_elem_t dht_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_readTemperature), MP_ROM_PTR(&moddht_readTemperature_obj) },
-    { MP_ROM_QSTR(MP_QSTR_readHumidity), MP_ROM_PTR(&moddht_readHumidity_obj) }
+    { MP_ROM_QSTR(MP_QSTR_read_temperature), MP_ROM_PTR(&moddht_read_temperature_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read_humidity), MP_ROM_PTR(&moddht_read_humidity_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_type), MP_ROM_PTR(&moddht_get_type_obj) }
 };
 
 STATIC MP_DEFINE_CONST_DICT(dht_locals_dict, dht_locals_dict_table);
