@@ -146,6 +146,7 @@ Main contrubutions:
 * Limit dupterm to UART0
 * Rewritten SMS logic
 * Added CC1101 433MHz support to A9/A9G
+* Added DHT sensor module support to A9/A9G (DHT11, DHT12, DHT21, DHT22, AM2301 sernsors)
 * Added machine.OTA function (Over The Air upgrade from predefined URL)
 * Added versioning support with generating upgrade packs. Version number configured in mpconfigport.h
 * Added deployment to external storage (path to external storage configured in Makefile)
