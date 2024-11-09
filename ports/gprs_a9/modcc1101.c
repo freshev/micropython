@@ -269,7 +269,7 @@ uint8_t _cc1101_transfer_addr_byte(cc1101_obj_t *self, uint8_t addr, uint8_t wby
 // ------------------------
 // Constructor & Destructor
 // ------------------------
-
+extern const mp_obj_type_t cc1101_type;
 mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
     enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_mode, ARG_cs, ARG_duplex, ARG_cs_active_low, ARG_dma_delay, ARG_debug, ARG_debug_hst};

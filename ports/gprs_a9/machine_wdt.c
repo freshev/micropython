@@ -47,7 +47,7 @@ STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
     // value > 512000 overflows WatchDog_Open() and hangs A9
     // value = 0 turns off watchdog (SW and HW)
     // value < 0 simply returns watchdog instance
-    // excat timeout for hw watchdog not used i.e. it relies on HW only
+    // exact timeout for hw watchdog not used i.e. it relies on HW only
     switch (id) {
         case 0: // A9 soft watchdog
             if(timeout_ms > 0 && timeout_ms < 512000) {

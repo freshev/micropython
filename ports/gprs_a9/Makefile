@@ -168,7 +168,8 @@ SRC_C = \
 	machine_rtc.c \
 	machine_hw_i2c.c \
 	machine_hw_spi.c \
-	modcc1101.c
+	modcc1101.c \
+	moddht.c
 
 SHARED_SRC_C = $(addprefix shared/,\
 	netutils/netutils.c \

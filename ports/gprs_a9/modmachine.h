@@ -73,9 +73,6 @@ typedef struct _machine_hw_spi_obj_t {
 
 extern mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 
-
-extern const mp_obj_type_t cc1101_type;
-
 // Machine Hardware Watchdog
 extern uint8_t machine_hw_watchdog_active;
 extern uint8_t machine_hw_watchdog_pin_level;

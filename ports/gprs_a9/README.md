@@ -112,6 +112,7 @@ blink.blink(1)
 - [x] GPRS, DNS: `cellular`, `socket`, `ssl`
 - [x] Power: `machine`, `watchdog`
 - [x] Calls: `cellular`
+- [x] DHT: `DHT`
 
 ## Examples
 
@@ -129,9 +130,10 @@ Featured:
 6. [`I2C`](#I2C): I2C hardware implementation
 7. [`SPI`](#SPI): SPI hardware implementation
 8. [`CC1101`](#CC1101): CC1101 module support over SPI
-9. [`umqtt`](#umqtt): umqtt support via frozen module
-10. [`urequests`](#urequests): urequests support via frozen module
-11. [Notes](#Notes)
+9. [`DHT`](#DHT): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
+10. [`umqtt`](#umqtt): umqtt support via frozen module
+11. [`urequests`](#urequests): urequests support via frozen module
+12. [Notes](#Notes)
 
 ### `cellular`
 
@@ -526,6 +528,28 @@ Version: November 12, 2010 for Arduino platform.
 
 * `ba2hex(ba)`: returns hex string for `ba` bytearray parameter (340 bytes maximum).
   * Returns hex string
+
+### `DHT1` ###
+DHT series temperature and humidity sensor module
+Originally written by Adafruit Industries [https://www.adafruit.com](https://www.adafruit.com)
+
+#### Methods
+* `dht(pin=20, type=dht.DHT11)`: initialize DHT module.
+  * `pin`: Pin number;
+  * `type`: Sensor type. One of DHT11, DHT12, DHT21, DHT22 or AM2301(the same as DHT21);
+  * Returns DHT object.
+
+* `readTemperature(S=true, force=true)`: read sensor temperature.
+  * `S`: Scale.  
+     - true = Fahrenheit  
+     - false = Celcius;
+  * `force`: force read data from sensor;
+  * Returns temperature as float or `nan` if reading failed.
+
+* `readHumidity(force=true)`: read sensor humidity.
+  * `force`: force read data from sensor;
+  * Returns humidity as float or `nan` if reading failed.
+
 
 ### umqtt ###
 Rewritten from umqtt.simple to support python 1.5.2 syntax.  
