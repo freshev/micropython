@@ -542,14 +542,14 @@ Originally written by Adafruit Industries [https://www.adafruit.com](https://www
 * `get_type()`: sensor type, defined in constructor.
   * Returns sensor type as integer: 11 - for DHT11, 12 - for DHT12, etc.
 
-* `read_temperature(S=true, force=true)`: read sensor temperature.
+* `read_temperature(S=True, force=True)`: read sensor temperature.
   * `S`: Scale.  
-     - true = Fahrenheit  
-     - false = Celcius;
+     - True = Fahrenheit  
+     - False = Celcius;
   * `force`: force read data from sensor;
   * Returns temperature as float or `nan` if reading failed.
 
-* `read_humidity(force=true)`: read sensor humidity.
+* `read_humidity(force=True)`: read sensor humidity.
   * `force`: force read data from sensor;
   * Returns humidity as float or `nan` if reading failed.
 
