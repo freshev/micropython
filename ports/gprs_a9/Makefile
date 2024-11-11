@@ -119,6 +119,7 @@ INC += -I$(BUILD_PATH_ABS)
 INC += -I${CSDK_PATH}/include \
        -I${CSDK_PATH}/include/std_inc \
        -I${CSDK_PATH}/include/api_inc \
+       -I${CSDK_PATH}/libs/cjson/src \
        -I${CSDK_PATH}/libs/utils/include \
        -I${CSDK_PATH}/libs/gps/include \
        -I${CSDK_PATH}/libs/gps/minmea/src \

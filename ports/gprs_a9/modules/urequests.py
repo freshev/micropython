@@ -120,14 +120,13 @@ def request(method, url, data=None, timeout=None):
 
 def get(url, data=None, timeout=None):
     return request('GET', url, data, timeout)
-
-#def head(url, data=None, timeout=None):
-#    return request('HEAD', url, data, timeout)
-#def post(url, data=None, timeout=None):
-#    return request('POST', url, data, timeout)
-#def put(url, data=None, timeout=None):
-#    return request('PUT', url, data, timeout)
-#def patch(url, data=None, timeout=None):
-#    return request('PATCH', url, data, timeout)
-#def delete(url, data=None, timeout=None):
-#    return request('DELETE', url, data, timeout)
+def head(url, data=None, timeout=None):
+    return request('HEAD', url, data, timeout)
+def post(url, data=None, timeout=None):
+    return request('POST', url, data, timeout)
+def put(url, data=None, timeout=None):
+    return request('PUT', url, data, timeout)
+def patch(url, data=None, timeout=None):
+    return request('PATCH', url, data, timeout)
+def delete(url, data=None, timeout=None):
+    return request('DELETE', url, data, timeout)

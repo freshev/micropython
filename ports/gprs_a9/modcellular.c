@@ -52,6 +52,7 @@
 
 #include "time.h"
 #include "py/mperrno.h"
+#include "cJSON.h"
 
 #define NTW_REG_BIT 0x01
 #define NTW_ROAM_BIT 0x02
@@ -163,6 +164,7 @@ void modcellular_init0(void) {
     sms_callback = mp_const_none;
     call_callback = mp_const_none;
     ussd_callback = mp_const_none;
+    //API_FS_Delete("settings.txt");
 
     // Reset statuses
     network_exception = NTW_NO_EXC;
@@ -354,33 +356,50 @@ void modcellular_remove_files(char *suffix) {
     API_FS_CloseDir(dir);
 }
 
-int modcellular_new_settings(char *file, const char* sname, const char* snum) {
+int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     int result = 0;
     Dir_t* dir = API_FS_OpenDir("/");
     const Dirent_t* entry = NULL;
     while ((entry = API_FS_ReadDir(dir))) {
         if(strcmp(entry->d_name, file) == 0) {
-            mp_printf(&mp_plat_print, "Remove %s ... ", entry->d_name);
-            int res = API_FS_Delete(file);
-            if(res == 0) {
+            mp_printf(&mp_plat_print, "Open %s ... ", file);
+            int fd  = API_FS_Open(file, FS_O_RDWR, 0);
+            if(fd >= 0) {
                 mp_printf(&mp_plat_print, "success\n");
-                mp_printf(&mp_plat_print, "Create %s ... ", file);
-                int fd  = API_FS_Open(file, FS_O_RDWR | FS_O_CREAT, 0);
-                if(fd >= 0) {
-                    mp_printf(&mp_plat_print, "success\n");
-                    char mess[255];
-                    if(sname != NULL && snum != NULL && strlen(sname) <= 20 && strlen(snum) <= 20) {
-                        sprintf(mess, "{\"snum\":\"%s\", \"sname\": \"%s\", \"DEBUG\":\"1\", \"OTA\",\"1\"}", snum, sname);
-                        mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
-                        res = API_FS_Write(fd, (uint8_t*)mess, strlen(mess));
-                        if(res == strlen(mess)) {
-                            mp_printf(&mp_plat_print, "success\n");
-                            result = 1;
-                        }
-                        else mp_printf(&mp_plat_print, "failed\n");
-                        API_FS_Close(fd);
-                    } else mp_printf(&mp_plat_print, "sname or snum too long\n");
-                } else mp_printf(&mp_plat_print, "failed\n");
+                char buff[255];
+                memset(buff, 0, sizeof(buff));
+                int res = API_FS_Read(fd, (uint8_t*)buff, sizeof(buff));
+                API_FS_Close(fd);
+                if(res > 0 && res < sizeof(buff) - 1) {
+                    cJSON *json = cJSON_Parse(buff);
+                    if(json != NULL) {
+                        if(cJSON_HasObjectItem(json, "sname") && cJSON_HasObjectItem(json, "ssub") &&
+                           sname != NULL && ssub != NULL && strlen(sname) <= 20 && strlen(ssub) <= 20) {
+                            cJSON_ReplaceItemInObjectCaseSensitive(json, "sname", cJSON_CreateString(sname));
+                            cJSON_ReplaceItemInObjectCaseSensitive(json, "ssub", cJSON_CreateString(ssub));
+                            char *mess = cJSON_PrintUnformatted(json);
+                            if(mess != NULL) {
+                                mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
+                                if(API_FS_Delete(file) == 0) {
+                                    fd = API_FS_Open(file, FS_O_RDWR | FS_O_CREAT, 0);
+                                    if(fd >= 0) {
+                                        res = API_FS_Write(fd, (uint8_t*)mess, strlen(mess));
+                                        if(res == strlen(mess)) {
+                                            mp_printf(&mp_plat_print, "success\n");
+                                            result = 1;
+                                        }
+                                        else mp_printf(&mp_plat_print, "failed\n");
+                                        API_FS_Flush(fd);
+                                        API_FS_Close(fd);
+                                        OS_Sleep(1000);
+                                    }
+                                }
+                                free(mess);
+                            }
+                        } else mp_printf(&mp_plat_print, "sname or ssub not found or too long\n");
+                        cJSON_Delete(json);
+                    }
+                }
             } else mp_printf(&mp_plat_print, "failed\n");
         }
     }
@@ -426,9 +445,9 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
     }
     if(strncmp((char*)content, "set ", 4) == 0) {
       char sname [52];
-      char snum  [52];
+      char ssub [52];
       memset(sname, 0, sizeof(sname));
-      memset(snum, 0, sizeof(snum));
+      memset(ssub, 0, sizeof(ssub));
       int len = strlen((char*)content);
       char * last = (char*)content + len;
       char * firstSpace = strstr((char*)content, " ");
@@ -438,9 +457,9 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
               if(firstSpace < secondSpace && ((int)(secondSpace - firstSpace)) > 0 && ((int)(secondSpace - firstSpace)) <= 50 &&
                  secondSpace < last && ((int)(last - secondSpace)) > 0 && ((int)(last - secondSpace)) <= 50) {
                   strncpy(sname, firstSpace + 1, ((int)(secondSpace - firstSpace)) - 1);
-                  strncpy(snum, secondSpace + 1, ((int)(last - secondSpace)));
-                  mp_printf(&mp_plat_print, "Set device sname = '%s' snum = '%s'\n", sname, snum);
-                  if(modcellular_new_settings("settings.txt", sname, snum) == 1) to_reset = true;
+                  strncpy(ssub, secondSpace + 1, ((int)(last - secondSpace)));
+                  mp_printf(&mp_plat_print, "Set device sname = '%s' ssub = '%s'\n", sname, ssub);
+                  if(modcellular_new_settings("settings.txt", sname, ssub) == 1) to_reset = true;
               } else mp_printf(&mp_plat_print, "Incorrect format (too long)\n");
           } else mp_printf(&mp_plat_print, "Incorrect format (SS)\n");
       } else mp_printf(&mp_plat_print, "Incorrect format (FS)\n");
