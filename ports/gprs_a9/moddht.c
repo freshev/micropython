@@ -91,7 +91,7 @@ STATIC uint32_t moddht_expectPulse(dht_obj_t *self, uint8_t level_in) {
     GPIO_LEVEL level;
     while (true) {
         if(GPIO_Get(self->_pin, &level)) {
-            if(level != level_in) break;
+            if(level != level_in) break; // was !=
             if (count++ >= self->_maxcycles) {
                Trace(1, "DHT TIMEOUT, count: %d", count);
                return DHT_TIMEOUT;
@@ -114,6 +114,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
 
     // Reset 40 bits of received data to zero.
     self->data[0] = self->data[1] = self->data[2] = self->data[3] = self->data[4] = 0;
+    Trace(1, "DHT started");
 
     // Send start signal.  See DHT datasheet for full signal diagram:
     //   http://www.adafruit.com/datasheets/Digital%20humidity%20and%20temperature%20sensor%20AM2302.pdf
@@ -156,14 +157,16 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
 
     // First expect a low signal for ~80 microseconds followed by a high signal
     // for ~80 microseconds again.
-    if (moddht_expectPulse(self, GPIO_LEVEL_LOW) == DHT_TIMEOUT) {
+    uint32_t lowCyclesInit = 0;
+    uint32_t highCyclesInit = 0;
+    if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
         Trace(1, "DHT timeout waiting for start signal low pulse.");
         self->_lastresult = false;
         MICROPY_END_ATOMIC_SECTION(status);
         return self->_lastresult;
     }
-    if (moddht_expectPulse(self, GPIO_LEVEL_HIGH) == DHT_TIMEOUT) {
-        Trace(1, "DHT timeout waiting for start signal high pulse.");
+    if ((highCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_HIGH)) == DHT_TIMEOUT) {
+        Trace(1, "DHT timeout waiting for start signal high pulse. Low count %d", lowCyclesInit);
         self->_lastresult = false;
         MICROPY_END_ATOMIC_SECTION(status);
         return self->_lastresult;
