@@ -533,8 +533,8 @@ Version: November 12, 2010 for Arduino platform.
 DHT series temperature and humidity sensor module.  
 Originally written by Adafruit Industries [https://www.adafruit.com](https://www.adafruit.com)
 
-#### Attentions
-DHT sensors DHT21, DHT22, AM2301 need external pullup resistor (i.e. 10k ohm) for working properly.
+#### Attention
+DHT sensors like DHT21, DHT22, AM2301 need external pullup resistor (i.e. 10k ohm) for working properly.
 
 #### Methods
 * `dht(pin=20, type=dht.DHT11)`: initialize DHT module.
@@ -556,7 +556,7 @@ DHT sensors DHT21, DHT22, AM2301 need external pullup resistor (i.e. 10k ohm) fo
   * `force`: force read data from sensor;
   * Returns humidity as float or `nan` if reading failed.
 
-* `deinit()`: deinit sensor. Free pin for other application
+* `deinit()`: deinit sensor. Free pin for other application.
 
 
 ### umqtt ###
