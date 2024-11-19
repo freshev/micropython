@@ -54,20 +54,21 @@ typedef struct _dht_obj_t {
     uint8_t _pin;
     uint8_t _type;
     uint8_t data[5];
-    uint32_t _lastreadtime;
+    uint64_t _lastreadtime;
     uint32_t _maxcycles;
     uint8_t _lastresult;
     uint8_t pullTime; // Time (in usec) to pull up data line before reading
 } dht_obj_t;
 
-static int dht_inited = 0;
+static int dht_inited[30] = {0};
+static int dht_pins[30] = {0};
 
 STATIC int moddht_microsecondsToClockCycles(int us) {
     return us * CLOCKS_PER_MSEC;
 }
 
 STATIC void moddht_begin(dht_obj_t *self, uint8_t usec) {
-    if(dht_inited == 0) {
+    if(dht_inited[self->_pin] == 0) {
         // set up the pins!
         mp_hal_pin_input(self->_pin);
 
@@ -77,7 +78,8 @@ STATIC void moddht_begin(dht_obj_t *self, uint8_t usec) {
         self->_lastreadtime = mp_hal_ticks_ms_64() - DHT_MIN_INTERVAL;
         //Trace(1, "DHT max clock cycles: %d", self->_maxcycles);
         self->pullTime = usec;
-        dht_inited = 1;
+        dht_inited[self->_pin] = 1;
+        OS_Sleep(200); // Call to immediate DHT read failed
     }
 }
 
@@ -106,7 +108,7 @@ STATIC uint32_t moddht_expectPulse(dht_obj_t *self, uint8_t level_in) {
 STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // Check if sensor was read less than two seconds ago and return early
     // to use last reading.
-    uint32_t currenttime = mp_hal_ticks_ms_64();
+    uint64_t currenttime = mp_hal_ticks_ms_64();
     if (!force && ((currenttime - self->_lastreadtime) < DHT_MIN_INTERVAL)) {
         return self->_lastresult; // return last correct measurement
     }
@@ -144,32 +146,47 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // -------------------------
     // Time critical code start
     // -------------------------
+
     // End the start signal by setting data line high for 55 microseconds.
     mp_hal_pin_input(self->_pin);
 
     // Delay a moment to let sensor pull data line low.
     OS_SleepUs(self->pullTime);
 
+    uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
     // Now start reading the data line to get the value from the DHT sensor.
     // Turn off interrupts temporarily because the next sections
     // are timing critical and we don't want any interruptions.
-    uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
-
     // First expect a low signal for ~80 microseconds followed by a high signal
     // for ~80 microseconds again.
     uint32_t lowCyclesInit = 0;
     uint32_t highCyclesInit = 0;
     if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
-        Trace(1, "DHT timeout waiting for start signal low pulse.");
-        self->_lastresult = false;
         MICROPY_END_ATOMIC_SECTION(status);
+        Trace(1, "DHT timeout waiting for pulse LOW init(1).");
+        self->_lastresult = false;
         return self->_lastresult;
     }
     if ((highCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_HIGH)) == DHT_TIMEOUT) {
-        Trace(1, "DHT timeout waiting for start signal high pulse. Low count %d", lowCyclesInit);
-        self->_lastresult = false;
         MICROPY_END_ATOMIC_SECTION(status);
+        Trace(1, "DHT timeout waiting for pulse HIGH init(1).");
+        self->_lastresult = false;
         return self->_lastresult;
+    }
+
+    if(lowCyclesInit < 20 || highCyclesInit < 20) {
+        if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
+            MICROPY_END_ATOMIC_SECTION(status);
+            Trace(1, "DHT timeout waiting for pulse LOW init(2).");
+            self->_lastresult = false;
+            return self->_lastresult;
+        }
+        if ((highCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_HIGH)) == DHT_TIMEOUT) {
+            MICROPY_END_ATOMIC_SECTION(status);
+            Trace(1, "DHT timeout waiting for pulse HIGH init(2).");
+            self->_lastresult = false;
+            return self->_lastresult;
+        }
     }
 
     // Now read the 40 bits sent by the sensor.  Each bit is sent as a 50
@@ -189,13 +206,12 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // -------------------------
     MICROPY_END_ATOMIC_SECTION(status);
 
-
+    // Trace(1, "DHT highCyclesInit = %d, lowCyclesInit = %d", (int)((float)highCyclesInit/3.64), (int)((float)lowCyclesInit/3.64));
     // Inspect pulses and determine which ones are 0 (high state cycle count < low
     // state cycle count), or 1 (high state cycle count > low state cycle count).
     for (int i = 0; i < 40; ++i) {
         uint32_t lowCycles = cycles[2 * i];
         uint32_t highCycles = cycles[2 * i + 1];
-        // Trace(1, "DHT pulses[%d]: lowCycles: %d, highCycles: %d", i, lowCycles, highCycles);
         if ((lowCycles == DHT_TIMEOUT) || (highCycles == DHT_TIMEOUT)) {
            Trace(1, "DHT timeout waiting for pulse.");
            self->_lastresult = false;
@@ -203,6 +219,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         }
         self->data[i / 8] <<= 1;
         // Now compare the low and high cycle times to see if the bit is a 0 or 1.
+        // if(i < 3) Trace(1, "DHT highCycles = %d, lowCycles = %d, bit=%d", (int)((float)highCycles/3.64), (int)((float)lowCycles/3.64), highCycles > lowCycles);
         if (highCycles > lowCycles) {
             // High cycles are greater than 50us low cycle count, must be a 1.
             self->data[i / 8] |= 1;
@@ -217,13 +234,13 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
 
     // Check we read 40 bits and that the checksum matches.
     if (self->data[4] == ((self->data[0] + self->data[1] + self->data[2] + self->data[3]) & 0xFF)) {
+        // Trace(1, "DHT checksum OK: %02x, %02x, %02x, %02x -> %02x", self->data[0], self->data[1], self->data[2], self->data[3], self->data[4]);
         self->_lastresult = true;
-        return self->_lastresult;
     } else {
-        Trace(1, "DHT checksum failure!");
+        Trace(1, "DHT checksum failure: %02x, %02x, %02x, %02x -> %02x", self->data[0], self->data[1], self->data[2], self->data[3], self->data[4]);
         self->_lastresult = false;
-        return self->_lastresult;
     }
+    return self->_lastresult;
 }
 
 STATIC float moddht_convertCtoF(float c) { return c * 1.8 + 32; }
@@ -257,15 +274,21 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
 
     self->_pin = args[ARG_pin].u_int;
     self->_type = args[ARG_type].u_int;
-    self->_maxcycles = moddht_microsecondsToClockCycles(1000);  // was 1000
+    self->_maxcycles = moddht_microsecondsToClockCycles(1000);
 
-    //init pin via machine_pin to turn on power on pin
-    mp_obj_t pin_args[1];
-    pin_args[0] = MP_OBJ_NEW_SMALL_INT(args[ARG_pin].u_int);
-    mp_obj_t pin_obj = mp_pin_make_new(NULL, 1, 0, pin_args);
-    self->pin_obj = pin_obj;
+    if(dht_pins[self->_pin] == 0) {
+        //init pin via machine_pin to turn on pin "power on"
+        mp_obj_t pin_args[1];
+        pin_args[0] = MP_OBJ_NEW_SMALL_INT(args[ARG_pin].u_int);
+        mp_obj_t pin_obj = mp_pin_make_new(NULL, 1, 0, pin_args);
+        self->pin_obj = pin_obj;
+        dht_pins[self->_pin] = 1;
 
-    return MP_OBJ_FROM_PTR(self);
+        return MP_OBJ_FROM_PTR(self);
+    } else {
+        mp_warning(MP_WARN_CAT(RuntimeWarning), "Another DHT sensor already use this pin");
+        return mp_const_none;
+    }
 }
 
 STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
@@ -281,7 +304,7 @@ STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_
     dht_obj_t *self = self_in;
     uint8_t S = mp_obj_get_int(S_in);
     uint8_t force = mp_obj_get_int(force_in);
-    moddht_begin(self, 55);
+    moddht_begin(self, 55); // was 55
 
     float f = NAN;
 
@@ -353,6 +376,17 @@ STATIC mp_obj_t moddht_get_type(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_get_type_obj, &moddht_get_type);
 
+STATIC mp_obj_t moddht_deinit(mp_obj_t self_in) {
+    dht_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    dht_inited[self->_pin] = 0;
+    dht_pins[self->_pin] = 0;
+    OS_Sleep(DHT_MIN_INTERVAL);
+    mp_warning(MP_WARN_CAT(RuntimeWarning), "DHT object deleted");
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_deinit_obj, &moddht_deinit);
+
+
 
 // -------
 // Locals
@@ -360,7 +394,8 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_get_type_obj, &moddht_get_type);
 STATIC const mp_rom_map_elem_t dht_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_read_temperature), MP_ROM_PTR(&moddht_read_temperature_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_humidity), MP_ROM_PTR(&moddht_read_humidity_obj) },
-    { MP_ROM_QSTR(MP_QSTR_get_type), MP_ROM_PTR(&moddht_get_type_obj) }
+    { MP_ROM_QSTR(MP_QSTR_get_type), MP_ROM_PTR(&moddht_get_type_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&moddht_deinit_obj) }
 };
 
 STATIC MP_DEFINE_CONST_DICT(dht_locals_dict, dht_locals_dict_table);
