@@ -164,40 +164,10 @@ void modcellular_init0(void) {
     sms_callback = mp_const_none;
     call_callback = mp_const_none;
     ussd_callback = mp_const_none;
-    //API_FS_Delete("settings.txt");
 
     // Reset statuses
     network_exception = NTW_NO_EXC;
     cells_n = 0;
-
-    uint8_t status;
-
-    // Deactivate
-    if (Network_GetActiveStatus(&status)) {
-        if (status)
-            network_status |= NTW_ACT_BIT;
-        else
-            network_status &= ~NTW_ACT_BIT;
-    }
-
-    if (network_status & NTW_ACT_BIT)
-        if (Network_StartDeactive(1))
-            WAIT_UNTIL(!(network_status & NTW_ACT_BIT), TIMEOUT_GPRS_ACTIVATION, 100, break);
-
-    // Poll attachment status
-    // TODO: attachment status does not really work
-    if (Network_GetAttachStatus(&status)) {
-        if (status)
-            network_status |= NTW_ATT_BIT;
-        else
-            network_status &= ~NTW_ATT_BIT;
-    }
-
-    // !!!!!!!!!!!!!!!!!!!!!!!
-    if (network_status & NTW_ATT_BIT)
-        if (Network_StartDetach())
-            WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, break);
-    // !!!!!!!!!!!!!!!!!!!!!!!
 
     // Set bands to default
     Network_SetFrequencyBand(NETWORK_FREQ_BAND_GSM_900P | NETWORK_FREQ_BAND_GSM_900E | NETWORK_FREQ_BAND_GSM_850 | NETWORK_FREQ_BAND_DCS_1800 | NETWORK_FREQ_BAND_PCS_1900);
@@ -1139,11 +1109,9 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
         }
 
-        // !!!!!!!!!!!!!!!!!!!!!!!
         if (network_status & NTW_ATT_BIT)
             if (Network_StartDetach())
                 WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, break);
-        // !!!!!!!!!!!!!!!!!!!!!!!
 
     } else if (n_args == 3 || n_args == 4) {
         const char* c_apn = mp_obj_str_get_str(args[0]);
@@ -1156,19 +1124,32 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             mp_raise_ValueError("GPRS is already on");
             return mp_const_none;
         }
-        WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Network is not attached: try resetting"));
 
-        if (!(network_status & NTW_ACT_BIT)) {
-            Network_PDP_Context_t context;
-            memcpy(context.apn, c_apn, MIN(strlen(c_apn) + 1, sizeof(context.apn)));
-            memcpy(context.userName, c_user, MIN(strlen(c_user) + 1, sizeof(context.userName)));
-            memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
+        uint8_t ret;
+        //mp_printf(&mp_plat_print, "Deactivate... ");
+        ret = Network_StartDeactive(1);
+        WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not detactivated: try resetting"));
+        //mp_printf(&mp_plat_print, " ret=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
 
-            if (!Network_StartActive(context))
-                mp_raise_RuntimeError("Cannot initiate context activation");
-            WAIT_UNTIL(network_status & NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
-        }
+        //mp_printf(&mp_plat_print, "Detach ... ");
+        ret = Network_StartDetach();
+        WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not detached: try resetting"));
+        //mp_printf(&mp_plat_print, " ret=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
 
+        //mp_printf(&mp_plat_print, "Attach... ");
+        ret = Network_StartAttach();
+        WAIT_UNTIL((network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+        //mp_printf(&mp_plat_print, " ret=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
+
+        Network_PDP_Context_t context;
+        memcpy(context.apn, c_apn, MIN(strlen(c_apn) + 1, sizeof(context.apn)));
+        memcpy(context.userName, c_user, MIN(strlen(c_user) + 1, sizeof(context.userName)));
+        memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
+
+        //mp_printf(&mp_plat_print, "Activate... ");
+        ret = Network_StartActive(context);
+        WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not activated: try resetting"));
+        //mp_printf(&mp_plat_print, " ret=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
     } else if (n_args != 0) {
         mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
     }
