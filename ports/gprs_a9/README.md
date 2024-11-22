@@ -589,4 +589,5 @@ To use other methods, uncomment needed methods in `modules/urequests.py` and reb
 * Initial PIN state patches (disabled in ./libcsdk-patches/patch-lod.py)
 
 ## Bugs known ##
-* SMS in unicode is not fully supported
+* SMS with UCS2 encoding is not fully supported (TODO: add support for UCS2 encoding using `iconv` library)
+
