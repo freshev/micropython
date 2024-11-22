@@ -582,6 +582,7 @@ To use other methods, uncomment needed methods in `modules/urequests.py` and reb
 
 ## Bugs in CSDK corrected ##
 * timeout.h code rewritten because of well known `32bit clock counter` bug, which leads to A9G hanging with long timeout (more than 3.5 hours). Now A9G timeouts are 64bit counters.
+* cellular.gprs() code rewritten to reattach and reactivate PDP context after long timeouts
 * Patch to make hardware watchdog feed during boot (if watchdog timer less than 1.5 seconds like in IMP706RESA)
 * Patch to avoid freezing while GPRS sends/receives data (for sys_arch_mbox_fetch() timeout changed from 100 to 50)
 * Patch to avoid freezing while GPRS sends/receives data (in netconn_drain()->lwip_netconn_is_err_msg() check mem for NULL)
