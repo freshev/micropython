@@ -1,0 +1,12 @@
+# Other files and folders
+.settings/
+.vscode/
+
+# Executables
+out/
+old/
+build/
+.xmake/
+*.o
+__py_cache__/
+log*.*
