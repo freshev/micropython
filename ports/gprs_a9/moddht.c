@@ -124,42 +124,42 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         // Reset 40 bits of received data to zero.
         self->data[0] = self->data[1] = self->data[2] = self->data[3] = self->data[4] = 0;
         Trace(1, "DHT started, try count %d", retry);
-        
+
         // Send start signal.  See DHT datasheet for full signal diagram:
         //   http://www.adafruit.com/datasheets/Digital%20humidity%20and%20temperature%20sensor%20AM2302.pdf
-        
+
         // Go into high impedence state to let pull-up raise data line level and
         // start the reading process.
         mp_hal_pin_input(self->_pin);
         OS_Sleep(1);
-        
+
         // First set data line low for a period according to sensor type
         mp_hal_pin_output(self->_pin);
         mp_hal_pin_write(self->_pin, GPIO_LEVEL_LOW);
-        
+
         switch (self->_type) {
             case DHT22:
             case DHT21:
                 OS_SleepUs(1100); // data sheet says "at least 1ms"
                 break;
-        
+
             case DHT11:
             default:
                 OS_Sleep(20); // data sheet says at least 18ms, 20ms just to be safe
                 break;
         }
-        
+
         uint32_t cycles[80];
         // -------------------------
         // Time critical code start
         // -------------------------
-        
+
         // End the start signal by setting data line high for 55 microseconds.
         mp_hal_pin_input(self->_pin);
-        
+
         // Delay a moment to let sensor pull data line low.
         OS_SleepUs(self->pullTime);
-        
+
         //uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
         // Now start reading the data line to get the value from the DHT sensor.
         // Turn off interrupts temporarily because the next sections
@@ -186,7 +186,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 continue;
             } else return self->_lastresult;
         }
-        
+
         if(lowCyclesInit < 20 || highCyclesInit < 20) {
             if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
                 //MICROPY_END_ATOMIC_SECTION(status);
@@ -207,7 +207,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 } else return self->_lastresult;
             }
         }
-        
+
         // Now read the 40 bits sent by the sensor.  Each bit is sent as a 50
         // microsecond low pulse followed by a variable length high pulse.  If the
         // high pulse is ~28 microseconds then it's a 0 and if it's ~70 microseconds
@@ -224,7 +224,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         // Time critical code end
         // -------------------------
         //MICROPY_END_ATOMIC_SECTION(status);
-        
+
         // Trace(1, "DHT highCyclesInit = %d, lowCyclesInit = %d", (int)((float)highCyclesInit/3.64), (int)((float)lowCyclesInit/3.64));
         // Inspect pulses and determine which ones are 0 (high state cycle count < low
         // state cycle count), or 1 (high state cycle count > low state cycle count).
@@ -250,10 +250,10 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             // cycle count so this must be a zero.  Nothing needs to be changed in the
             // stored data.
         }
-        
+
         // Trace(1, "Received from DHT: 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x", self->data[0], self->data[1], self->data[2], self->data[3], self->data[4]);
         // Trace(1, "Check sum: 0x%02x vs 0x%02x", (self->data[0] + self->data[1] + self->data[2] + self->data[3]) & 0xFF, self->data[4]);
-        
+
         // Check we read 40 bits and that the checksum matches.
         if (self->data[4] == ((self->data[0] + self->data[1] + self->data[2] + self->data[3]) & 0xFF)) {
             // Trace(1, "DHT checksum OK: %02x, %02x, %02x, %02x -> %02x", self->data[0], self->data[1], self->data[2], self->data[3], self->data[4]);
