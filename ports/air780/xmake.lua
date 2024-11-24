@@ -1,0 +1,1451 @@
+set_project("EC618")
+set_xmakever("2.7.2")
+set_version("0.0.2", {build = "%Y%m%d%H%M"})
+add_rules("mode.debug", "mode.release")
+set_defaultmode("debug")
+
+local VM_64BIT = nil
+SDK_TOP = "."
+local SDK_PATH
+local USER_PROJECT_NAME = "micropython"
+USER_PROJECT_DIR  = ""
+local LUAT_SCRIPT_SIZE
+local LUAT_SCRIPT_OTA_SIZE
+local script_addr = nil
+local full_addr = nil
+
+-- to configure board run: xmake f --menu
+option("Board type")
+    set_default(true)
+    add_defines("BOARD")
+    set_default("Air780_GENERIC")
+    set_values("Air780_GENERIC", "XMAKE_TEST_BOARD")
+option("Firmware version")
+    add_defines("FW_VERSION")
+    set_default("v1.0")
+option("Micropython REPL port")
+    add_defines("HW_UART_REPL")
+    set_default("REPL over USB")
+    set_values("REPL over USB", "UART1", "UART2")
+option("GPIO8-11 mux")
+    add_defines("GPIO_MUX")
+    set_default("UART2 & I2C1")
+    set_values("UART2 & I2C1", "SPI0")
+
+
+package("gnu_rm")    
+	set_kind("toolchain")
+	set_homepage("https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm")
+	set_description("GNU Arm Embedded Toolchain")
+	local version_map = {
+		["2021.10"] = "10.3-2021.10"
+	}
+	if is_host("windows") then
+		set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-win32.zip", {version = function (version)
+			return version_map[tostring(version)]
+		end})
+		add_versions("2021.10", "d287439b3090843f3f4e29c7c41f81d958a5323aecefcf705c203bfd8ae3f2e7")
+	elseif is_host("linux") then
+		set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-x86_64-linux.tar.bz2", {version = function (version)
+			return version_map[tostring(version)]
+		end})
+		add_versions("2021.10", "97dbb4f019ad1650b732faffcc881689cedc14e2b7ee863d390e0a41ef16c9a3")
+    elseif is_host("macosx") then
+        set_urls("https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-$(version)-mac.tar.bz2", {version = function (version)
+			return version_map[tostring(version)]
+		end})
+		add_versions("2021.10", "fb613dacb25149f140f73fe9ff6c380bb43328e6bf813473986e9127e2bc283b")
+	end
+	on_install("@windows", "@linux", "@macosx", function (package)
+	 	os.vcp("*", package:installdir())
+	end)	
+
+package_end()
+
+if os.getenv("GCC_PATH") then
+	toolchain("arm_toolchain")
+	    set_kind("standalone")
+	    set_sdkdir(os.getenv("GCC_PATH"))
+	toolchain_end()
+	set_toolchains("arm_toolchain")
+else
+	add_requires("gnu_rm 2021.10")
+	set_toolchains("gnu-rm@gnu_rm")
+end
+
+add_requires("python 3.10")
+add_packages("python")
+
+-- install sh, make, cat, touch, others --  
+-- add_requires("msys2", {configs = {base_devel = true}}) 
+-- add_packages("msys2")
+                     
+--Get project name
+if os.getenv("PROJECT_NAME") then
+	USER_PROJECT_NAME = os.getenv("PROJECT_NAME")
+end
+
+--Whether it is rndis csdk
+if os.getenv("EC618_RNDIS") == "enable" then
+    is_rndis = true
+    add_defines("LUAT_EC618_RNDIS_ENABLED=1")
+else
+    is_rndis = false
+end
+
+--Whether to enable low-speed mode, which has larger memory but is not compatible with rndis
+if is_rndis == false and os.getenv("LSPD_MODE") == "enable" then
+    is_lspd = true
+else
+    is_lspd = false
+end
+
+-- If is_lspd is enabled, add additional macros
+if is_lspd == true then
+    add_defines("LOW_SPEED_SERVICE_ONLY")
+end
+
+if os.getenv("ROOT_PATH") then
+	SDK_TOP = os.getenv("ROOT_PATH")
+else
+	SDK_TOP = os.curdir()
+end
+
+SDK_TOP = SDK_TOP .. "/../../lib/luatos-soc-2022"
+SDK_PATH = SDK_TOP
+
+
+if os.getenv("PROJECT_DIR") then
+    USER_PROJECT_DIR = os.getenv("PROJECT_DIR")
+else
+    USER_PROJECT_DIR = "./"
+end
+
+set_plat("cross")
+set_arch("arm")
+set_languages("gnu99", "cxx11")
+set_warnings("everything")
+
+-- ==============================
+--=== defines =====
+DEFINES={	"__EC618",
+            "CHIP_EC618",
+            "CORE_IS_AP",
+            "SDK_REL_BUILD",
+            "EC_ASSERT_FLAG",
+            "PM_FEATURE_ENABLE",
+            "UINILOG_FEATURE_ENABLE",
+            "FEATURE_OS_ENABLE",
+            "configUSE_NEWLIB_REENTRANT=1",
+            "ARM_MATH_CM3",
+            "FEATURE_YRCOMPRESS_ENABLE",
+            "FEATURE_CCIO_ENABLE",
+            "DHCPD_ENABLE_DEFINE=1",
+            "LWIP_CONFIG_FILE=\"lwip_config_ec6180h00.h\"",
+            "FEATURE_MBEDTLS_ENABLE",
+            "LFS_NAME_MAX=63",
+            "LFS_DEBUG_TRACE",
+            "WDT_FEATURE_ENABLE=1",
+            "FEATURE_UART_HELP_DUMP_ENABLE",
+            "DEBUG_LOG_HEADER_FILE=\"debug_log_ap.h\"",
+            "TRACE_LEVEL=5",
+            -- "SOFTPACK_VERSION=\"\"",
+            "HAVE_STRUCT_TIMESPEC",
+            "HTTPS_WITH_CA",
+            "FEATURE_HTTPC_ENABLE",
+            -- "LITE_FEATURE_MODE",
+            --"RTE_RNDIS_EN=0", "RTE_ETHER_EN=0",
+            "RTE_USB_EN=1",
+            "RTE_PPP_EN=0",
+            "RTE_OPAQ_EN=0",
+            "RTE_ONE_UART_AT=0",
+            "RTE_TWO_UART_AT=0",
+            "__USER_CODE__",
+            "__PRINT_ALIGNED_32BIT__",
+            "_REENT_SMALL",
+            "_REENT_GLOBAL_ATEXIT"
+}
+add_defines(DEFINES)
+
+if is_rndis then
+
+else
+    add_defines("LITE_FEATURE_MODE")
+end
+
+set_optimize("smallest")
+add_cxflags("-g3",
+            "-mcpu=cortex-m3",
+            "-mthumb",
+            "-std=gnu99",
+            "-nostartfiles",
+            "-mapcs-frame",
+            "-ffunction-sections",
+            "-fdata-sections",
+            "-fno-isolate-erroneous-paths-dereference",
+            "-freorder-blocks-algorithm=stc",
+            "-Wall",
+            "-Wno-incompatible-pointer-types",
+            "-Wno-unused-but-set-variable",
+            "-Wno-implicit-int",
+            "-Wno-implicit-fallthrough",
+            "-Wno-ignored-qualifiers",
+            "-Wno-unused-parameter",
+            "-Wno-unused-variable",
+            "-Wno-unused-function",
+            "-Wno-unused-label",
+            "-Wno-enum-conversion",
+            "-Wno-implicit-function-declaration",
+            "-Wno-discarded-qualifiers",
+            "-Wno-sign-compare",
+            "-Wno-old-style-declaration",
+            "-Wno-return-type",
+            "-Wno-int-conversion",
+            "-Wno-missing-field-initializers",
+            "-Wno-switch",
+            "-Wno-type-limits",
+            "-Wno-pointer-sign",            
+            "-Wno-format",
+            "-gdwarf-2",
+            "-fno-inline",
+            "-mslow-flash-data",
+            "-fstack-usage",
+            "-Wstack-usage=4096",
+{force=true})
+
+add_cxflags("-Werror=maybe-uninitialized")
+
+add_ldflags(" -Wl,--wrap=clock ",{force = true})
+add_ldflags(" -Wl,--wrap=localtime ",{force = true})
+add_ldflags(" -Wl,--wrap=gmtime ",{force = true})
+add_ldflags(" -Wl,--wrap=time ",{force = true})
+add_ldflags(" -Wl,--wrap=SetUnilogUart", {force=true})
+
+add_ldflags("--specs=nano.specs", {force=true})
+add_asflags("-Wl,--cref -Wl,--check-sections -Wl,--gc-sections -lm -Wl,--print-memory-usage -Wl,--wrap=_malloc_r -Wl,--wrap=_free_r -Wl,--wrap=_realloc_r  -mcpu=cortex-m3 -mthumb -DTRACE_LEVEL=5 -DSOFTPACK_VERSION=\"\" -DHAVE_STRUCT_TIMESPEC")
+
+add_defines("sprintf=sprintf_")
+add_defines("snprintf=snprintf_")
+add_defines("vsnprintf=vsnprintf_")
+
+-- ==============================
+--=== includes =====
+INCLUDES={
+                SDK_TOP .. "/PLAT/device/target/board/common/ARMCM3/inc",
+                SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/common/inc",
+                SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc",
+                SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/inc",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/audio",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/bf30a2",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/gc6153",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/gc032A",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/gc6123",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/sp0A39",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/camera/sp0821",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/eeprom",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/lcd",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/lcd/ST7571",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/lcd/ST7789V2",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/inc/ntc",
+                SDK_TOP .. "/PLAT/driver/chip/ec618/ap/inc",
+                SDK_TOP .. "/PLAT/driver/chip/ec618/ap/inc_cmsis",
+                SDK_TOP .. "/PLAT/driver/hal/common/inc",
+                SDK_TOP .. "/PLAT/driver/hal/ec618/ap/inc",
+                SDK_TOP .. "/PLAT/os/freertos/inc",
+                SDK_TOP .. "/PLAT/os/freertos/CMSIS/common/inc",
+                SDK_TOP .. "/PLAT/os/freertos/CMSIS/ap/inc",
+                SDK_TOP .. "/PLAT/os/freertos/portable/mem/tlsf",
+                SDK_TOP .. "/PLAT/os/freertos/portable/gcc",
+                SDK_TOP .. "/PLAT/middleware/developed/debug/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/nvram/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/psdial/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/cms/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/psil/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/psstk/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/sockmgr/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/cms/cmsnetlight/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/ecapi/appmwapi/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/ecapi/psapi/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/common/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/psnv/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/tcpipmgr/app/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/tcpipmgr/common/inc",
+                SDK_TOP .. "/PLAT/os/freertos/inc",
+                -- SDK_TOP .. "/PLAT/middleware/developed/yrcompress",
+                SDK_TOP .. "/PLAT/prebuild/PS/inc",                
+                SDK_TOP .. "/PLAT/middleware/developed/ccio/pub", -- UART
+                SDK_TOP .. "/PLAT/middleware/developed/ccio/device/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/ccio/service/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/ccio/custom/inc",
+                SDK_TOP .. "/PLAT/middleware/developed/fota/pub",
+                SDK_TOP .. "/PLAT/middleware/developed/fota/custom/inc",
+                -- SDK_TOP .. "/thirdparty/httpclient",
+                SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include",
+                SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/posix",
+                -- SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/lwip/apps", -- mdns
+                SDK_TOP .. "/PLAT/os/freertos/inc",
+                SDK_TOP .. "/PLAT/prebuild/PS/inc",
+                SDK_TOP .. "/PLAT/prebuild/PLAT/inc",
+                SDK_TOP .. "/PLAT/core/common/include",
+                SDK_TOP .. "/PLAT/core/tts/include",
+                SDK_TOP .. "/PLAT/core/multimedia/include",
+                SDK_TOP .. "/PLAT/core/driver/include",
+                SDK_TOP .. "/interface/include", 
+                SDK_TOP .. "/interface/base_include", 
+                SDK_TOP .. "/interface/private_include", 
+                SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include", 		
+                SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/lwip",	
+                SDK_TOP .. "/thirdparty/littlefs",
+                SDK_TOP .. "/thirdparty/littlefs/port",
+                SDK_TOP .. "/thirdparty/mbedtls/include",						-- link MPY version
+                SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",				-- link MPY version
+                SDK_TOP .. "/thirdparty/mbedtls/configs",						-- link MPY version
+                SDK_TOP .. "/thirdparty/fal/inc",
+                SDK_TOP .. "/thirdparty/flashdb/inc",
+				SDK_TOP .. "/thirdparty/linksdk",
+                SDK_TOP .. "/thirdparty/printf",
+                SDK_TOP .. "/thirdparty/cJSON",
+                SDK_TOP .. "/luatos_lwip_socket/include",
+         }
+add_includedirs(INCLUDES, {public = true})
+
+--linkflags
+local LD_BASE_FLAGS = "-Wl,--cref -Wl,--check-sections -Wl,--gc-sections -lm -Wl,--print-memory-usage"
+LD_BASE_FLAGS = LD_BASE_FLAGS .. " -L" .. SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc/"
+--LD_BASE_FLAGS = LD_BASE_FLAGS .. " -T" .. SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc/ec618_0h00_flash.ld -Wl,-Map,$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME.."_$(mode).map "
+LD_BASE_FLAGS = LD_BASE_FLAGS .. " -T" .. SDK_TOP .. "/PLAT/core/ld/ec618_0h00_flash.ld -Wl,-Map,$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME.."_$(mode).map "
+LD_BASE_FLAGS = LD_BASE_FLAGS .. " -Wl,--wrap=_malloc_r -Wl,--wrap=_free_r -Wl,--wrap=_realloc_r  -mcpu=cortex-m3 -mthumb -DTRACE_LEVEL=5 -DSOFTPACK_VERSION=\"\" -DHAVE_STRUCT_TIMESPEC"
+local LIB_BASE = SDK_TOP .. "/PLAT/libs/libstartup.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libcore_airm2m.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libfreertos.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libpsnv.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libtcpipmgr.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libyrcompress.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/libmiddleware_ec.a "
+LIB_BASE = LIB_BASE .. SDK_TOP .. "/PLAT/libs/liblwip.a "
+
+if is_rndis then
+    LIB_PS_PRE = SDK_TOP .. "/PLAT/prebuild/PS/lib/gcc"
+    LIB_PLAT_PRE = SDK_TOP .. "/PLAT/prebuild/PLAT/lib/gcc"
+else
+    LIB_PS_PRE = SDK_TOP .. "/PLAT/prebuild/PS/lib/gcc/lite"
+    LIB_PLAT_PRE = SDK_TOP .. "/PLAT/prebuild/PLAT/lib/gcc/lite"
+end
+LIB_BASE = LIB_BASE .. LIB_PS_PRE .. "/libps.a "
+LIB_BASE = LIB_BASE .. LIB_PS_PRE .. "/libpsl1.a "
+LIB_BASE = LIB_BASE .. LIB_PS_PRE .. "/libpsif.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libosa.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libmiddleware_ec_private.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libccio.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libdeltapatch.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libfota.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libdriver_private.a "
+LIB_BASE = LIB_BASE .. LIB_PLAT_PRE .. "/libusb_private.a "
+LIB_USER = ""
+
+
+after_load(function (target)
+    for _, sourcebatch in pairs(target:sourcebatches()) do
+        if sourcebatch.sourcekind == "as" then --only asm files
+            for idx, objectfile in ipairs(sourcebatch.objectfiles) do
+                sourcebatch.objectfiles[idx] = objectfile:gsub("%.S%.o", ".o")
+            end
+        end
+        if sourcebatch.sourcekind == "cc" then --only c files
+            for idx, objectfile in ipairs(sourcebatch.objectfiles) do
+                sourcebatch.objectfiles[idx] = objectfile:gsub("%.c%.o", ".o")
+            end
+        end
+    end
+end)
+
+--------------------------------------------------------
+---------------------- Parse configs -------------------
+--------------------------------------------------------
+local BOARD = "Air780_GENERIC"
+local USER_PROJECT_NAME_VERSION = "v1.0"
+local FW_VERSION = USER_PROJECT_NAME_VERSION
+local HW_UART_REPL=0x20 -- LUAT_VUART_ID_0
+local RTE_UART2 = 1
+local RTE_I2C1 = 1
+local RTE_SPI0 = 1
+
+if get_config("Board type") ~= nil then
+	if os.isdir("boards/" .. get_config("Board type")) then BOARD = get_config("Board type") end
+end
+
+if get_config("Firmware version") ~= nil then
+	USER_PROJECT_NAME_VERSION = get_config("Firmware version")
+	FW_VERSION = USER_PROJECT_NAME_VERSION
+end
+if get_config("Micropython REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
+if get_config("Micropython REPL port") == "UART1" then HW_UART_REPL=1 end
+if get_config("Micropython REPL port") == "UART2" then HW_UART_REPL=2 end
+if get_config("GPIO8-11 mux") == "UART2 & I2C1" then 
+	RTE_SPI0 = 0 
+end
+
+if get_config("GPIO8-11 mux") == "SPI0" then
+   RTE_UART2 = 0
+   RTE_I2C1 = 0
+end
+
+table.insert(DEFINES, "FW_VERSION=\"" .. FW_VERSION .. "\"")
+table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
+table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
+table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
+table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
+--------------------------------------------------------
+--------------- MICROPYTHON PART START -----------------
+--------------------------------------------------------
+BOARD_DIR = "boards/" .. BOARD	
+DEBUG_LUA = 0
+
+-- include ../../py/mkenv.mk
+------------------------------------------
+local TOP =  "../.."
+local BUILD = "build"
+local PYTHON = "python"
+local CAT = "cat"
+local LIB_NAME = "lib" .. USER_PROJECT_NAME .. ".a "
+
+PY_SRC = TOP .. "/py"
+MAKE_MANIFEST = PYTHON .. " " .. TOP .. "/tools/makemanifest.py"
+MAKE_FROZEN = PYTHON .. " " .. TOP .. "/tools/make-frozen.py"
+MPY_TOOL = PYTHON .. " " .. TOP .. "/tools/mpy-tool.py"
+MPY_LIB_SUBMODULE_DIR = TOP .. "/lib/micropython-lib"
+MPY_LIB_DIR = MPY_LIB_SUBMODULE_DIR		
+MPY_TOOL_FLAGS = ""
+
+MICROPY_MPYCROSS = TOP .. "/mpy-cross/build/mpy-cross"
+MICROPY_MPYCROSS_DEPENDENCY = MICROPY_MPYCROSS
+
+MPY_CROSS_FLAGS = "" -- port not supporting dynruntime
+
+-- # Optional
+-- include $(BOARD_DIR)/mpconfigboard.mk
+-- add content from $(BOARD_DIR)/mpconfigboard.mk here
+
+-- # qstr definitions (must come before including py.mk)
+QSTR_DEFS = "qstrdefsport.h" -- BUILD .. "/pins_qstr.h"
+QSTR_GLOBAL_DEPENDENCIES = BOARD_DIR .. "/mpconfigboard.h"
+FROZEN_MANIFEST = ""
+if os.isfile("boards/manifest.py") then FROZEN_MANIFEST="boards/manifest.py" end
+
+-- # MicroPython feature configurations
+-- MICROPY_ROM_TEXT_COMPRESSION ?= 1
+-- MICROPY_PY_SSL = 1
+-- MICROPY_SSL_AXTLS = 1
+-- AXTLS_DEFS_EXTRA = -Dabort=abort_ -DRT_MAX_PLAIN_LENGTH=1024 -DRT_EXTRA=4096
+-- BTREE_DEFS_EXTRA = -DDEFPSIZE=1024 -DMINCACHE=3
+
+
+
+-- # include py core make definitions
+-- include $(TOP)/py/py.mk
+----------------------------------------
+--            py.mk content
+----------------------------------------
+-- # where py object files go (they have a name prefix to prevent filename clashes)
+PY_BUILD = BUILD .. "/py"
+
+-- # where autogenerated header files go
+HEADER_BUILD = BUILD .. "/genhdr"
+
+-- # file containing qstr defs for the core Python bit
+PY_QSTR_DEFS = PY_SRC .. "/qstrdefs.h"
+
+-- # If qstr autogeneration is not disabled we specify the output header
+-- # for all collected qstrings.
+if QSTR_AUTOGEN_DISABLE ~= 1 then
+	QSTR_DEFS_COLLECTED = HEADER_BUILD .. "/qstrdefs.collected.h"
+end
+
+-- # Any files listed by these variables will cause a full regeneration of qstrs
+-- # DEPENDENCIES: included in qstr processing; REQUIREMENTS: not included
+QSTR_GLOBAL_DEPENDENCIES = QSTR_GLOBAL_DEPENDENCIES .. " " .. PY_SRC .. "/mpconfig.h mpconfigport.h"
+QSTR_GLOBAL_REQUIREMENTS = HEADER_BUILD .. "/mpversion.h"
+
+-- # some code is performance bottleneck and compiled with other optimization options
+CSUPEROPT = "-O3"
+-- skip MICROPY_FORCE_32BIT
+-- skip USER_C_MODULES
+
+PY_CORE_O_BASENAME = {"mpstate.o", "nlr.o", "nlrx86.o", "nlrx64.o", "nlrthumb.o", "nlraarch64.o", "nlrmips.o", "nlrpowerpc.o", "nlrxtensa.o", 
+	"nlrsetjmp.o", "malloc.o", "gc.o", "pystack.o", "qstr.o", "vstr.o", "mpprint.o", "unicode.o", "mpz.o", "reader.o", "lexer.o", "parse.o", 
+	"scope.o", "compile.o", "emitcommon.o", "emitbc.o", "asmbase.o", "asmx64.o", "emitnx64.o", "asmx86.o", "emitnx86.o", "asmthumb.o", 
+	"emitnthumb.o", "emitinlinethumb.o", "asmarm.o", "emitnarm.o", "asmxtensa.o", "emitnxtensa.o", "emitinlinextensa.o", "emitnxtensawin.o", 
+	"formatfloat.o", "parsenumbase.o", "parsenum.o", "emitglue.o", "persistentcode.o", "runtime.o", "runtime_utils.o", "scheduler.o", 
+	"nativeglue.o", "pairheap.o", "ringbuf.o", "stackctrl.o", "argcheck.o", "warning.o", "profile.o", "map.o", "obj.o", "objarray.o", 
+	"objattrtuple.o", "objbool.o", "objboundmeth.o", "objcell.o", "objclosure.o", "objcomplex.o", "objdeque.o", "objdict.o", "objenumerate.o", 
+	"objexcept.o", "objfilter.o", "objfloat.o", "objfun.o", "objgenerator.o", "objgetitemiter.o", "objint.o", "objint_longlong.o", "objint_mpz.o", 
+	"objlist.o", "objmap.o", "objmodule.o", "objobject.o", "objpolyiter.o", "objproperty.o", "objnone.o", "objnamedtuple.o", "objrange.o", 
+	"objreversed.o", "objset.o", "objsingleton.o", "objslice.o", "objstr.o", "objstrunicode.o", "objstringio.o", "objtuple.o", "objtype.o", 
+	"objzip.o", "opmethods.o", "sequence.o", "stream.o", "binary.o", "builtinimport.o", "builtinevex.o", "builtinhelp.o", "modarray.o", 
+	"modbuiltins.o", "modcollections.o", "modgc.o", "modio.o", "modmath.o", "modcmath.o", "modmicropython.o", "modstruct.o", "modsys.o", 
+	"moderrno.o", "modthread.o", "vm.o", "bc.o", "showbc.o", "repl.o", "smallint.o", "frozenmod.o" 
+	}
+
+for _, name in ipairs(PY_CORE_O_BASENAME) do PY_CORE_O_BASENAME[_] = "py/" .. name end
+
+-- # Sources that may contain qstrings
+SRC_QSTR_IGNORE = "py/nlr"
+--SRC_QSTR += $(filter-out $(SRC_QSTR_IGNORE),$(PY_CORE_O_BASENAME:.o=.c))
+SRC_QSTR = ""
+for _, name in ipairs(PY_CORE_O_BASENAME) do
+	if name:sub(1, #SRC_QSTR_IGNORE) ~= SRC_QSTR_IGNORE then 
+		SRC_QSTR = SRC_QSTR .. " " .. TOP .. "/" .. string.gsub(name .. " ", ".o ", ".c ")
+	end
+end
+
+-- # mpconfigport.mk is optional, but changes to it may drastically change
+-- # overall config, so they need to be caught
+-- MPCONFIGPORT_MK = $(wildcard mpconfigport.mk)
+-- feature disabled for now
+
+-- include $(TOP)/extmod/extmod.mk
+----------------------------------------
+--           extmod.mk content
+----------------------------------------
+-- # This makefile fragment adds the source code files for the core extmod modules
+-- # and provides rules to build 3rd-party components for extmod modules.
+
+SRC_EXTMOD_C = { "extmod/machine_adc.c", "extmod/machine_adc_block.c", "extmod/machine_bitstream.c", "extmod/machine_i2c.c", 
+				"extmod/machine_i2s.c", "extmod/machine_mem.c", "extmod/machine_pinbase.c", "extmod/machine_pulse.c", 
+				"extmod/machine_pwm.c", "extmod/machine_signal.c", "extmod/machine_spi.c", "extmod/machine_timer.c", 
+				"extmod/machine_uart.c", "extmod/machine_wdt.c", "extmod/modasyncio.c", "extmod/modbinascii.c", 
+				"extmod/modbluetooth.c", "extmod/modbtree.c", "extmod/modcryptolib.c", "extmod/moddeflate.c", 
+				"extmod/modframebuf.c", "extmod/modhashlib.c", "extmod/modheapq.c", "extmod/modjson.c", "extmod/modlwip.c", 
+				"extmod/modmachine.c", "extmod/modnetwork.c", "extmod/modonewire.c", "extmod/modos.c", "extmod/modplatform.c", 
+				"extmod/modrandom.c", "extmod/modre.c", "extmod/modselect.c", "extmod/modsocket.c", "extmod/modssl_axtls.c", 
+				"extmod/modssl_mbedtls.c", "extmod/modtime.c", "extmod/moductypes.c", "extmod/modwebrepl.c", "extmod/modwebsocket.c", 
+				"extmod/network_cyw43.c", "extmod/network_esp_hosted.c", "extmod/network_lwip.c", "extmod/network_ninaw10.c", 
+				"extmod/network_wiznet5k.c", "extmod/os_dupterm.c", "extmod/vfs.c", "extmod/vfs_blockdev.c", "extmod/vfs_fat.c", 
+				"extmod/vfs_fat_diskio.c", "extmod/vfs_fat_file.c", "extmod/vfs_lfs.c", "extmod/vfs_posix.c", "extmod/vfs_posix_file.c", 
+				"extmod/vfs_reader.c", "extmod/virtpin.c", "shared/libc/abort_.c", "shared/libc/printf.c" }
+
+-- SRC_THIRDPARTY_C = { "/interface/src/luat_sms_ec618.c" }
+SRC_THIRDPARTY_C = {  }
+
+-- PY_O += $(addprefix $(BUILD)/, $(SRC_EXTMOD_C:.c=.o))
+for _, name in ipairs(SRC_EXTMOD_C) do SRC_EXTMOD_C[_] = TOP .. "/" .. name end
+SRC_QSTR = SRC_QSTR .. " " .. table.concat(SRC_EXTMOD_C, " ")
+
+
+-- ################################################################################
+-- # libm/libm_dbl math library
+
+-- # Single-precision math library.
+-- SRC_LIB_LIBM_C += $(addprefix lib/libm/,\
+SRC_LIB_LIBM_C = { 	"acoshf.c", "asinfacosf.c", "asinhf.c", "atan2f.c", "atanf.c", "atanhf.c", "ef_rem_pio2.c", "erf_lgamma.c", 
+					"fmodf.c", "kf_cos.c", "kf_rem_pio2.c", "kf_sin.c", "kf_tan.c", "log1pf.c", "math.c", "nearbyintf.c", 
+					"roundf.c", "sf_cos.c", "sf_erf.c", "sf_frexp.c", "sf_ldexp.c", "sf_modf.c", "sf_sin.c", "sf_tan.c", 
+					"wf_lgamma.c", "wf_tgamma.c" }
+
+-- # Choose only one of these sqrt implementations, software or hardware.
+SRC_LIB_LIBM_SQRT_SW_C = "lib/libm/ef_sqrt.c"
+SRC_LIB_LIBM_SQRT_HW_C = "lib/libm/thumb_vfp_sqrtf.c"
+
+-- # Double-precision math library.
+-- SRC_LIB_LIBM_DBL_C += $(addprefix lib/libm_dbl/,\
+SRC_LIB_LIBM_DBL_C = { 	"__cos.c", "__expo2.c", "__fpclassify.c", "__rem_pio2.c", "__rem_pio2_large.c", "__signbit.c", "__sin.c", 
+						"__tan.c", "acos.c", "acosh.c", "asin.c", "asinh.c", "atan.c", "atan2.c", "atanh.c", "ceil.c", "cos.c", 
+						"cosh.c", "copysign.c", "erf.c", "exp.c", "expm1.c", "floor.c", "fmod.c", "frexp.c", "ldexp.c", "lgamma.c", 
+						"log.c", "log10.c", "log1p.c", "modf.c", "nearbyint.c", "pow.c", "rint.c", "round.c", "scalbn.c", "sin.c", 
+						"sinh.c", "tan.c", "tanh.c", "tgamma.c", "trunc.c" }
+
+-- # Choose only one of these sqrt implementations, software or hardware.
+SRC_LIB_LIBM_DBL_SQRT_SW_C = "lib/libm_dbl/sqrt.c"
+SRC_LIB_LIBM_DBL_SQRT_HW_C = "lib/libm_dbl/thumb_vfp_sqrt.c"
+
+-- # Too many warnings in libm_dbl, disable for now.
+-- $(BUILD)/lib/libm_dbl/%.o: CFLAGS += -Wno-double-promotion -Wno-float-conversion -- TODO add to target
+
+---------------------------------------------------------------------------------
+-- Skip VFS, VFA FAT, btree, blootooth, lwip, mbedtls, networking from extmod.mk
+---------------------------------------------------------------------------------
+CFLAGS_EXTMOD = ""
+CFLAGS_THIRDPARTY = ""
+
+-- ################################################################################
+-- # ussl
+
+if MICROPY_PY_SSL == 1 then 
+	CFLAGS_EXTMOD = CFLAGS_EXTMOD .. "-DMICROPY_PY_SSL=1"
+end
+
+--[[
+################################################################################
+# btree
+
+ifeq ($(MICROPY_PY_BTREE),1)
+BTREE_DIR = lib/berkeley-db-1.xx
+BTREE_DEFS = -D__DBINTERFACE_PRIVATE=1 -Dmpool_error=printf -Dabort=abort_ "-Dvirt_fd_t=void*" $(BTREE_DEFS_EXTRA)
+INC += -I$(TOP)/$(BTREE_DIR)/PORT/include
+SRC_THIRDPARTY_C += $(addprefix $(BTREE_DIR)/,\
+	btree/bt_close.c \
+	btree/bt_conv.c \
+	btree/bt_debug.c \
+	btree/bt_delete.c \
+	btree/bt_get.c \
+	btree/bt_open.c \
+	btree/bt_overflow.c \
+	btree/bt_page.c \
+	btree/bt_put.c \
+	btree/bt_search.c \
+	btree/bt_seq.c \
+	btree/bt_split.c \
+	btree/bt_utils.c \
+	mpool/mpool.c \
+	)
+CFLAGS_EXTMOD += -DMICROPY_PY_BTREE=1
+# we need to suppress certain warnings to get berkeley-db to compile cleanly
+# and we have separate BTREE_DEFS so the definitions don't interfere with other source code
+$(BUILD)/$(BTREE_DIR)/%.o: CFLAGS += -Wno-old-style-definition -Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-non-prototype -Wno-unknown-warning-option $(BTREE_DEFS)
+$(BUILD)/extmod/modbtree.o: CFLAGS += $(BTREE_DEFS)
+endif
+]]--
+
+-- PY_O += $(addprefix $(BUILD)/, $(SRC_THIRDPARTY_C:.c=.o))
+for _, name in ipairs(SRC_THIRDPARTY_C) do SRC_THIRDPARTY_C[_] = SDK_TOP .. "/" .. name end
+
+
+
+
+----------------------------------------
+--           Makefile content
+----------------------------------------
+CFLAGS = " -I . -I ../../ -I ./" .. BUILD .. "/"
+CFLAGS = CFLAGS .. " -nostdlib -std=gnu99"
+CFLAGS = CFLAGS .. " -I" .. table.concat(INCLUDES, " -I")
+if os.exists("./boards/" .. BOARD) then CFLAGS = CFLAGS .. " -I" .. "./boards/" .. BOARD end
+CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
+CXXFLAGS = ""
+
+SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c"}  
+
+SHARED_SRC_C = {	"netutils/netutils.c", 
+					"timeutils/timeutils.c", 
+					"runtime/interrupt_char.c", 
+					"runtime/pyexec.c", 
+					"runtime/sys_stdio_mphal.c", 
+					"runtime/stdout_helpers.c",
+					"runtime/gchelper_native.c"
+				}
+for _, name in ipairs(SHARED_SRC_C) do SHARED_SRC_C[_] = TOP .. "/shared/" .. name end
+
+SHARED_SRC_S = 	{ "runtime/gchelper_thumb2.s" }
+for _, name in ipairs(SHARED_SRC_S) do SHARED_SRC_S[_] = TOP .. "/shared/" .. name end
+
+LIB_SRC_C = { 		-- "lib/oofatfs/ff.c", 
+					-- "lib/oofatfs/ffunicode.c",
+					"shared/readline/readline.c" 
+			}
+for _, name in ipairs(LIB_SRC_C) do LIB_SRC_C[_] = TOP .. "/" .. name end
+
+SRC_S = { }
+DRIVERS_SRC_C = { }
+
+-- xmake build target logic differs from Makefile logic, so simplify "OBJ" to simple string
+OBJ = "OBJ"
+
+-- # List of sources for qstr extraction
+SRC_QSTR = SRC_QSTR .. " " .. table.concat(SRC_C, " ") .. " ".. table.concat(SHARED_SRC_C, " ")
+
+-- TODO refactor build logic
+PROCESS_QSTR = not os.isfile("build/genhdr/qstrdefs.generated.h")
+
+----------------------------------
+-- include $(TOP)/py/mkrules.mk --
+----------------------------------
+HELP_BUILD_ERROR = "See \27[1;31mhttps://github.com/micropython/micropython/wiki/Build-Troubleshooting\27[0m"
+HELP_MPY_LIB_SUBMODULE = "\27[1;31mError: micropython-lib submodule is not initialized.\27[0m Run 'make submodules'"
+
+-- # Extra deps that need to happen before object compilation.
+OBJ_EXTRA_ORDER_DEPS = ""
+
+-- # Generate header files.
+OBJ_EXTRA_ORDER_DEPS = OBJ_EXTRA_ORDER_DEPS .. " " .. HEADER_BUILD .. "/moduledefs.h " .. HEADER_BUILD .. "/root_pointers.h"
+
+if MICROPY_ROM_TEXT_COMPRESSION == 1 then
+	-- # If compression is enabled, trigger the build of compressed.data.h...
+	OBJ_EXTRA_ORDER_DEPS = OBJ_EXTRA_ORDER_DEPS .. " " .. HEADER_BUILD .. "/compressed.data.h"
+	-- # ...and enable the MP_COMPRESSED_ROM_TEXT macro (used by MP_ERROR_TEXT).
+	CFLAGS = CFLAGS .. " -DMICROPY_ROM_TEXT_COMPRESSION=1"
+end
+
+-- # QSTR generation uses the same CFLAGS, with these modifications.
+QSTR_GEN_FLAGS = "-DNO_QSTR"
+-- # Note: := to force evaluation immediately.
+QSTR_GEN_CFLAGS = CFLAGS:replace("\"", "\\\\\"")
+QSTR_GEN_CFLAGS = QSTR_GEN_CFLAGS .. " " .. QSTR_GEN_FLAGS
+QSTR_GEN_CXXFLAGS = CXXFLAGS
+QSTR_GEN_CXXFLAGS = QSTR_GEN_CXXFLAGS .. " " .. QSTR_GEN_FLAGS
+
+
+if FROZEN_MANIFEST ~= "" then 
+
+    GIT_SUBMODULES = ""
+	if MPY_LIB_DIR == MPY_LIB_SUBMODULE_DIR then 
+		GIT_SUBMODULES = "lib/micropython-lib"
+	end
+
+	CFLAGS = CFLAGS .. " -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool"
+	CFLAGS = CFLAGS .. " -DMICROPY_MODULE_FROZEN_MPY"
+	CFLAGS = CFLAGS .. " -DMICROPY_MODULE_FROZEN_STR"
+
+	-- # Set default path variables to be passed to makemanifest.py. These will be
+	-- # available in path substitutions. Additional variables can be set per-board
+	-- # in mpconfigboard.mk or on the make command line.
+	MICROPY_MANIFEST_MPY_LIB_DIR = MPY_LIB_DIR
+	MICROPY_MANIFEST_PORT_DIR = os.curdir():replace("\\", "/")
+	MICROPY_MANIFEST_BOARD_DIR = BOARD_DIR
+	MICROPY_MANIFEST_MPY_DIR = TOP
+
+	-- # Find all MICROPY_MANIFEST_* variables and turn them into command line arguments.
+	-- $(foreach var,$(filter MICROPY_MANIFEST_%, $(.VARIABLES)),-v "$(subst MICROPY_MANIFEST_,,$(var))=$($(var))")
+
+	MANIFEST_VARIABLES = ""
+	MANIFEST_VARIABLES = MANIFEST_VARIABLES .. " -v \"MPY_LIB_DIR=" .. MICROPY_MANIFEST_MPY_LIB_DIR .. "\""
+	MANIFEST_VARIABLES = MANIFEST_VARIABLES .. " -v \"PORT_DIR="    .. MICROPY_MANIFEST_PORT_DIR    .. "\""
+	MANIFEST_VARIABLES = MANIFEST_VARIABLES .. " -v \"BOARD_DIR="   .. MICROPY_MANIFEST_BOARD_DIR   .. "\""
+	MANIFEST_VARIABLES = MANIFEST_VARIABLES .. " -v \"MPY_DIR="     .. MICROPY_MANIFEST_MPY_DIR     .. "\""
+	MANIFEST_VARIABLES = MANIFEST_VARIABLES .. " "
+end
+
+CFLAGS = CFLAGS .. " " .. CFLAGS_EXTMOD .. " " .. CFLAGS_THIRDPARTY
+-- LDFLAGS = LDFLAGS .. "  " .. LDFLAGS_EXTMOD .. " " .. LDFLAGS_THIRDPARTY
+
+--------------------------------------------------------
+----------------- MICROPYTHON PART END -----------------
+--------------------------------------------------------
+
+--------------------------------------------------------
+--                  EC618 driver target
+--------------------------------------------------------
+target("driver")
+    set_kind("static")
+    set_objectdir(BUILD)
+    set_targetdir(BUILD)
+    add_includedirs("./",{public = true})
+
+	add_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/**.c",
+                SDK_TOP .. "/PLAT/driver/chip/ec618/ap/**.c",
+                SDK_TOP .. "/PLAT/driver/chip/ec618/common/gcc/memcpy-armv7m.S",
+                SDK_TOP .. "/PLAT/driver/hal/**.c",
+                SDK_TOP .. "/PLAT/core/speed/*.c"
+    )
+	
+	remove_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/camAT.c",
+                SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/exstorage/*.c",
+				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
+				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_lpusart_stub.c",
+				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/tls.c",
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c"
+	)
+target_end()
+--------------------------------------------------------
+--                  mpy-cross target
+--------------------------------------------------------
+target(MICROPY_MPYCROSS_DEPENDENCY)
+	set_enabled(FROZEN_MANIFEST ~= "")
+	set_policy("build.across_targets_in_parallel", false)    
+    set_kind("object")
+    set_objectdir(BUILD)
+	add_values("MPC", MICROPY_MPYCROSS_DEPENDENCY)
+
+	on_build(function (target)
+		MPC = target:values("MPC")
+		import("lib.detect.find_tool")		
+        local mpy_cross = find_tool(MPC)
+
+        if mpy_cross == nil then
+        	local make = find_tool("make")
+        	if make and make.program then
+        	   print(path.directory(path.directory(MPC)))
+        	   os.exec("make -C " .. path.directory(path.directory(MPC)))
+        	end
+        end
+    end)
+target_end()
+--------------------------------------------------------
+--                         py core target
+--------------------------------------------------------
+target("py")    
+	set_policy("build.across_targets_in_parallel", false)
+	set_policy("build.intermediate_directory", false)
+    set_kind("object") -- important!
+	set_objectdir(BUILD)
+	add_deps(OBJ)
+
+	for _, name in ipairs(PY_CORE_O_BASENAME) do 
+		add_files(TOP .. "/" .. (string.gsub(name .. " ", ".o ", ".c ")):rtrim(), { cflags = CFLAGS })
+	end
+target_end()
+--------------------------------------------------------
+--                         extmod target
+--------------------------------------------------------
+target("extmod")    
+	set_policy("build.across_targets_in_parallel", false)
+	set_policy("build.intermediate_directory", false)
+    set_kind("object") -- important!
+    set_objectdir(BUILD)
+	add_deps(OBJ)
+
+	for _, name in ipairs(SRC_EXTMOD_C) do 
+		add_files(name, { cflags = CFLAGS .. " -Wno-clobbered -Wno-stack-usage "}) 
+	end
+target_end()
+--------------------------------------------------------
+--                    the port target
+--------------------------------------------------------
+target(USER_PROJECT_NAME)
+	set_policy("build.intermediate_directory", false)
+	set_policy("build.across_targets_in_parallel", false)
+
+	set_kind("static")
+    set_targetdir(BUILD)
+
+    add_includedirs(INCLUDES, { public = true })
+    add_deps("py")
+    add_deps("extmod")    
+
+    ----------------------- thirdparty -----------------------
+    add_includedirs("./",{public = true})
+	add_defines("MBEDTLS_CONFIG_FILE=\"config_user_ssl.h\"")
+	add_defines("MBEDTLS_ERROR_C")
+    add_files(SDK_TOP .. "/interface/private_src/*.c",{public = true})
+    add_files(SDK_TOP .. "/thirdparty/mbedtls/library/*.c",{public = true}) 	
+    add_files(SDK_TOP .. "/thirdparty/printf/*.c",{public = true})
+    add_files(SDK_TOP .. "/thirdparty/iconv/*.c",{public = true})
+	add_files(SDK_TOP .. "/thirdparty/fal/src/*.c",{public = true})
+    add_files(SDK_TOP .. "/thirdparty/flashdb/src/*.c",{public = true})
+	add_files(SDK_TOP .. "/interface/src/*.c",{public = true})
+	add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
+	add_files(SDK_TOP .. "/thirdparty/cJSON/**.c",{public = true})
+	add_files(SDK_TOP .. "/luatos_lwip_socket/src/**.c",{public = true, cflags = CFLAGS .. " -Wno-override-init"})
+
+	-- remove_files(SDK_TOP .. "/interface/private_src/luat_full_ota_ec618.c") 	-- rewritten to use MPY mbedtls version
+
+target_end()
+--------------------------------------------------------
+--                 mkrules.mk targets
+--------------------------------------------------------
+-- # The following rule uses | to create an order only prerequisite. Order only
+-- # prerequisites only get built if they don't exist. They don't cause timestamp
+-- # checking to be performed.
+-- #
+-- # We don't know which source files actually need the generated.h (since
+-- # it is #included from str.h). The compiler generated dependencies will cause
+-- # the right .o's to get recompiled if the generated.h file changes. Adding
+-- # an order-only dependency to all of the .o's will cause the generated .h
+-- # to get built before we try to compile any of them.
+target(OBJ) 
+	set_policy("build.across_targets_in_parallel", false)
+
+	set_kind("object") -- important!
+	-- $(OBJ): | $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/mpversion.h $(OBJ_EXTRA_ORDER_DEPS)
+	if PROCESS_QSTR then
+		add_deps(HEADER_BUILD .. "/qstrdefs.generated.h")
+		add_deps(HEADER_BUILD .. "/mpversion.h")
+	end
+	if FROZEN_MANIFEST ~= "" then 
+    	add_deps(BUILD .. "/frozen_content.c")
+    	add_files(BUILD .. "/frozen_content.c", { public = true, cflags = CFLAGS })
+    end
+
+	for _, tdep in ipairs(OBJ_EXTRA_ORDER_DEPS:split(" ")) do
+	    if DEBUG_LUA == 1 then print("Add dep: ", tdep) end
+   		if PROCESS_QSTR then add_deps(tdep) end
+	end
+
+	on_load(function (target)
+        -- frozen_content.c should be included in prebuild stage, so the file should exist here
+        -- it replaces by generated content in target(BUILD .. "/frozen_content.c")
+        os.mkdir(BUILD)
+        if not os.isfile(BUILD .. "/frozen_content.c") then os.touch(BUILD .. "/frozen_content.c") end
+	end)
+target_end()
+
+-- # The logic for qstr regeneration (applied by makeqstrdefs.py) is:
+-- # - if anything in QSTR_GLOBAL_DEPENDENCIES is newer, then process all source files ($^)
+-- # - else, if list of newer prerequisites ($?) is not empty, then process just these ($?)
+-- # - else, process all source files ($^) [this covers "make -B" which can set $? to empty]
+-- # See more information about this process in docs/develop/qstr.rst.
+
+target(HEADER_BUILD .. "/qstr.i.last")
+	set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/qstr.i.last: $(SRC_QSTR) $(QSTR_GLOBAL_DEPENDENCIES) | $(QSTR_GLOBAL_REQUIREMENTS)
+	-- add_deps(SRC_QSTR)	
+	-- add_deps(QSTR_GLOBAL_DEPENDENCIES)
+	add_deps(QSTR_GLOBAL_REQUIREMENTS)	
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py pp $(CPP) output $(HEADER_BUILD)/qstr.i.last cflags $(QSTR_GEN_CFLAGS) cxxflags $(QSTR_GEN_CXXFLAGS) sources $^ dependencies $(QSTR_GLOBAL_DEPENDENCIES) changed_sources $?
+	set_values("execp1", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py pp ")
+	set_values("execp2", " output " .. HEADER_BUILD .. "/qstr.i.last " .. " cflags " .. QSTR_GEN_CFLAGS .. " cxxflags " .. QSTR_GEN_CXXFLAGS .. " sources " .. SRC_QSTR .. " dependencies " .. QSTR_GLOBAL_DEPENDENCIES .. " changed_sources " .. SRC_QSTR .. "'")
+
+	on_build(function (target)
+	    print("GEN ", target:name())
+		GCC_DIR = target:toolchains()[1]:sdkdir().."/"
+		CPP = GCC_DIR .. "bin/arm-none-eabi-gcc -E "
+		cmd = target:values("execp1") .. CPP .. target:values("execp2")
+		os.exec(cmd)
+	end)
+target_end()
+
+target(HEADER_BUILD .. "/qstr.split") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/qstr.split: $(HEADER_BUILD)/qstr.i.last
+	add_deps(HEADER_BUILD .. "/qstr.i.last")
+	
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split qstr $< $(HEADER_BUILD)/qstr _
+	-- $(Q)$(TOUCH) $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split qstr " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/qstr " .. HEADER_BUILD .. "/qstr.i.last")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. "'")
+	    os.touch(target:name())
+	end)
+target_end()
+
+target(QSTR_DEFS_COLLECTED) 
+	set_enabled(PROCESS_QSTR)
+	-- $(QSTR_DEFS_COLLECTED): $(HEADER_BUILD)/qstr.split
+	add_deps(HEADER_BUILD .. "/qstr.split")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py cat qstr _ $(HEADER_BUILD)/qstr $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py cat qstr " .. HEADER_BUILD .. "/qstr.split " .. HEADER_BUILD .. "/qstr ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. target:name() .. "'")
+	end)
+target_end()
+
+-- # Module definitions via MP_REGISTER_MODULE.
+target(HEADER_BUILD .. "/moduledefs.split") 
+	set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/moduledefs.split: $(HEADER_BUILD)/qstr.i.last
+	add_deps(HEADER_BUILD .. "/qstr.i.last")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split module $< $(HEADER_BUILD)/module _
+	-- $(Q)$(TOUCH) $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split module " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/module " .. HEADER_BUILD .. "/qstr.i.last")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. "'")
+	    os.touch(target:name())
+	end)
+target_end()
+
+target(HEADER_BUILD .. "/moduledefs.collected") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/moduledefs.collected: $(HEADER_BUILD)/moduledefs.split
+	add_deps(HEADER_BUILD .. "/moduledefs.split")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py cat module _ $(HEADER_BUILD)/module $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py cat module " .. HEADER_BUILD .. "/moduledefs.split " .. HEADER_BUILD .. "/module ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. target:name() .. "'")
+	end)
+target_end()
+
+-- # Module definitions via MP_REGISTER_ROOT_POINTER.
+target(HEADER_BUILD .. "/root_pointers.split") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/root_pointers.split: $(HEADER_BUILD)/qstr.i.last
+	add_deps(HEADER_BUILD .. "/qstr.i.last")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split root_pointer $< $(HEADER_BUILD)/root_pointer _
+	-- $(Q)$(TOUCH) $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split root_pointer " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/root_pointer " .. HEADER_BUILD .. "/qstr.i.last")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. "'")
+	    os.touch(target:name())
+	end)
+target_end()
+
+target(HEADER_BUILD .. "/root_pointers.collected") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/root_pointers.collected: $(HEADER_BUILD)/root_pointers.split
+	add_deps(HEADER_BUILD .. "/root_pointers.split")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py cat root_pointer _ $(HEADER_BUILD)/root_pointer $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py cat root_pointer " .. HEADER_BUILD .. "/root_pointers.split " .. HEADER_BUILD .. "/root_pointer ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. target:name() .. "'")
+	end)
+target_end()
+
+-- # Compressed error strings.
+target(HEADER_BUILD .. "/compressed.split") 
+    set_enabled(PROCESS_QSTR)
+	if MICROPY_ROM_TEXT_COMPRESSION ~= 1 then
+		set_enabled(false)
+	end
+	-- $(HEADER_BUILD)/compressed.split: $(HEADER_BUILD)/qstr.i.last
+	add_deps(HEADER_BUILD .. "/qstr.i.last")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split compress $< $(HEADER_BUILD)/compress _
+	-- $(Q)$(TOUCH) $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split compress " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/compress " .. HEADER_BUILD .. "/qstr.i.last")
+	
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. "'")
+	    os.touch(target:name())
+	end)
+target_end()
+
+target(HEADER_BUILD .. "/compressed.collected") 
+    set_enabled(PROCESS_QSTR)
+	if MICROPY_ROM_TEXT_COMPRESSION ~= 1 then
+		set_enabled(false)
+	end
+	-- $(HEADER_BUILD)/compressed.collected: $(HEADER_BUILD)/compressed.split
+	add_deps(HEADER_BUILD .. "/compressed.split")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py cat compress _ $(HEADER_BUILD)/compress $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py cat compress " .. HEADER_BUILD .. "/compressed.split "  .. HEADER_BUILD .. "/compress ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. target:name() .. "'")
+	end)
+target_end()
+
+
+target(HEADER_BUILD)
+	set_values("HEADER_BUILD", HEADER_BUILD)
+	on_build(function (target)
+		BUILD = target:values("BUILD")
+	    HEADER_BUILD = target:values("HEADER_BUILD")	    
+		if not os.exists(HEADER_BUILD) then os.mkdir(HEADER_BUILD) end
+	end)
+target_end()
+
+
+target(BUILD .. "/frozen_content.c")	
+	set_enabled(FROZEN_MANIFEST ~= "")	
+    set_policy("build.across_targets_in_parallel", false)	
+    set_policy("build.intermediate_directory", false)
+	set_kind("object")
+    set_objectdir(BUILD)
+
+	-- $(BUILD)/frozen_content.c: FORCE $(BUILD)/genhdr/qstrdefs.generated.h $(BUILD)/genhdr/root_pointers.h | $(MICROPY_MPYCROSS_DEPENDENCY)
+	if PROCESS_QSTR then
+		add_deps(HEADER_BUILD .. "/qstrdefs.generated.h")
+		add_deps(HEADER_BUILD .. "/root_pointers.h")		
+	end
+	if FROZEN_MANIFEST ~= "" then add_deps(MICROPY_MPYCROSS_DEPENDENCY) end
+
+	-- $(Q)test -e "$(MPY_LIB_DIR)/README.md" || (echo -e $(HELP_MPY_LIB_SUBMODULE); false)
+	-- $(Q)$(MAKE_MANIFEST) -o $@ $(MANIFEST_VARIABLES) -b "$(BUILD)" $(if $(MPY_CROSS_FLAGS),-f"$(MPY_CROSS_FLAGS)",) --mpy-tool-flags="$(MPY_TOOL_FLAGS)" $(FROZEN_MANIFEST)
+	set_values("test", MPY_LIB_DIR .. "/README.md")
+	set_values("err", HELP_MPY_LIB_SUBMODULE)
+	set_values("execp1", "sh -c '" .. MAKE_MANIFEST .. " -o ")
+	
+	cmd = " " .. MANIFEST_VARIABLES .. " -b \"" .. BUILD .. "\" "
+	if MPY_CROSS_FLAGS ~= "" then
+		cmd = cmd .. "-f\"" .. MPY_CROSS_FLAGS .. "\""
+	end
+	cmd = cmd .. "--mpy-tool-flags=\"" .. MPY_TOOL_FLAGS .. "\" " .. FROZEN_MANIFEST .. "'"
+	set_values("execp2", cmd)
+
+	on_build(function (target)
+		test = target:values("test")
+		err = target:values("err")		
+		if os.isfile(test) == false then
+			os.raise(err)
+		else
+			os.rm(target:name()) -- frozen_content.c build workaround
+			cmd = target:values("execp1") .. target:name() .. target:values("execp2")
+			os.exec(cmd)			
+		end
+	end)
+target_end()
+
+
+
+task("submodules")
+	set_menu { } -- this is a xmake "feature"
+
+	on_run(function ()
+	    -- xmake can not set task parameters :(
+		TOP = "../.."
+		GIT_SUBMODULES = "lib/micropython-lib"
+		print("Updating submodules: " .. GIT_SUBMODULES)
+		
+		-- $(Q)git submodule sync $(addprefix $(TOP)/,$(GIT_SUBMODULES))
+		-- $(Q)git submodule update --init $(addprefix $(TOP)/,$(GIT_SUBMODULES))
+		SUB_DUR = TOP .. "/" .. GIT_SUBMODULES
+		if os.isdir(SUB_DUR) then
+			try { function () 
+				os.exec("git rm -r -f " .. SUB_DUR) 
+			end }
+		end
+				
+		cmd0 = "git submodule add -f https://github.com/micropython/micropython-lib.git " .. TOP .. "/" .. GIT_SUBMODULES
+		cmd1 = "git submodule sync " .. TOP .. "/" .. GIT_SUBMODULES
+		cmd2 = "git submodule update --init " .. TOP .. "/" .. GIT_SUBMODULES
+		print(cmd1)
+		os.exec(cmd0)
+		os.exec(cmd1)
+		os.exec(cmd2)
+	end)
+task_end()
+
+--------------------------------------------------------
+--                     py.mk targets
+--------------------------------------------------------
+target (HEADER_BUILD .. "/mpversion.h")
+	-- TODO: add $@
+	-- $(HEADER_BUILD)/mpversion.h: FORCE | $(HEADER_BUILD)
+	add_deps(HEADER_BUILD)
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeversionhdr.py $@
+	set_values("exec", PYTHON .. " " .. PY_SRC .. "/makeversionhdr.py" .. " " .. HEADER_BUILD .. "/mpversion.h")
+	on_build(function (target)
+		os.exec(target:values("exec"))
+	end)
+target_end()
+
+
+target(HEADER_BUILD .. "/qstrdefs.generated.h") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/qstrdefs.generated.h: $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_COLLECTED) $(PY_SRC)/makeqstrdata.py mpconfigport.h $(MPCONFIGPORT_MK) $(PY_SRC)/mpconfig.h | $(HEADER_BUILD)
+	add_deps(HEADER_BUILD)
+	-- add_deps(PY_QSTR_DEFS)
+	-- add_deps(QSTR_DEFS)
+	add_deps(QSTR_DEFS_COLLECTED)
+	-- add_deps(PY_SRC .. "/makeqstrdata.py")
+	-- add_deps("mpconfigport.h")
+	add_deps(MPCONFIGPORT_MK)
+	--add_deps(PY_SRC .. "/mpconfig.h")
+	                                                                           
+	-- $(ECHO) "GEN $@"                                                        
+	-- $(Q)$(CAT) $(PY_QSTR_DEFS) $(QSTR_DEFS) $(QSTR_DEFS_COLLECTED) | $(SED) 's/^Q(.*)/"&"/' | $(CPP) $(CFLAGS) - | $(SED) 's/^\"\(Q(.*)\)\"/\1/' > $(HEADER_BUILD)/qstrdefs.preprocessed.h
+	-- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdata.py $(HEADER_BUILD)/qstrdefs.preprocessed.h > $@    
+
+	QSTR_CAT = PY_QSTR_DEFS .. " " .. QSTR_DEFS_COLLECTED 
+	if QSTR_DEFS ~= ""  and os.exists(QSTR_DEFS) then QSTR_CAT = QSTR_CAT .. " " .. QSTR_DEFS end
+
+	set_values("HEADER_BUILD", HEADER_BUILD)
+	set_values("QSTR_CAT", QSTR_CAT)
+	set_values("CFLAGS", CFLAGS)
+	set_values("PYTHON", PYTHON)
+	set_values("PY_SRC", PY_SRC)
+	
+	on_build(function (target)		
+		print("GEN ", target:name())
+		GCC_DIR = target:toolchains()[1]:sdkdir().."/"
+		CPP = GCC_DIR .. "bin/arm-none-eabi-gcc -E "
+
+		HEADER_BUILD = target:values("HEADER_BUILD")
+		QSTR_CAT = target:values("QSTR_CAT")
+		CFLAGS = target:values("CFLAGS")
+		PYTHON = target:values("PYTHON")
+		PY_SRC = target:values("PY_SRC")
+
+		temp1 = HEADER_BUILD .. "/qstrdefs.temp1.h"
+		temp2 = HEADER_BUILD .. "/qstrdefs.temp2.h"
+		temp3 = HEADER_BUILD .. "/qstrdefs.preprocessed.h"
+
+		data = ""
+		for _,fname in ipairs(QSTR_CAT:split(" ")) do
+			data = data .. io.readfile(fname)
+		end
+
+		local function starts_with(str, start) return str:sub(1, #start) == start end
+		local function ends_with(str, ending) return ending == "" or str:sub(-#ending) == ending end
+
+		lines = {}
+		for s in data:gmatch("[^\r\n]+") do table.insert(lines, s) end
+		for _,line in ipairs(lines) do
+			if string.len(line) > 2 then
+				if starts_with(line, "Q(") then 
+					lines[_] = "\"" .. lines[_]
+					if ends_with(line, ")") then lines[_] = lines[_] .. "\"" end
+				end
+			end
+		end
+		data = ""
+		for _,line in ipairs(lines) do data = data .. line .. "\r\n" end
+		io.writefile(temp1, data) 
+
+		os.exec("sh -c \"" .. CPP .. CFLAGS .. " " .. temp1 .. " > " .. temp2 .. "\"")
+
+		data = io.readfile(temp2)
+		lines = {}
+		for s in data:gmatch("[^\r\n]+") do table.insert(lines, s) end
+		for _,line in ipairs(lines) do
+			if string.len(line) > 2 then
+				if starts_with(line, "\"Q(") then 
+					lines[_] = string.sub(lines[_], 2)
+					if ends_with(line, ")\"") then lines[_] = string.sub(lines[_], 1, -2) end
+				end
+			end
+		end
+
+		data = ""
+		for _,line in ipairs(lines) do data = data .. line .. "\r\n" end
+		io.writefile(temp3, data) 
+
+		os.exec("sh -c \"" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdata.py ".. temp3 .. " > " .. target:name() .. "\"")
+	end)
+target_end()
+
+target(HEADER_BUILD .. "/compressed.data.h") 
+    set_enabled(PROCESS_QSTR)
+	if MICROPY_ROM_TEXT_COMPRESSION ~= 1 then
+		set_enabled(false)
+	end
+
+	-- $(HEADER_BUILD)/compressed.data.h: $(HEADER_BUILD)/compressed.collected
+	add_deps(HEADER_BUILD .. "/compressed.collected")
+	
+	-- $(Q)$(PYTHON) $(PY_SRC)/makecompresseddata.py $< > $@
+	set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makecompresseddata.py " .. HEADER_BUILD .. "/compressed.collected > ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("exec") .. target:name() .. "'")
+	end)
+target_end()
+
+-- # build a list of registered modules for py/objmodule.c.
+target(HEADER_BUILD .. "/moduledefs.h") 
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/moduledefs.h: $(HEADER_BUILD)/moduledefs.collected
+	add_deps(HEADER_BUILD.. "/moduledefs.collected")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/makemoduledefs.py $< > $@
+	set_values("execp1", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makemoduledefs.py " .. HEADER_BUILD.. "/moduledefs.collected > ")
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("execp1") .. target:name() .. "'")
+	end)
+target_end()
+
+-- # build a list of registered root pointers for py/mpstate.h.
+target(HEADER_BUILD .. "/root_pointers.h")
+    set_enabled(PROCESS_QSTR)
+	-- $(HEADER_BUILD)/root_pointers.h: $(HEADER_BUILD)/root_pointers.collected $(PY_SRC)/make_root_pointers.py
+	add_deps(HEADER_BUILD .. "/root_pointers.collected")
+	-- add_deps(PY_SRC .. "/make_root_pointers.py")
+
+	-- $(Q)$(PYTHON) $(PY_SRC)/make_root_pointers.py $< > $@
+	set_values("execp1", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/make_root_pointers.py " .. HEADER_BUILD .. "/root_pointers.collected > ")
+
+	on_build(function (target)
+		print("GEN ", target:name())
+	    os.exec(target:values("execp1") .. target:name() .. "'")
+	end)
+target_end()
+
+
+--------------------------------------------------------
+--                     main target
+--------------------------------------------------------
+target(USER_PROJECT_NAME..".elf")
+    add_deps("driver")
+    add_deps(USER_PROJECT_NAME)
+
+    set_kind("binary")
+    set_targetdir(BUILD .. "/"..USER_PROJECT_NAME)
+    
+    add_files(SRC_C, {public = true, cflags = CFLAGS })
+    if #SRC_S > 0 then add_files(SRC_S, {public = true, cflags = CFLAGS }) end
+    if #SHARED_SRC_C > 0 then add_files(SHARED_SRC_C, {public = true, cflags = CFLAGS }) end
+    if #SHARED_SRC_S > 0 then add_files(SHARED_SRC_S, {public = true, cflags = CFLAGS }) end
+    if #LIB_SRC_C > 0 then add_files(LIB_SRC_C, {public = true, cflags = CFLAGS }) end
+    if #DRIVERS_SRC_C > 0 then add_files(DRIVERS_SRC_C, {public = true, cflags = CFLAGS }) end
+    if #SRC_THIRDPARTY_C > 0 then add_files(SRC_THIRDPARTY_C, {public = true, cflags = CFLAGS }) end
+
+	add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded -ldriver -lmicropython", {force=true})
+
+    on_load(function (target)
+    	--[[if get_config("Board type") == nil or get_config("Firmware version") == nil then
+    	    print("BOARD = ", get_config("Board type"))
+    	    print("FW_VERSION = ", get_config("Firmware version"))
+			os.raise("First you should set up the project. Run \27[1;31mxmake f --menu\27[0m or \27[1;31mconfigure\27[0m")
+		end]]--
+
+        print("----------------------------------------------------")
+        print("Compiling Version " .. FW_VERSION .. " for " ..  BOARD .. " on " .. os.host():gsub("^%l", string.upper))
+        print("----------------------------------------------------")
+
+        if USER_PROJECT_NAME == 'luatos' then
+            local conf_data = io.readfile("$(projectdir)/project/luatos/inc/luat_conf_bsp.h")
+            USER_PROJECT_NAME_VERSION = conf_data:match("#define LUAT_BSP_VERSION \"(%w+)\"")
+            VM_64BIT = conf_data:find("\r#define LUAT_CONF_VM_64bit") or conf_data:find("\n#define LUAT_CONF_VM_64bit")
+            local TTS_ONCHIP = conf_data:find("\r#define LUAT_USE_TTS_ONCHIP") or conf_data:find("\n#define LUAT_USE_TTS_ONCHIP")
+            local TLS_DISABLE = conf_data:find("\r#define LUAT_USE_TLS_DISABLE") or conf_data:find("\n#define LUAT_USE_TLS_DISABLE")
+
+            local mem_map_data = io.readfile("$(projectdir)/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h")
+            FLASH_FOTA_REGION_START = tonumber(mem_map_data:match("#define FLASH_FOTA_REGION_START%s+%((%g+)%)"))
+            if (TTS_ONCHIP or os.getenv("LUAT_USE_TTS_ONCHIP") == "1") and not TLS_DISABLE then
+                LUAT_SCRIPT_SIZE = 64
+                LUAT_SCRIPT_OTA_SIZE = 48
+            elseif os.getenv("LUAT_EC618_LITE_MODE") == "1" then
+                LUAT_SCRIPT_SIZE = 448
+                LUAT_SCRIPT_OTA_SIZE = 284
+            else
+                LUAT_SCRIPT_SIZE = tonumber(conf_data:match("\r#define LUAT_SCRIPT_SIZE (%d+)") or conf_data:match("\n#define LUAT_SCRIPT_SIZE (%d+)"))
+                LUAT_SCRIPT_OTA_SIZE = tonumber(conf_data:match("\r#define LUAT_SCRIPT_OTA_SIZE (%d+)") or conf_data:match("\n#define LUAT_SCRIPT_OTA_SIZE (%d+)"))
+            end
+            print(string.format("script zone %d ota %d", LUAT_SCRIPT_SIZE, LUAT_SCRIPT_OTA_SIZE))
+            LUA_SCRIPT_ADDR = FLASH_FOTA_REGION_START - (LUAT_SCRIPT_SIZE + LUAT_SCRIPT_OTA_SIZE) * 1024
+            LUA_SCRIPT_OTA_ADDR = FLASH_FOTA_REGION_START - LUAT_SCRIPT_OTA_SIZE * 1024
+            script_addr = string.format("%X", LUA_SCRIPT_ADDR)
+            full_addr = string.format("%X", LUA_SCRIPT_OTA_ADDR)
+            -- print(FLASH_FOTA_REGION_START,LUAT_SCRIPT_SIZE,LUAT_SCRIPT_OTA_SIZE)
+            -- print(script_addr,full_addr)
+        end
+    end)
+    before_build(function(target)
+        if os.getenv("GCC_PATH") then
+            GCC_DIR = os.getenv("GCC_PATH").."/"
+        else
+            GCC_DIR = target:toolchains()[1]:sdkdir().."/"
+        end
+        if os.getenv("LSPD_MODE") == "enable" then
+            FLAGS = "-DLOW_SPEED_SERVICE_ONLY"
+        else
+            FLAGS = ""
+        end
+        if USER_PROJECT_NAME == "luatos" then
+            FLAGS = FLAGS .. " -D__LUATOS__ -DFLASH_AREA_SIZE=" .. string.format("%dK", 2944 - LUAT_SCRIPT_SIZE - LUAT_SCRIPT_OTA_SIZE)
+        end
+        os.exec(GCC_DIR .. "bin/arm-none-eabi-gcc -E " .. FLAGS .. " -I " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc" .. " -P " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.c" ..  " -o " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.ld")        
+    end)
+	after_build(function(target)
+		if os.getenv("GCC_PATH") then
+			GCC_DIR = os.getenv("GCC_PATH").."/"
+		else
+			GCC_DIR = target:toolchains()[1]:sdkdir().."/"
+		end
+		OUT_PATH = "./out"
+		if not os.exists(OUT_PATH) then
+			os.mkdir(OUT_PATH)
+		end
+		os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
+		--io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".list", os.iorun(GCC_DIR .. "bin/arm-none-eabi-objdump -h -S $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
+		io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size", os.iorun(GCC_DIR .. "bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
+		-- io.cat("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size")
+		os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
+		os.exec(GCC_DIR .."bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf")
+        os.cp("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin", "$(buildir)/"..USER_PROJECT_NAME.."/ap.bin")
+        
+        os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.bin", OUT_PATH)
+		os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.map", OUT_PATH)
+		os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.elf", OUT_PATH)
+		os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH)
+
+        ---------------------------------------------------------
+        -------------- This part is not yet cross-platform
+        local cmd = "-M -input " .. SDK_PATH .. "/PLAT/tools/ap_bootloader.bin -addrname  BL_IMG_MERGE_ADDR -flashsize BOOTLOADER_FLASH_LOAD_SIZE -input $(buildir)/"..USER_PROJECT_NAME.."/ap.bin -addrname  AP_IMG_MERGE_ADDR -flashsize AP_FLASH_LOAD_SIZE -input " .. SDK_PATH .. "/PLAT/prebuild/FW/lib/cp-demo-flash.bin -addrname CP_IMG_MERGE_ADDR -flashsize CP_FLASH_LOAD_SIZE -def " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h "
+        if os.getenv("BINPKG_CROSS") then
+            --Prepare a custom packager
+            cmd = os.getenv("BINPKG_CROSS") .. cmd
+        else
+            if is_plat("windows") then
+                cmd = SDK_PATH .. "/PLAT/tools/fcelf.exe " .. cmd
+            elseif is_plat("macosx") then
+                cmd = "bash ./fcelf-docker.sh " .. cmd
+            else
+                cmd = "./fcelf " .. cmd
+            end
+        end
+        cmd = cmd .. " -outfile " .. "./out/" .. USER_PROJECT_NAME..".binpkg"
+        --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
+        --You can still use other tools to continue flashing your phone
+        print("fcelf CMD --> ", cmd)
+        os.exec(cmd)
+        ---------------------------------------------------------
+
+        import("lib.detect.find_file")
+        local path7z = nil
+        if is_plat("windows") then
+            path7z = "\"$(programdir)/winenv/bin/7z.exe\""
+        elseif is_plat("linux") or is_plat("macosx") then
+            path7z = find_file("7z", { "/usr/bin/", "/usr/local/bin/" })
+            if not path7z then
+                path7z = find_file("7zr", { "/usr/bin/"})
+            end
+        end
+        if path7z == nil then
+            print("7z not find")
+            return
+        end
+		import("core.base.json")
+        if USER_PROJECT_NAME == 'luatos' then
+            os.cp("$(projectdir)/project/luatos/pack", OUT_PATH)
+            local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
+            if VM_64BIT then
+                info_table["script"]["bitw"] = 64
+            end
+            if script_addr then
+                info_table["download"]["script_addr"] = script_addr
+                info_table["rom"]["fs"]["script"]["size"] = LUAT_SCRIPT_SIZE
+                io.gsub(OUT_PATH.."/pack/config_ec618_usb.ini", "filepath = .\\script.bin\nburnaddr = 0x(%g+)", "filepath = .\\script.bin\nburnaddr = 0x"..script_addr)
+            end
+            if full_addr then
+                info_table["fota"]["full_addr"] = full_addr
+            end
+            json.savefile(OUT_PATH.."/pack/info.json", info_table)
+            os.cp(OUT_PATH.."/luatos.binpkg", OUT_PATH.."/pack")
+            os.cp(OUT_PATH.."/luatos.elf", OUT_PATH.."/pack")
+            os.cp(OUT_PATH.."/*.map", OUT_PATH.."/pack")
+            os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH.."/pack")
+            os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
+            os.cp("$(projectdir)/project/luatos/inc/luat_conf_bsp.h", OUT_PATH.."/pack")
+            os.exec(path7z.." a -mx9 LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618.7z "..OUT_PATH.."/pack/* -r")
+            local ver = "_FULL"
+            if os.getenv("LUAT_EC618_LITE_MODE") == "1" then
+                ver = ""
+            end
+            if os.getenv("LUAT_USE_TTS") == "1" then
+                ver = "_TTS"
+                if os.getenv("LUAT_USE_TTS_ONCHIP") == "1" then
+                    ver = "_TTS_ONCHIP"
+                end
+            end
+            os.mv("LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618.7z", OUT_PATH.."/LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618"..ver..".soc")
+            os.rm(OUT_PATH.."/pack")
+        else 
+            if not os.exists(OUT_PATH.."/pack") then
+                os.mkdir(OUT_PATH.."/pack")
+            end
+            os.cp(OUT_PATH.."/*.binpkg", OUT_PATH.."/pack")
+            os.cp(OUT_PATH.."/*.elf", OUT_PATH.."/pack")
+            os.cp(OUT_PATH.."/*.map", OUT_PATH.."/pack")
+            os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH.."/pack")
+            os.cp(SDK_PATH .. "/project/luatos/pack/info.json", OUT_PATH.."/pack")
+            local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
+            info_table["rom"]["file"] = USER_PROJECT_NAME .. ".binpkg"
+            json.savefile(OUT_PATH.."/pack/info.json", info_table)
+            os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
+            os.exec(path7z.." a -mx9 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
+            os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
+            os.rm(OUT_PATH.."/pack")
+        end
+
+        --To calculate the differential package size, you need to put the old binpkg in the root directory and name it $project name.binpkg
+        if os.exists(USER_PROJECT_NAME .. ".binpkg") then
+            os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
+            os.cp(OUT_PATH.."/"..USER_PROJECT_NAME..".binpkg", "tools/dtools/new.binpkg")
+            os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
+            os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
+        end
+	end)	
+target_end()

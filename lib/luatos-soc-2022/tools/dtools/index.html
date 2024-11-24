@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+    <header>
+<title>Core shifting differential tool</title>
+    </header>
+    <body>
+        <div>
+<h2>The difference process will take 1~2 minutes, depending on the machine performance, please wait patiently after submitting the form</h2>
+        </div>
+        <div>
+<h2>This service is EC618 differential, suitable for Moduless based on EC618 solutions such as Air780E/Air600E/Air780EG</h2>
+        </div>
+        <div>
+<form method="post" enctype="multipart/form-data" action="/api/diff/org">
+Original version (old version) <input type="file" name="old"> <p/>
+Version to be upgraded (new version) <input type="file" name="new"> <p/>
+Differential type <select name="mode">
+<option value="org">Original difference</option>
+<option value="csdk">CSDK difference</option>
+<option value="at">Hezhou AT differential</option>
+<option value="qat">Hezhou QAT differential</option>
+<option value="soc">LuatOS差分</option>
+<option value="full">CSDK full package upgrade</option>
+                </select>
+<button type="submit">Submit, start generating</button>
+            </form>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,1299 @@
+{
+    "version": 1,
+    "builder": {
+        "chip": {
+            "name": "ec618-luatos",
+            "io": 44,
+            "memory": {
+                "min": 256,
+                "max": 256,
+                "dft": 256
+            },
+            "layout": {
+                "total": 4096,
+                "fs": {
+                    "min": 512,
+                    "max": 512,
+                    "dft": 512
+                },
+                "rom": {
+                    "min": 1677721,
+                    "max": 2918400,
+                    "dft": 2918400,
+                    "rsize": 1800000
+                },
+                "bl": {
+                    "min": 512,
+                    "max": 512,
+                    "dft": 512
+                }
+            },
+            "script": {
+                "min": 32,
+                "max": 448,
+                "dft": 128,
+                "unit": 32
+            }
+        },
+        "sdk": {
+            "presets": [
+                {
+                    "name": "dev",
+                    "value": {
+                        "luatos": "head",
+                        "air101": "head"
+                    }
+                }
+            ]
+        },
+        "component": [
+            {
+                "icon": "zmdi-input-composite",
+                "name": "@DEV2",
+                "content": "Compilation reminder, this sub-item is a prompt, not a configuration item",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "@comment_1",
+                        "content": "If you need to be compatible with V1103's flash layout, please set the script area size to 448k",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_2",
+                        "content": "If TTS resources are configured to be stored in the Modules, the script area will be forcibly set to 64k",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_3",
+                        "content": "Normal compilation takes no more than 2 minutes. If you have any questions, please go to https://gitee.com/openLuat/LuatOS/issues to provide feedback, or ask FAE for help.",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_4",
+                        "content": "Only firmware with the same script area size can perform underlying OTA. Be sure to pay attention.",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_5",
+                        "content": "What is shown is the estimated size. It is an estimate! An estimate! An estimate! The actual compilation is successful and it can be accommodated.",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_7",
+                        "content": "It is estimated that the red color may not be compiled, and the green color represents a high probability of compilation. If the actual compilation is successful, it can be put down!",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    },
+                    {
+                        "name": "@comment_6",
+                        "content": "Lua basic library and network basic library (socket/http/mqtt) are all enabled by default and have no configuration items.",
+                        "rsize": 0,
+                        "fsize": 0,
+                        "dft": false
+                    }
+                ]
+            },
+            {
+                "icon": "zmdi-input-composite",
+                "name": "@DEV",
+                "content": "Basic peripherals",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "gpio",
+                        "content": "General input and output, input/output/interrupt",
+                        "rsize": 1432,
+                        "fsize": 288852,
+                        "dft": false
+                    },
+                    {
+                        "name": "uart",
+                        "content": "serial port",
+                        "rsize": 3520,
+                        "fsize": 290940,
+                        "dft": false,
+                        "children": [
+                            {
+                                "name": "soft_uart",
+                                "content": "Soft serial port support, baud rate 9600 or below, any 2 GPIO, only supports one channel",
+                                "rsize": 2432,
+                                "fsize": 288852,
+                                "dft": false
+                            }
+                        ]
+                    },
+                    {
+                        "name": "i2c",
+                        "content": "IIC protocol",
+                        "rsize": 4976,
+                        "fsize": 292396,
+                        "dft": false
+                    },
+                    {
+                        "name": "spi",
+                        "content": "SPI protocol",
+                        "rsize": 5424,
+                        "fsize": 292844,
+                        "dft": false
+                    },
+                    {
+                        "name": "adc",
+                        "content": "Analog to digital conversion",
+                        "rsize": 576,
+                        "fsize": 287996,
+                        "dft": false
+                    },
+                    {
+                        "name": "pwm",
+                        "content": "Frequency controllable square wave",
+                        "rsize": 1192,
+                        "fsize": 288612,
+                        "dft": false
+                    },
+                    {
+                        "name": "wdt",
+                        "content": "hard dog",
+                        "rsize": 240,
+                        "fsize": 287660,
+                        "dft": false
+                    },
+                    {
+                        "name": "crypto",
+                        "content": "Encryption and decryption algorithm, md5/sha family/aes/des/crc series",
+                        "rsize": 45568,
+                        "fsize": 332988,
+                        "dft": false
+                    },
+                    {
+                        "name": "mcu",
+                        "content": "MCU proprietary API to obtain unique id and tick clock count",
+                        "rsize": 2952,
+                        "fsize": 290372,
+                        "dft": false
+                    },
+                    {
+                        "name": "rtc",
+                        "content": "RTC clock",
+                        "rsize": 1944,
+                        "fsize": 289364,
+                        "dft": false
+                    },
+                    {
+                        "name": "pm",
+                        "content": "Power consumption management, sleep mode control, scheduled wake-up",
+                        "rsize": 1944,
+                        "fsize": 289364,
+                        "dft": false
+                    },
+                    {
+                        "name": "otp",
+                        "content": "Once locked, it cannot be modified or erased. Even if the Flash is cleared, it cannot be modified.",
+                        "rsize": 632,
+                        "fsize": 288052,
+                        "dft": false
+                    },
+                    {
+                        "name": "media",
+                        "content": "Multimedia, currently only audio, supports playing amr/mp3. Contains audio and codec libraries",
+                        "rsize": 10240,
+                        "fsize": 288052,
+                        "dft": false
+                    },
+                    {
+                        "name": "sms",
+                        "content": "For sending and receiving text messages, the Modules cannot send and receive text messages when the telecommunications card is inserted into it.",
+                        "rsize": 60240,
+                        "fsize": 288052,
+                        "dft": false
+                    },
+                    {
+                        "name": "wlan",
+                        "content": "wlan scanning function. Only supports scanning and does not support wifi communication!!",
+                        "rsize": 10240,
+                        "fsize": 288052,
+                        "dft": false
+                    }
+                ],
+                "fsize": 287420,
+                "dft": false
+            },
+            {
+                "name": "@tts",
+                "content": "TTS=offline text-to-speech, media needs to be enabled, occupies 200k",
+                "rsize": 0,
+                "fsize": 288052,
+                "dft": false,
+                "children" : [
+                    {
+                        "name": "tts",
+                        "content": "Enable TTS main function, the function itself accounts for 200k. The default is to plug-in SPI Flash to store TTS resources",
+                        "rsize": 190240,
+                        "fsize": 288052,
+                        "dft": false
+                    },
+                    {
+                        "name" : "@tts_comment",
+                        "content": "TTS resources are very large, and there are two configurations: external SPI Flash and direct placement in the Modules. The former is the default.",
+                        "rsize" : 0,
+                        "fsize" : 288052,
+                        "dft"   : false
+                    },
+                    {
+                        "name" : "tts_onchip",
+                        "content": "Putting TTS resources directly in the Modules requires 750k Flash. Pay attention to the trade-offs of other libraries, otherwise it will not be able to be placed.",
+                        "rsize" : 800000,
+                        "fsize" : 288052,
+                        "dft"   : false
+                    },
+                    {
+                        "name": "tts_only",
+                        "content": "Disable AMR/MP3 decoding and only integrate TTS playback function to save space",
+                        "rsize": -100240,
+                        "fsize": 288052,
+                        "dft": false
+                    },
+                    {
+                        "name" : "@tts_8k",
+                        "content": "[Abandoned, do not select] Use 8k TTS resources, the sound quality is slightly worse than 16k",
+                        "rsize" : 1024,
+                        "fsize" : 288052,
+                        "dft"   : false
+                    },
+                    {
+                        "name" : "@tts_16k",
+                        "content": "Choose 16k TTS resource, the default is also 16k, the sound quality is slightly better",
+                        "rsize" : 0,
+                        "fsize" : 288052,
+                        "dft"   : false
+                    }
+                ]
+            },
+            {
+                "icon": "zmdi-card-sd",
+                "name": "@LIB",
+                "content": "Tool library",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "mqtt",
+                        "content": "mqtt client",
+                        "rsize": 8304,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "repl",
+                        "content": "REPL (read-parse-execute) loop",
+                        "rsize": 10908,
+                        "fsize": 284260,
+                        "dft": false
+                    },
+                    {
+                        "name": "cjson",
+                        "content": "JSON serialization and deserialization",
+                        "rsize": 5800,
+                        "fsize": 293220,
+                        "dft": false
+                    },
+                    {
+                       "name":"iotauth",
+                       "content":"Cloud service authentication key generation, Alibaba Cloud/Tencent Cloud/Baidu Cloud/Huawei Cloud/Tuya, etc.",
+                       "rsize":14928,
+                       "fsize":418304,
+                       "dft":false
+                    },
+                    {
+                        "name": "fs",
+                        "content": "File system status",
+                        "rsize": 744,
+                        "fsize": 288164,
+                        "dft": false
+                    },
+                    {
+                        "name": "pack",
+                        "content": "Data packaging and unpacking, especially binary data unpacking and packaging",
+                        "rsize": 1960,
+                        "fsize": 289380,
+                        "dft": false
+                    },
+                    {
+                        "name": "zbuff",
+                        "content": "C-style memory array manipulation library",
+                        "rsize": 15632,
+                        "fsize": 303052,
+                        "dft": false
+                    },
+                    {
+                        "name": "libgnss",
+                        "content": "NMEA analysis, analysis of GNSS/GPS data",
+                        "rsize": 6232,
+                        "fsize": 293652,
+                        "dft": false
+                    },
+                    {
+                        "name": "fdb",
+                        "content": "[Not recommended] kv database, it will not be lost after power failure. It is recommended to use fskv library instead.",
+                        "rsize": 10832,
+                        "fsize": 298252,
+                        "dft": false
+                    },
+                    {
+                        "name": "fskv",
+                        "content": "[Recommended] kv database, instead of fdb, recommended",
+                        "rsize": 10832,
+                        "fsize": 298252,
+                        "dft": false
+                    },
+                    {
+                        "name": "miniz",
+                        "content": "Compression and decompression library, compatible with zlib format",
+                        "rsize": 12768,
+                        "fsize": 317120,
+                        "dft": false
+                    },
+                    {
+                        "name": "fastlz",
+                        "content": "Another LZ compression and decompression library, the memory requirements for compression are smaller than miniz",
+                        "rsize": 12768,
+                        "fsize": 317120,
+                        "dft": false
+                    },
+                    {
+                        "name": "sfud",
+                        "content": "Universal spi flash driver library, supported by common spi flash on the market",
+                        "rsize": 11968,
+                        "fsize": 299388,
+                        "dft": false
+                    },
+                    {
+                        "name": "lora",
+                        "content": "lora driver",
+                        "rsize": 13196,
+                        "fsize": 284548,
+                        "dft": false
+                    },
+                    {
+                        "name": "lora2",
+                        "content": "lora2 driver (supports mounting multiple devices)",
+                        "rsize": 13196,
+                        "fsize": 284548,
+                        "dft": false
+                    },
+                    {
+                        "name": "mlx90640",
+                        "content": "Infrared imaging mlx90640",
+                        "rsize": 13196,
+                        "fsize": 284548,
+                        "dft": false
+                    },
+                    {
+                        "name": "max30102",
+                        "content": "heart rate blood oxygen sensor",
+                        "rsize": 13196,
+                        "fsize": 284548,
+                        "dft": false
+                    },
+                    {
+                        "name": "protobuf",
+                        "content": "protobuf codec",
+                        "rsize": 12008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "rsa",
+                        "content": "RSA encryption and decryption, signature verification, does not rely on crypto libraries",
+                        "rsize": 6008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "ftp",
+                        "content": "FTP client",
+                        "rsize": 6008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "websocket",
+                        "content": "websocket client",
+                        "rsize": 5320,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "w5500",
+                        "content": "Ethernet support library, supports W5500",
+                        "rsize": 6008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "fatfs",
+                        "content": "Mount SD card via SPI",
+                        "rsize": 90856,
+                        "fsize": 481276,
+                        "dft": false,
+                        "children" : [
+                            {
+                                "name": "LUAT_USE_FATFS_CHINESE",
+                                "content": "Support Chinese path",
+                                "rsize": 122400,
+                                "fsize": 481276
+                            }
+                        ]
+                    },
+                    {
+                        "name": "gmssl",
+                        "content": "National secret algorithm SM2/SM3/SM4",
+                        "rsize": 20008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "iconv",
+                        "content": "Encoding conversion GB2312/UTF8/UNICODE",
+                        "rsize": 40008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "sensor",
+                        "content": "Sensor (e.g. ds18b20/ws2812)",
+                        "rsize": 2248,
+                        "fsize": 289668,
+                        "dft": false
+                    },
+                    {
+                        "name": "statem",
+                        "content": "State machine, can output GPIO sequence",
+                        "rsize": 1480,
+                        "fsize": 272832,
+                        "dft": false
+                    },
+                    {
+                        "name": "bit64",
+                        "content": "64-bit data processing library",
+                        "rsize": 10008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "xxtea",
+                        "content": "xxtea encryption and decryption library",
+                        "rsize": 2008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "ir",
+                        "content": "IR infrared transmit/receive, currently only supports sending",
+                        "rsize": 2008,
+                        "fsize": 274360,
+                        "dft": false
+                    },
+                    {
+                        "name": "ht1621",
+                        "content": "ht1621/ht1621b LCD driver",
+                        "rsize": 2048,
+                        "fsize": 274360,
+                        "dft": false
+                    }
+                ],
+                "fsize": 287420,
+                "dft": false
+            },
+            {
+                "icon": "zmdi-puzzle-piece",
+                "name": "@REVS",
+                "content": "Code version selection",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "@rev_master_comment1",
+                        "content": "This section selects the code version. By default, the latest code of the code base is selected, that is, the latest code of the master branch.",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "@rev_master_select",
+                        "content": "Use the latest code of the code base, that is, the latest code of the master branch",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "@rev_release_v1110",
+                        "content": "Select the code of the V1110 release version for compilation, release date 2024.6.7",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "@rev_release_v1109",
+                        "content": "Select the code of the V1109 release version for compilation, release date 2024.3.6",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "@rev_release_v1108",
+                        "content": "Select the code of the V1108 release version for compilation, release date 2023.10.31",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "@rev_release_v1107",
+                        "content": "Select the code of the V1107 release version for compilation, release date 2023.7.11",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    }
+                ]
+            },
+            {
+                "icon": "zmdi-puzzle-piece",
+                "name": "@MASTERS",
+                "content": "Advanced configuration",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "@master123",
+                        "content": "The configuration in this section has certain risks, please choose carefully.",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_VM_64bit",
+                        "content": "64bit virtual machine (testing phase)",
+                        "rsize": 193240,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_UART0_FORCE_USER",
+                        "content": "Release UART0 for user use. The underlying log cannot be read from UART0, and the log can only be read through USB.",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_UART0_FORCE_ALT1",
+                        "content": "Switch UART0 to another multiplexer, paddr 31/32",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name" : "LUAT_GPIO_1415_ALT0",
+                        "content": "[Abandoned, unavailable] GPIO14/15 is forcibly allocated to the position of UART0, paddr 29/30, needs to turn on LUAT_UART0_FORCE_ALT1",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+					{
+                        "name": "LUAT_UART0_LOG_BR_12M",
+                        "content": "The baud rate of UART0 output log is 12M",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_HEAP_SIZE_200K",
+                        "content": "Lua memory is set to 200k bytes. The default is 200k before 2023.7.10, and the default is 256k after that. This option is only for compatibility with old configurations. It does not affect FOTA",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_HEAP_SIZE_300K",
+                        "content": "Lua memory is set to 300k bytes. In this mode, the audio library cannot be used, and the number of TLS connections needs to be limited to less than 2.",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_HEAP_SIZE_324K",
+                        "content": "Lua memory is set to 324k bytes. In this mode, the audio library cannot be used, and the number of TLS connections needs to be limited to less than 2.",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "rndis",
+                        "content": "Enable RNDIS network card, Lua memory will be forcibly reduced to 160k",
+                        "rsize": 0,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "tls_disable",
+                        "content": "Completely disabling the TLS/SSL function can save 110k flash consumption and related encrypted communications will be unavailable.",
+                        "rsize": -120000,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_TLS_DTLS_DISABLE",
+                        "content": "Disable the encrypted version of UDP communication, which is similar to TCP's SSL/TLS. It is not used in 99% of scenarios.",
+                        "rsize": -12000,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_TLS_DISABLE_NC",
+                        "content": "Disable GCM/DHM/DES/PKCS1_V21 and other algorithms, which are not used in 99% of scenarios",
+                        "rsize": -4000,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_TLS_SHA512_DISABLE",
+                        "content": "Disable the SHA512 algorithm, which is not used in 99% of scenarios",
+                        "rsize": -10000,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_TLS_DISABLE_ECP_ECDHE",
+                        "content": "Disabling the elliptical algorithm can accelerate https websites that are compatible with elliptical and AES",
+                        "rsize": -10000,
+                        "fsize": 1024,
+                        "dft": false
+                    },
+                    {
+                        "name": "LUAT_CONF_FONTS_OLD_STYLE",
+                        "content": "Use the old U8G2 font file so that when the old version is differentially upgraded, the differential package size will not exceed the standard. New users should not choose this option!!!",
+                        "rsize": 1024,
+                        "fsize": 1024,
+                        "dft": false
+                    }
+                ]
+            },
+            {
+                "icon": "zmdi-puzzle-piece",
+                "name": "@EXT",
+                "content": "UI, display class driver",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "u8g2",
+                        "content": "Monochrome screen driver",
+                        "rsize": 56072,
+                        "fsize": 343492,
+                        "dft": false
+                    },
+                    {
+                        "name": "lcd",
+                        "content": "Color screen lcd driver",
+                        "rsize": 55720,
+                        "children": [
+                            {
+                                "name": "tjpgd",
+                                "content": "Supports JPG images, decoding requires the same memory as the image size",
+                                "rsize": 5712,
+                                "fsize": 348852,
+                                "dft": false
+                            }
+                        ],
+                        "fsize": 343140,
+                        "dft": false
+                    },
+                    {
+                        "name": "eink",
+                        "content": "Ink screen driver",
+                        "rsize": 70200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "@lvgl",
+                        "content": "A lightweight graphical library that relies on the LCD library. Although it is supported, SPI is slow and the effect is not good.",
+                        "rsize": 1024,
+                        "children": [
+                            {
+                                "name": "lvgl",
+                                "content": "Basic functions",
+                                "rsize": 260536,
+                                "fsize": 631888,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_jpg",
+                                "content": "JPG decoding function",
+                                "rsize": 260536,
+                                "fsize": 631888,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_png",
+                                "content": "PNG decoding function",
+                                "rsize": 260536,
+                                "fsize": 631888,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_bmp",
+                                "content": "BMP decoding function",
+                                "rsize": 260536,
+                                "fsize": 631888,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_anim",
+                                "content": "Custom animation",
+                                "rsize": 0,
+                                "fsize": 631888,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_indev",
+                                "content": "input device",
+                                "rsize": 2048,
+                                "fsize": 654400,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_arc",
+                                "content": "Arc",
+                                "rsize": 8412,
+                                "fsize": 640300,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_bar",
+                                "content": "progress bar",
+                                "rsize": 1556,
+                                "fsize": 633444,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_btn",
+                                "content": "button",
+                                "rsize": 2156,
+                                "fsize": 634044,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_btnmatrix",
+                                "content": "button matrix",
+                                "rsize": 8348,
+                                "fsize": 640236,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_calendar",
+                                "content": "calendar",
+                                "rsize": 6852,
+                                "fsize": 638740,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_canvas",
+                                "content": "canvas",
+                                "rsize": 9732,
+                                "fsize": 641620,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_checkbox",
+                                "content": "checkbox",
+                                "rsize": 4756,
+                                "fsize": 636644,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_chart",
+                                "content": "chart",
+                                "rsize": 12772,
+                                "fsize": 644660,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_cont",
+                                "content": "container",
+                                "rsize": 1316,
+                                "fsize": 633204,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_cpicker",
+                                "content": "color picker",
+                                "rsize": 7232,
+                                "fsize": 639120,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_dropdown",
+                                "content": "drop down list",
+                                "rsize": 17760,
+                                "fsize": 649648,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_gauge",
+                                "content": "meter",
+                                "rsize": 7524,
+                                "fsize": 639412,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_img",
+                                "content": "picture",
+                                "rsize": 6420,
+                                "fsize": 638308,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_imgbtn",
+                                "content": "Picture button",
+                                "rsize": 3456,
+                                "fsize": 635344,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_keyboard",
+                                "content": "keyboard",
+                                "rsize": 6428,
+                                "fsize": 638316,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_label",
+                                "content": "Label",
+                                "rsize": 5876,
+                                "fsize": 637764,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_led",
+                                "content": "LED light",
+                                "rsize": 1636,
+                                "fsize": 633524,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_line",
+                                "content": "line segment",
+                                "rsize": 2156,
+                                "fsize": 634044,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_list",
+                                "content": "list",
+                                "rsize": 20936,
+                                "fsize": 652824,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_linemeter",
+                                "content": "Instrument (arc scale)",
+                                "rsize": 3524,
+                                "fsize": 635412,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_msgbox",
+                                "content": "message box",
+                                "rsize": 11620,
+                                "fsize": 643508,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_page",
+                                "content": "page",
+                                "rsize": 11880,
+                                "fsize": 643768,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_spinner",
+                                "content": "spinner",
+                                "rsize": 6656,
+                                "fsize": 638544,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_roller",
+                                "content": "roller",
+                                "rsize": 16304,
+                                "fsize": 648192,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_slider",
+                                "content": "Slider",
+                                "rsize": 4368,
+                                "fsize": 636256,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_spinbox",
+                                "content": "digital adjustment box",
+                                "rsize": 18752,
+                                "fsize": 650640,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_switch",
+                                "content": "switch",
+                                "rsize": 864,
+                                "fsize": 632752,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_textarea",
+                                "content": "text box",
+                                "rsize": 19296,
+                                "fsize": 651184,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_table",
+                                "content": "sheet",
+                                "rsize": 8272,
+                                "fsize": 640160,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_tabview",
+                                "content": "tab",
+                                "rsize": 21708,
+                                "fsize": 653596,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_tileview",
+                                "content": "Tile view",
+                                "rsize": 10436,
+                                "fsize": 642324,
+                                "dft": false
+                            },
+                            {
+                                "name": "lvgl_win",
+                                "content": "window",
+                                "rsize": 12948,
+                                "fsize": 644836,
+                                "dft": false
+                            }
+                        ],
+                        "fsize": 631888,
+                        "dft": false
+                    }
+                ],
+                "fsize": 287420,
+                "dft": false
+            },
+            {
+                "icon": "zmdi-puzzle-piece",
+                "name": "@FOTNS",
+                "content": "Font/font library configuration",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "fonts",
+                        "content": "Universal font library",
+                        "rsize": 27888
+                    },
+                    {
+                        "name": "@u8g2_fonts",
+                        "content": "Universal font, suitable for u8g2/disp/eink/lcd library",
+                        "rsize": 27888,
+                        "children": [
+                            {
+                                "name": "@fonts_comment1",
+                                "content" : "Starting from V1110, the font data of the U8G2 library has been updated. If there is a differential upgrade from a version before V1110 to a version V1110 or above, please pay attention to the size of the differential package.",
+                                "rsize": 1024,
+                                "fsize": 304416,
+                                "dft": false
+                            },
+                            {
+                                "name": "@fonts_comment2",
+                                "content" : "In the advanced options, there is a configuration item to select the font data of the old version. It is only available to users who have differential upgrades to the above-mentioned lower versions. New users do not need to pay attention.",
+                                "rsize": 1024,
+                                "fsize": 304416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_ENGLISH",
+                                "content": "Monospace font English font and special symbols",
+                                "rsize": 121216,
+                                "fsize": 304416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M8_CHINESE",
+                                "content": "8pix constant width Chinese font, use lcd.font_sarasa_m8_chinese when calling",
+                                "rsize": 251984,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M10_CHINESE",
+                                "content": "10pix constant width Chinese font lcd.font_sarasa_m10_chinese",
+                                "rsize": 331664,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M12_CHINESE",
+                                "content": "12pix fixed-width Chinese font, similarly, u8g2.font_sarasa_m12_chinese is also available",
+                                "rsize": 388176,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M14_CHINESE",
+                                "content": "14pix fixed width Chinese font",
+                                "rsize": 454592,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M16_CHINESE",
+                                "content": "16pix fixed width Chinese font",
+                                "rsize": 547432,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M18_CHINESE",
+                                "content": "18pix fixed width Chinese font",
+                                "rsize": 654527,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M20_CHINESE",
+                                "content": "20pix fixed width Chinese font",
+                                "rsize": 759421,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M22_CHINESE",
+                                "content": "22pix fixed width Chinese font",
+                                "rsize": 864352,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M24_CHINESE",
+                                "content": "24pix fixed width Chinese font",
+                                "rsize": 975376,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M26_CHINESE",
+                                "content": "26pix fixed width Chinese font",
+                                "rsize": 1084724,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_SARASA_M28_CHINESE",
+                                "content": "28pix fixed width Chinese font",
+                                "rsize": 11947457,
+                                "fsize": 749372,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM_ENGLISH",
+                                "content": "English fonts and special symbols",
+                                "rsize": 48176,
+                                "fsize": 304416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM8_CHINESE",
+                                "content": "8pix Chinese font, use lcd.font_opposansm8_chinese when calling",
+                                "rsize": 105176,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM10_CHINESE",
+                                "content": "10pix Chinese font lcd.font_opposansm10_chinese",
+                                "rsize": 205176,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM12_CHINESE",
+                                "content": "12pix Chinese font, similarly, u8g2.font_opposansm12_chinese is also available",
+                                "rsize": 305176,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM14_CHINESE",
+                                "content": "14pix Chinese font",
+                                "rsize": 405176,
+                                "fsize": 604416,
+                                "dft": false
+                            },
+                            {
+                                "name": "USE_U8G2_OPPOSANSM16_CHINESE",
+                                "content": "16pix Chinese font",
+                                "rsize": 450132,
+                                "fsize": 749372,
+                                "dft": false
+                            }
+                        ],
+                        "fsize": 299240,
+                        "dft": false
+                    },
+                    {
+                        "name": "gtfont",
+                        "content": "Qualcomm vector font (requires Qualcomm font chip)",
+                        "rsize": 400,
+                        "children": [
+                            {
+                                "name": "gtfont_utf8",
+                                "content": "Qualcomm vector fonts support UTF-8 encoding (180k transcoding table)",
+                                "rsize": 0,
+                                "fsize": 271752,
+                                "dft": false
+                            }
+                        ],
+                        "fsize": 271752,
+                        "dft": false
+                    },
+                    {
+                        "name": "@lvgl_font",
+                        "content": "lvgl dedicated font library",
+                        "rsize": 360536,
+                        "children": [
+                            {
+                                "name": "LV_FONT_OPPOSANS_M_8",
+                                "content": "OPPO Song Dynasty 8pix",
+                                "rsize": 391044,
+                                "fsize": 1022932,
+                                "dft": false
+                            },
+                            {
+                                "name": "LV_FONT_OPPOSANS_M_10",
+                                "content": "OPPO Arial 10pix",
+                                "rsize": 531232,
+                                "fsize": 1163120,
+                                "dft": false
+                            },
+                            {
+                                "name": "LV_FONT_OPPOSANS_M_12",
+                                "content": "OPPO Song Dynasty 12pix",
+                                "rsize": 665500,
+                                "fsize": 1297388,
+                                "dft": false
+                            },
+                            {
+                                "name": "LV_FONT_OPPOSANS_M_14",
+                                "content": "OPPO Song Dynasty 14pix",
+                                "rsize": 849828,
+                                "fsize": 1481716,
+                                "dft": false
+                            }
+                        ],
+                        "fsize": 631888,
+                        "dft": false
+                    }
+                ],
+                "fsize": 271352,
+                "dft": false
+            },
+            {
+                "icon": "zmdi-puzzle-piece",
+                "name": "@ADD123",
+                "content": "Infrequently used libraries, generally not used",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "mqttcore",
+                        "content": "The MQTT protocol parsing library does not contain links and does not rely on the mqtt library. It has no impact on daily mqtt communication.",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "libcoap",
+                        "content": "COAP protocol parsing library, only contains protocol parsing and synthesis",
+                        "rsize": 2200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "ercoap",
+                        "content": "New version of COAP protocol library",
+                        "rsize": 2200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "coremark",
+                        "content": "Benchmarks, performance testing",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "ymodem",
+                        "content": "YModem communication protocol",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "httpsrv",
+                        "content": "Http service under IPV6",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "antbot",
+                        "content": "Ant Chain is provided by Ant Group. You need to contact Ant Group to obtain the official token.",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "ulwip",
+                        "content": "[Under testing] User layer lwip integration, currently used for docking of air601, w5200",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "napt",
+                        "content": "[Under testing] Network address port conversion, using ulwip library to implement router function",
+                        "rsize": 5200,
+                        "fsize": 357620,
+                        "dft": false
+                    },
+                    {
+                        "name": "sqlite3",
+                        "content": "Sqlite3 database stores the database in the file system, and the data is slow. It is only recommended to try it out in scenarios with a small amount of data.",
+                        "rsize": 1024000,
+                        "fsize": 357620,
+                        "dft": false
+                    }
+                ]
+            }
+        ]
+    }
+}

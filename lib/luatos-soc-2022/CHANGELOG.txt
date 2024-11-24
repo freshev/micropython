@@ -1,0 +1,6 @@
+date: 2023-03-25
+commit: https://gitee.com/openLuat/luatos-soc-2022/commit/549c4eb73b27bf7746c3c250a7025efe8c7bc299
+fix: fix i2c1 default pin error
+Before this, the default pin of i2c1 was wrong. This modification involves luatos and csdk users. If used, please modify the code in time! ! !
+
+

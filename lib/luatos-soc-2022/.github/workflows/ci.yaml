@@ -1,0 +1,176 @@
+name: EC618
+run-name: GoGoGo 🚀
+on: [push]
+
+jobs:
+  EC6xx_basic:
+    runs-on: ubuntu-latest
+    strategy:    
+      matrix:
+        csdk_project:
+          - example
+        lspd:
+          - enable
+          - disable
+    steps:
+      - name: 初始化工具链
+        run: |
+          sudo add-apt-repository ppa:xmake-io/xmake -y
+          sudo apt update -y
+          sudo apt-get update -y && sudo apt-get install -y gcc make g++ wget curl xmake p7zip-full
+          sudo dpkg --add-architecture i386 && sudo apt update
+          sudo apt-get install -y lib32z1 libc6:i386 libgcc1:i386 libstdc++5:i386 libstdc++6:i386
+      - name: 克隆 LuatOS 代码库
+        if: matrix.csdk_project == 'luatos'
+        run:  git clone --depth=1 https://github.com/openLuat/LuatOS.git
+      - name: 克隆 ec7xx-csdk 代码库
+        run:  git clone --depth=1 https://github.com/openLuat/luatos-soc-2022.git
+      - name: 下载Gcc
+        run: |
+          mkdir tools
+          cd tools
+          wget -q https://github.com/wendal/xmake-docker/releases/download/dev-gcc/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+          tar xf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+      - name: 构建指定项目
+        run: |
+          export GCC_PATH=`pwd`/tools/gcc-arm-none-eabi-10.3-2021.10
+          cd luatos-soc-2022
+          xmake -y --root
+        env:
+          PROJECT_NAME: ${{ matrix.csdk_project }}
+          LSPD_MODE : ${{ matrix.lspd }}
+
+  EC6xx:
+    runs-on: ubuntu-latest
+    needs: "EC6xx_basic"
+    strategy:    
+      matrix:
+        csdk_project:
+          - cloud_speaker
+          - download_play_mp3
+          - example_adc
+          - example_air153C_wtd
+          - example_andlink
+          - example_apn
+          - example_audio
+          - example_audio_flash
+          - example_audio_raw
+          - example_cjson
+          - example_crypto
+          - example_fatfs
+          - example_filesystem
+          - example_flash
+          - example_fskv
+          - example_full_ota
+          - example_gnss
+          - example_gpio
+          - example_gpio_ws2812b
+          - example_https
+          - example_i2c
+          - example_iconv
+          - example_lbsLoc
+          - example_lcd
+          - example_linksdk
+          - example_link_speech1
+          - example_low_power
+          - example_lpuart
+          - example_luatos_http_post
+          - example_luatos_mqtt
+          - example_luatos_socket
+          - example_mobile
+          - example_ntp
+          - example_otp
+          - example_pm
+          - example_protobuf
+          - example_pwm
+          - example_record
+          - example_rtc
+          - example_sfud
+          - example_sms
+          - example_socket
+          - example_socket_multiple
+          - example_socket_single
+          - example_spi
+          - example_u8g2
+          - example_uart
+          - example_uart0_alt
+          - example_uart0_log
+          - example_uart1_wakeup
+          - example_uart_org
+          - example_usb_uart
+          - example_vsim_showmac
+          - example_wdt
+          - example_wifiscan
+          - example_ymodem
+          - libhttp_fota_iot
+          - tracker
+          - web_audio
+    steps:
+      - name: 初始化工具链
+        run: |
+          sudo add-apt-repository ppa:xmake-io/xmake -y
+          sudo apt update -y
+          sudo apt-get update -y && sudo apt-get install -y gcc make g++ wget curl xmake p7zip-full
+          sudo dpkg --add-architecture i386 && sudo apt update
+          sudo apt-get install -y lib32z1 libc6:i386 libgcc1:i386 libstdc++5:i386 libstdc++6:i386
+      - name: 克隆 LuatOS 代码库
+        if: matrix.csdk_project == 'luatos'
+        run:  git clone --depth=1 https://github.com/openLuat/LuatOS.git
+      - name: 克隆 ec7xx-csdk 代码库
+        run:  git clone --depth=1 https://github.com/openLuat/luatos-soc-2022.git
+      - name: 下载Gcc
+        run: |
+          mkdir tools
+          cd tools
+          wget -q https://github.com/wendal/xmake-docker/releases/download/dev-gcc/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+          tar xf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+      - name: 构建指定项目
+        run: |
+          export GCC_PATH=`pwd`/tools/gcc-arm-none-eabi-10.3-2021.10
+          export XMAKE_MAIN_REPO=https://gitee.com/tboox/xmake-repo.git
+          export LSPD_MODE=enable
+          cd luatos-soc-2022
+          xmake -y --root
+          rm -fr build
+        env:
+          PROJECT_NAME: ${{ matrix.csdk_project }}
+
+  EC6xx_luatos:
+    runs-on: ubuntu-latest
+    needs: "EC6xx_basic"
+    strategy:    
+      matrix:
+        csdk_project:
+          - luatos
+        lite_mode:
+          - "1"
+          - "0"
+    steps:
+      - name: 初始化工具链
+        run: |
+          sudo add-apt-repository ppa:xmake-io/xmake -y
+          sudo apt update -y
+          sudo apt-get update -y && sudo apt-get install -y gcc make g++ wget curl xmake p7zip-full
+          sudo dpkg --add-architecture i386 && sudo apt update
+          sudo apt-get install -y lib32z1 libc6:i386 libgcc1:i386 libstdc++5:i386 libstdc++6:i386
+      - name: 克隆 LuatOS 代码库
+        run:  git clone --depth=1 https://github.com/openLuat/LuatOS.git
+      - name: 克隆 ec7xx-csdk 代码库
+        run:  git clone --depth=1 https://github.com/openLuat/luatos-soc-2022.git
+      - name: 下载Gcc
+        run: |
+          mkdir tools
+          cd tools
+          wget -q https://github.com/wendal/xmake-docker/releases/download/dev-gcc/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+          tar xf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
+      - name: 构建指定项目
+        run: |
+          export GCC_PATH=`pwd`/tools/gcc-arm-none-eabi-10.3-2021.10
+          export XMAKE_MAIN_REPO=https://gitee.com/tboox/xmake-repo.git
+          export LSPD_MODE=enable
+          cd luatos-soc-2022
+          xmake -y --root
+          rm -fr build
+        env:
+          PROJECT_NAME: ${{ matrix.csdk_project }}
+          LUAT_EC618_LITE_MODE: ${{ matrix.lite_mode }}
