@@ -32,6 +32,11 @@
 *.pdf binary
 *.h binary
 *.c binary
+*.lua binary
 *.rc binary
 *.cer binary
 *.svn-base binary
+*.chm
+*.chw
+comdb.txt
+comdblib.txt

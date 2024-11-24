@@ -1,0 +1,117 @@
+{
+    ["GPIO8-11 mux"] = {
+        __sourceinfo_default = {
+            ["UART2 & I2C1"] = {
+                line = 32,
+                file = [[.\xmake.lua]]
+            }
+        },
+        __scriptdir = [[C:\micropython\ports\air780]],
+        values = {
+            "UART2 & I2C1",
+            "SPI0"
+        },
+        __sourceinfo_defines = {
+            GPIO_MUX = {
+                line = 31,
+                file = [[.\xmake.lua]]
+            }
+        },
+        defines = "GPIO_MUX",
+        default = "UART2 & I2C1",
+        __sourceinfo_values = {
+            SPI0 = {
+                line = 33,
+                file = [[.\xmake.lua]]
+            },
+            ["UART2 & I2C1"] = {
+                line = 33,
+                file = [[.\xmake.lua]]
+            }
+        }
+    },
+    ["Micropython REPL port"] = {
+        __sourceinfo_default = {
+            ["REPL over USB"] = {
+                line = 28,
+                file = [[.\xmake.lua]]
+            }
+        },
+        __scriptdir = [[C:\micropython\ports\air780]],
+        values = {
+            "REPL over USB",
+            "UART1",
+            "UART2"
+        },
+        __sourceinfo_defines = {
+            HW_UART_REPL = {
+                line = 27,
+                file = [[.\xmake.lua]]
+            }
+        },
+        defines = "HW_UART_REPL",
+        default = "REPL over USB",
+        __sourceinfo_values = {
+            ["REPL over USB"] = {
+                line = 29,
+                file = [[.\xmake.lua]]
+            },
+            UART2 = {
+                line = 29,
+                file = [[.\xmake.lua]]
+            },
+            UART1 = {
+                line = 29,
+                file = [[.\xmake.lua]]
+            }
+        }
+    },
+    ["Firmware version"] = {
+        __sourceinfo_default = {
+            ["v1.0"] = {
+                line = 25,
+                file = [[.\xmake.lua]]
+            }
+        },
+        defines = "FW_VERSION",
+        __sourceinfo_defines = {
+            FW_VERSION = {
+                line = 24,
+                file = [[.\xmake.lua]]
+            }
+        },
+        default = "v1.0",
+        __scriptdir = [[C:\micropython\ports\air780]]
+    },
+    ["Board type"] = {
+        __sourceinfo_default = {
+            Air780_GENERIC = {
+                line = 21,
+                file = [[.\xmake.lua]]
+            }
+        },
+        __scriptdir = [[C:\micropython\ports\air780]],
+        values = {
+            "Air780_GENERIC",
+            "XMAKE_TEST_BOARD"
+        },
+        __sourceinfo_defines = {
+            BOARD = {
+                line = 20,
+                file = [[.\xmake.lua]]
+            }
+        },
+        defines = "BOARD",
+        default = "Air780_GENERIC",
+        __sourceinfo_values = {
+            XMAKE_TEST_BOARD = {
+                line = 22,
+                file = [[.\xmake.lua]]
+            },
+            Air780_GENERIC = {
+                line = 22,
+                file = [[.\xmake.lua]]
+            }
+        }
+    }
+}

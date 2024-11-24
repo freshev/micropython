@@ -5,6 +5,7 @@
 
 # These are binary so should never be modified by git.
 *.a binary
+*.S binary
 *.dll binary
 *.ico binary
 *.png binary
@@ -32,6 +33,10 @@
 *.pdf binary
 *.h binary
 *.c binary
+*.lua binary
+*.yaml binary
+*.yml binary
+*.html binary
 *.rc binary
 *.cer binary
 *.svn-base binary

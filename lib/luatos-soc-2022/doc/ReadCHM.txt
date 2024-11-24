@@ -1,0 +1,13 @@
+Sometimes I download a chm file, but when I open it it is blank and no content is displayed. So what should I do if the chm file is opened and there is no content? I will share the solution below for your reference.
+
+When the chm file is opened and is blank and has no content, the display is as follows:
+
+If this is a very formal text and the download is not damaged or anything like that. First close the file, right-click the file and select Properties-View.
+
+You can see a prompt in General that this document comes from another computer and may be blocked to help protect your computer.
+
+If you trust this document, click Unlock. If you feel it is unsafe, then give up. After it is released, it will be displayed as follows:
+
+At this time, reopen the document and test it until it can be opened normally and the content inside is displayed normally.
+
+If you still can't open it by this method, check whether the file is damaged or blocked by anti-virus software.

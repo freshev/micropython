@@ -1,0 +1,182 @@
+
+#ifndef LUAT_LCD
+#define LUAT_LCD
+
+#include "luat_base.h"
+#include "luat_spi.h"
+#include "u8g2.h"
+
+#define LCD_W 240
+#define LCD_H 320
+#define LCD_DIRECTION 0
+
+#define LCD_WHITE            0xFFFF
+#define LCD_BLACK            0x0000
+
+#ifndef LUAT_LCD_COLOR_DEPTH
+#define LUAT_LCD_COLOR_DEPTH 16
+#endif
+
+#if (LUAT_LCD_COLOR_DEPTH == 32)
+#define luat_color_t uint32_t
+#elif (LUAT_LCD_COLOR_DEPTH == 16)
+#define luat_color_t uint16_t
+#elif (LUAT_LCD_COLOR_DEPTH == 8)
+#define luat_color_t uint8_t
+#else
+#error "no supprt color depth"
+#endif
+
+#define LUAT_LCD_SPI_DEVICE 255
+#define LUAT_LCD_HW_ID_0 0x20	//SPI ID of dedicated LCD interface
+
+struct luat_lcd_opts;
+
+#define LUAT_LCD_DEFAULT_SLEEP  0X10
+#define LUAT_LCD_DEFAULT_WAKEUP 0X11
+
+enum{
+	LUAT_LCD_IM_3_WIRE_9_BIT_INTERFACE_I = 5,
+	LUAT_LCD_IM_4_WIRE_8_BIT_INTERFACE_I = 6,
+	LUAT_LCD_IM_3_WIRE_9_BIT_INTERFACE_II = 13,
+	LUAT_LCD_IM_4_WIRE_8_BIT_INTERFACE_II = 14,
+	LUAT_LCD_IM_2_DATA_LANE = 16,
+};
+
+typedef struct luat_lcd_conf {
+    uint8_t port;
+    uint8_t pin_dc;
+    uint8_t pin_pwr;
+    uint8_t pin_rst;
+
+    int16_t w;
+    int16_t h;
+    uint32_t buffer_size;
+    uint32_t dc_delay_us;
+    uint8_t xoffset;//Offset
+    uint8_t yoffset;//Offset
+    uint8_t auto_flush;
+    uint8_t direction;//direction
+    u8g2_t luat_lcd_u8g2 ;
+    struct luat_lcd_opts* opts;
+    luat_spi_device_t* lcd_spi_device;
+    int lcd_spi_ref;
+    void* userdata;
+
+    // buff related
+    luat_color_t* buff;
+    int buff_ref;
+    int16_t flush_y_min;
+    int16_t flush_y_max;
+    uint8_t is_init_done;
+
+    uint8_t interface_mode;	// LUAT_LCD_IM_XXX
+    uint8_t lcd_cs_pin;		//Be careful to write 0xff when not in use
+} luat_lcd_conf_t;
+
+typedef struct luat_lcd_opts {
+    const char* name;
+    uint8_t sleep_cmd;
+    uint8_t wakeup_cmd;
+    uint8_t direction0;
+    uint8_t direction90;
+    uint8_t direction180;
+    uint8_t direction270;
+    uint16_t init_cmds_len;
+    uint16_t* init_cmds;
+    int (*init)(luat_lcd_conf_t* conf);
+    int (*write_cmd_data)(luat_lcd_conf_t* conf,const uint8_t cmd, const uint8_t *data, uint8_t data_len);
+    int (*read_cmd_data)(luat_lcd_conf_t* conf,const uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t dummy_bit);
+    int (*lcd_draw)(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t* color);
+} luat_lcd_opts_t;
+
+extern luat_lcd_opts_t lcd_opts_gc9106l;
+extern luat_lcd_opts_t lcd_opts_gc9306x;
+extern luat_lcd_opts_t lcd_opts_gc9a01;
+extern luat_lcd_opts_t lcd_opts_ili9341;
+extern luat_lcd_opts_t lcd_opts_ili9486;
+extern luat_lcd_opts_t lcd_opts_st7735;
+extern luat_lcd_opts_t lcd_opts_st7735s;
+extern luat_lcd_opts_t lcd_opts_st7735v;
+extern luat_lcd_opts_t lcd_opts_st7789;
+extern luat_lcd_opts_t lcd_opts_st7796;
+extern luat_lcd_opts_t lcd_opts_nv3037;
+
+static inline luat_color_t color_swap(luat_color_t color) {
+    luat_color_t tmp = (color >> 8) + ((color & 0xFF) << 8);
+    return tmp;
+}
+
+int lcd_write_cmd(luat_lcd_conf_t* conf,const uint8_t cmd);
+int lcd_write_data(luat_lcd_conf_t* conf,const uint8_t data);
+
+void luat_lcd_execute_cmds(luat_lcd_conf_t* conf);
+
+int lcd_write_cmd_data(luat_lcd_conf_t* conf,const uint8_t cmd, const uint8_t *data, uint8_t data_len);
+int lcd_read_cmd_data(luat_lcd_conf_t* conf,const uint8_t cmd, const uint8_t *data, uint8_t data_len, uint8_t dummy_bit);
+
+luat_lcd_conf_t* luat_lcd_get_default(void);
+const char* luat_lcd_name(luat_lcd_conf_t* conf);
+int luat_lcd_init(luat_lcd_conf_t* conf);
+int luat_lcd_close(luat_lcd_conf_t* conf);
+int luat_lcd_display_on(luat_lcd_conf_t* conf);
+int luat_lcd_display_off(luat_lcd_conf_t* conf);
+int luat_lcd_sleep(luat_lcd_conf_t* conf);
+int luat_lcd_wakeup(luat_lcd_conf_t* conf);
+int luat_lcd_inv_off(luat_lcd_conf_t* conf);
+int luat_lcd_inv_on(luat_lcd_conf_t* conf);
+int luat_lcd_set_address(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2);
+int luat_lcd_set_color(luat_color_t back, luat_color_t fore);
+int luat_lcd_draw(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t* color);
+int luat_lcd_flush(luat_lcd_conf_t* conf);
+int luat_lcd_draw_no_block(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t* color, uint8_t last_flush);
+int luat_lcd_clear(luat_lcd_conf_t* conf, luat_color_t color);
+int luat_lcd_draw_fill(luat_lcd_conf_t* conf, int16_t x1,int16_t y1,int16_t x2,int16_t y2,luat_color_t color);
+int luat_lcd_draw_point(luat_lcd_conf_t* conf, int16_t x, int16_t y, luat_color_t color);
+int luat_lcd_draw_line(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t color);
+int luat_lcd_draw_vline(luat_lcd_conf_t* conf, int16_t x, int16_t y,int16_t h, luat_color_t color);
+int luat_lcd_draw_hline(luat_lcd_conf_t* conf, int16_t x, int16_t y,int16_t h, luat_color_t color);
+int luat_lcd_draw_rectangle(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t color);
+int luat_lcd_draw_circle(luat_lcd_conf_t* conf, int16_t x0, int16_t y0, uint8_t r, luat_color_t color);
+int luat_lcd_set_direction(luat_lcd_conf_t* conf, uint8_t direction);
+/** For csdk adaptation*/
+void luat_lcd_service_init(uint32_t pro);
+void luat_lcd_service_run(void *api, void *data, uint32_t param, uint32_t timeout);
+int luat_lcd_service_draw(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t *data, uint8_t is_static_buf);
+int luat_lcd_service_set_mem_type(uint8_t type);
+uint32_t luat_lcd_service_cache_len(void);
+void luat_lcd_IF_init(luat_lcd_conf_t* conf);
+int luat_lcd_IF_write_cmd_data(luat_lcd_conf_t* conf,const uint8_t cmd, const uint8_t *data, uint8_t data_len);
+int luat_lcd_IF_read_cmd_data(luat_lcd_conf_t* conf,const uint8_t cmd, uint8_t *data, uint8_t data_len, uint8_t dummy_bit);
+int luat_lcd_IF_draw(luat_lcd_conf_t* conf, int16_t x1, int16_t y1, int16_t x2, int16_t y2, luat_color_t* color);
+/**
+ * @brief luat_lcd_init is run in service to avoid the impact of long delay in luat_lcd_init
+ * @param conf lcd configuration
+ * @return 0 no exception, other failures*/
+int luat_lcd_init_in_service(luat_lcd_conf_t* conf);
+
+typedef struct
+{
+	uint16_t top_cut_lines;
+	uint16_t bottom_cut_lines;
+	uint16_t left_cut_lines;
+	uint16_t right_cut_lines;
+	uint16_t w_scale;	//The width ratio is reduced, 0 is not reduced
+	uint16_t h_scale;	//The height ratio is reduced, 0 is not reduced
+}camera_cut_info_t;
+
+/**
+ * @brief camera startup preview
+ * @param camera_info camera configuration, which contains lcd configuration
+ * @param cut_info cutting configuration, can be left blank
+ * @param start_x starting position x
+ * @param start_y starting position y
+ * @return 0 no exception, other failures*/
+int luat_lcd_show_camera_in_service(void *camera_info, camera_cut_info_t *cut_info, uint16_t start_x, uint16_t start_y);
+
+/**
+ * @brief Stop camera preview
+ * @return 0 no exception, other failures*/
+int luat_lcd_stop_show_camera(void);
+#endif
+

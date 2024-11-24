@@ -1,0 +1,605 @@
+Index, UE Time, PC Time, Type, Message
+1402,12:0330:03:06176,2024-11-24 00:40:31.034,P/A,funcTestAPSleep1 Test 
+1403,12:0330:03:06656,2024-11-24 00:40:31.034,P/A,Ap go sleep1 
+1405,12:0330:03:16928,2024-11-24 00:40:31.034,P/A,HibTimer: User hibtimer delete failed ID = 7 
+1406,12:0330:03:17792,2024-11-24 00:40:31.034,P/A,APMU CpSleepEnd: Unknow sleep type! 
+1410,12:0330:03:26912,2024-11-24 00:40:31.034,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+1411,12:0330:04:03968,2024-11-24 00:40:31.034,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1413,12:0330:04:19328,2024-11-24 00:40:31.034,PHY,start self-recovery for PHY_ASSERT 
+1416,12:0330:04:27360,2024-11-24 00:40:31.037,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1418,12:0330:04:29952,2024-11-24 00:40:31.037,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1421,12:0330:04:30336,2024-11-24 00:40:31.037,P/A,AP SEND fast IPC ID: 0x53f13c , to start / wakeup CP... 
+1422,12:0330:05:06048,2024-11-24 00:40:31.037,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+1423,12:0330:05:13824,2024-11-24 00:40:31.037,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1424,12:0331:06:14144,2024-11-24 00:40:31.045,PHY,IPC pending too many cmd , pending number is 2 
+1425,12:0331:06:22304,2024-11-24 00:40:31.046,PHY,presync fail and sync flag is -98 
+1428,12:0331:09:16416,2024-11-24 00:40:31.049,PHY,start self-recovery for PHY_ASSERT 
+1429,12:0333:04:28128,2024-11-24 00:40:31.065,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1430,12:0333:04:30208,2024-11-24 00:40:31.065,PHY,skip spurEst process because spurAccuNum is 0 
+1431,12:0333:04:30272,2024-11-24 00:40:31.065,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1439,12:0336:08:15744,2024-11-24 00:40:31.098,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+1446,12:0336:08:28704,2024-11-24 00:40:31.098,PHY,sss offline presync try next candidate 
+1451,12:0336:09:01440,2024-11-24 00:40:31.098,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1452,12:0336:09:01888,2024-11-24 00:40:31.098,P/A,AP SEND fast IPC ID: 0x53f144 , to start / wakeup CP... 
+1454,12:0336:09:03008,2024-11-24 00:40:31.100,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+1455,12:0336:09:03552,2024-11-24 00:40:31.100,PS,only support EUTRAN! 
+1456,12:0337:00:11904,2024-11-24 00:40:31.100,PHY,sss offline presync try next candidate 
+1459,12:0337:01:17888,2024-11-24 00:40:31.101,PHY,CP sleep long in Non-CpOff state! 
+1461,12:0337:02:00672,2024-11-24 00:40:31.101,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+1469,12:0458:03:06624,2024-11-24 00:40:32.313,P/A,funcTestAPSleep1 Test 
+1470,12:0458:03:07072,2024-11-24 00:40:32.313,P/A,Ap go sleep1 
+1472,12:0458:03:17568,2024-11-24 00:40:32.313,P/A,HibTimer: User hibtimer delete failed ID = 7 
+1473,12:0458:03:18304,2024-11-24 00:40:32.313,P/A,APMU CpSleepEnd: Unknow sleep type! 
+1477,12:0458:03:27360,2024-11-24 00:40:32.314,P/A,Can ' t read ' plat_config ' version:2428 file body , or body not right , ( 60 /  ) , use the defult value 
+1478,12:0458:04:04352,2024-11-24 00:40:32.314,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1480,12:0458:04:20128,2024-11-24 00:40:32.314,PHY,start self-recovery for PHY_ASSERT 
+1483,12:0458:04:28096,2024-11-24 00:40:32.317,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1485,12:0458:05:00128,2024-11-24 00:40:32.317,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1488,12:0458:05:00576,2024-11-24 00:40:32.317,P/A,AP SEND fast IPC ID: 0x53f148 , to start / wakeup CP... 
+1489,12:0458:05:06944,2024-11-24 00:40:32.317,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+1490,12:0458:05:14848,2024-11-24 00:40:32.317,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1491,12:0459:06:14272,2024-11-24 00:40:32.326,PHY,IPC pending too many cmd , pending number is 2 
+1492,12:0459:06:22784,2024-11-24 00:40:32.327,PHY,presync fail and sync flag is 158 
+1494,12:0459:09:15200,2024-11-24 00:40:32.329,PHY,freqErrPPM with value of 0x%X overflow 
+1496,12:0459:09:16576,2024-11-24 00:40:32.329,PHY,start self-recovery for PHY_ASSERT 
+1497,12:0461:04:28256,2024-11-24 00:40:32.344,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1498,12:0461:04:30272,2024-11-24 00:40:32.344,PHY,skip spurEst process because spurAccuNum is 0 
+1499,12:0461:04:30336,2024-11-24 00:40:32.344,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1507,12:0464:09:15872,2024-11-24 00:40:32.379,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+1514,12:0464:09:28832,2024-11-24 00:40:32.379,PHY,sss offline presync try next candidate 
+1519,12:0465:00:02016,2024-11-24 00:40:32.381,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1521,12:0465:00:02496,2024-11-24 00:40:32.381,P/A,AP SEND fast IPC ID: 0x53f150 , to start / wakeup CP... 
+1522,12:0465:00:03680,2024-11-24 00:40:32.381,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+1523,12:0465:00:04224,2024-11-24 00:40:32.381,PS,only support EUTRAN! 
+1524,12:0465:01:12448,2024-11-24 00:40:32.382,PHY,sss offline presync try next candidate 
+1527,12:0465:02:18400,2024-11-24 00:40:32.382,PHY,CP sleep long in Non-CpOff state! 
+1530,12:0465:03:00608,2024-11-24 00:40:32.383,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+1538,12:0483:01:17792,2024-11-24 00:40:32.562,PS,CAM , CMI SYNC table full: 0x3e , can ' t proc reqId: 0x 
+1543,12:0483:02:01664,2024-11-24 00:40:32.562,PS,Start Plmn Search , Request Band ( s ) : 3 
+1545,12:0483:02:07840,2024-11-24 00:40:32.562,PS,Receive RrcConnectionRelease indicates CSFB but we do NOT support ! 
+1548,12:0483:02:12544,2024-11-24 00:40:32.562,P/A,funcTestAPSleep1 Test 
+1549,12:0483:02:13120,2024-11-24 00:40:32.562,P/A,Ap go sleep1 
+1551,12:0483:02:24448,2024-11-24 00:40:32.562,P/A,APMU CpSleepEnd: Unknow sleep type! 
+1554,12:0483:02:27456,2024-11-24 00:40:32.563,P/A,HibTimer: User hibtimer delete failed ID = 8 
+1558,12:0483:03:03232,2024-11-24 00:40:32.563,P/A,Can ' t read ' plat_config ' version:2428 file body , or body not right , ( 60 /  ) , use the defult value 
+1562,12:0483:03:11424,2024-11-24 00:40:32.563,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1571,12:0483:03:26688,2024-11-24 00:40:32.563,PHY,start self-recovery for PHY_ASSERT 
+1575,12:0483:04:04384,2024-11-24 00:40:32.564,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1578,12:0483:04:05536,2024-11-24 00:40:32.564,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3102 
+1580,12:0483:04:10400,2024-11-24 00:40:32.566,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1583,12:0483:04:10880,2024-11-24 00:40:32.566,P/A,AP SEND fast IPC ID: 0x53f15c , to start / wakeup CP... 
+1584,12:0483:04:17312,2024-11-24 00:40:32.566,P/A,Can ' t read ' plat_config ' version:2428 file body , or body not right , ( 60 /  ) , use the defult value 
+1585,12:0483:04:25184,2024-11-24 00:40:32.566,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1586,12:0484:06:14048,2024-11-24 00:40:32.575,PHY,IPC pending too many cmd , pending number is 2 
+1587,12:0484:06:22304,2024-11-24 00:40:32.576,PHY,presync fail and sync flag is 270 
+1589,12:0484:09:15456,2024-11-24 00:40:32.578,PHY,freqErrPPM with value of 0x%X overflow 
+1591,12:0484:09:17280,2024-11-24 00:40:32.579,PHY,PLMN Start signal received and handled when previous one is pending! 
+1592,12:0484:09:20640,2024-11-24 00:40:32.579,PHY,Start Fast ICS for EARFCN = 1599623748 
+1593,12:0484:09:20768,2024-11-24 00:40:32.579,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1595,12:0484:09:23232,2024-11-24 00:40:32.580,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1597,12:0484:09:23616,2024-11-24 00:40:32.580,P/A,AP SEND fast IPC ID: 0x53f160 , to start / wakeup CP... 
+1601,12:0484:09:30048,2024-11-24 00:40:32.580,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+1602,12:0485:00:06912,2024-11-24 00:40:32.580,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1603,11:0875:01:18144,2024-11-24 00:40:32.581,PHY,start self-recovery for PHY_ASSERT 
+1604,11:0875:01:19680,2024-11-24 00:40:32.581,PHY,start self-recovery for PHY_ASSERT 
+1628,11:0903:06:00224,2024-11-24 00:40:32.865,PHY,Start Frequency Scan in Score List , First EARFCN: 4 , Score = 1725 , numOfFreq =  
+1638,11:0913:09:03840,2024-11-24 00:40:32.967,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3338 
+1641,11:0913:09:06592,2024-11-24 00:40:32.967,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1643,11:0913:09:07072,2024-11-24 00:40:32.967,P/A,AP SEND fast IPC ID: 0x53f168 , to start / wakeup CP... 
+1650,11:0913:09:17440,2024-11-24 00:40:32.969,PHY,ICS High Level Frequency Done Report for BPLMN! 
+1653,11:0930:01:10272,2024-11-24 00:40:33.121,PHY,EARFCN changed by Sib1Config , prev_EARFCN = 1725 new_EARFCN = 71 
+1655,12:0539:01:14560,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1657,12:0539:01:15232,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1659,12:0539:01:15904,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1661,12:0539:01:16992,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1663,12:0539:01:17632,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1664,12:0539:01:18144,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1666,12:0539:01:18784,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1672,12:0539:01:23456,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1673,12:0539:01:23936,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1675,12:0539:01:24480,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1677,12:0539:01:25056,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1679,12:0539:01:25568,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1681,12:0539:01:26112,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1683,12:0539:01:26624,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1685,12:0539:01:27104,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1687,12:0539:01:27616,2024-11-24 00:40:33.121,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1689,12:0539:01:28096,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1691,12:0539:01:28544,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1692,12:0539:01:28928,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1694,12:0539:01:29376,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1696,12:0539:01:29792,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1697,12:0539:01:30144,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1703,12:0539:02:01056,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1705,12:0539:02:01440,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1711,12:0539:02:03040,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1713,12:0539:02:03360,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1715,12:0539:02:03680,2024-11-24 00:40:33.122,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1726,12:0539:02:07168,2024-11-24 00:40:33.122,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3303 
+1728,12:0539:02:08576,2024-11-24 00:40:33.122,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3305 
+1732,12:0539:02:14688,2024-11-24 00:40:33.122,P/A,CP Dump , AP is in ImageType = 12805 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1734,12:0539:02:15168,2024-11-24 00:40:33.122,P/A,AP SEND fast IPC ID: 0x53f170 , to start / wakeup CP... 
+1735,12:0539:02:16800,2024-11-24 00:40:33.122,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1737,12:0539:02:18400,2024-11-24 00:40:33.122,PHY,skip spurEst process because spurAccuNum is 0 
+1738,12:0539:02:18464,2024-11-24 00:40:33.122,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1741,12:0539:02:20832,2024-11-24 00:40:33.123,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1742,12:0539:02:21344,2024-11-24 00:40:33.123,P/A,AP SEND fast IPC ID: 0x53f178 , to start / wakeup CP... 
+1744,12:0539:03:06656,2024-11-24 00:40:33.123,PHY,Skip BandScan from start EARFCN: 1 , maxScore = 100 
+1748,11:0929:04:23776,2024-11-24 00:40:33.124,PHY,Pending PLMN start after paging cycle! 
+1750,11:0946:01:10560,2024-11-24 00:40:33.280,PHY,EARFCN changed by Sib1Config , prev_EARFCN = 100 new_EARFCN = 71 
+1751,12:0555:01:17568,2024-11-24 00:40:33.280,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3303 
+1753,12:0555:01:19008,2024-11-24 00:40:33.280,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3305 
+1759,12:0555:01:30560,2024-11-24 00:40:33.281,PS,Receive CerrcPlmnSearchReq with no valid numOfFreq ( 100 ) and numOfBand ( 71 ) ! 
+1760,12:0555:02:00000,2024-11-24 00:40:33.281,PS,MIB 6A2800
+1762,12:0555:02:02464,2024-11-24 00:40:33.281,P/A,CP Dump , AP is in ImageType = 12808 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1764,12:0555:02:03008,2024-11-24 00:40:33.281,P/A,AP SEND fast IPC ID: 0x53f188 , to start / wakeup CP... 
+1765,12:0555:02:03776,2024-11-24 00:40:33.281,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1767,12:0555:02:04160,2024-11-24 00:40:33.281,P/A,AP SEND fast IPC ID: 0x53f190 , to start / wakeup CP... 
+1768,12:0556:06:06240,2024-11-24 00:40:33.295,PHY,Cell ( 100 , 71 ) had beed reported , skip this time! 
+1769,12:0556:06:07264,2024-11-24 00:40:33.295,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3305 
+1772,12:0556:06:16800,2024-11-24 00:40:33.296,PS,MAC RESET , cause 0x64 
+1773,12:0556:06:17024,2024-11-24 00:40:33.296,PS,SIB1 484940415B065313934820018081844C2361236A8E00
+1774,12:0556:06:20768,2024-11-24 00:40:33.296,PS,pPaging->ue_Identity.tag is wrong: 100 
+1775,12:0556:06:25280,2024-11-24 00:40:33.296,PHY,sss offline presync try next candidate 
+1778,12:0556:06:29408,2024-11-24 00:40:33.296,P/A,CP Dump , AP is in ImageType = 12809 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1780,12:0556:06:29888,2024-11-24 00:40:33.296,P/A,AP SEND fast IPC ID: 0x53f198 , to start / wakeup CP... 
+1782,12:0556:07:01856,2024-11-24 00:40:33.296,P/A,CP Dump , AP is in ImageType = 12805 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1783,12:0556:07:02368,2024-11-24 00:40:33.296,P/A,AP SEND fast IPC ID: 0x53f1a0 , to start / wakeup CP... 
+1785,12:0556:07:03680,2024-11-24 00:40:33.297,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1787,12:0556:07:05376,2024-11-24 00:40:33.297,PHY,skip spurEst process because spurAccuNum is 0 
+1788,12:0556:07:05472,2024-11-24 00:40:33.297,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1790,12:0556:07:06624,2024-11-24 00:40:33.297,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1791,12:0556:07:07072,2024-11-24 00:40:33.297,P/A,AP SEND fast IPC ID: 0x53f1a8 , to start / wakeup CP... 
+1793,12:0556:07:24576,2024-11-24 00:40:33.297,PHY,Skip BandScan from start EARFCN: 2 , maxScore = 38750 
+1797,11:0946:09:13664,2024-11-24 00:40:33.299,PHY,Pending PLMN start after paging cycle! 
+1798,11:0967:00:16288,2024-11-24 00:40:33.497,PHY,Skip BandScan from start EARFCN: 3 , maxScore = 1263 
+1802,11:0971:05:02912,2024-11-24 00:40:33.543,PHY,Skip BandScan from start EARFCN: 4 , maxScore = 1264 
+1806,11:0976:01:02912,2024-11-24 00:40:33.589,PHY,Skip BandScan from start EARFCN: 5 , maxScore = 1424 
+1813,11:0979:06:01696,2024-11-24 00:40:33.624,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1814,11:0979:06:03360,2024-11-24 00:40:33.624,PHY,skip spurEst process because spurAccuNum is 0 
+1815,11:0979:06:03424,2024-11-24 00:40:33.624,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1816,12:0589:05:19072,2024-11-24 00:40:33.625,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1818,12:0589:05:22528,2024-11-24 00:40:33.625,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1820,12:0589:05:22912,2024-11-24 00:40:33.625,P/A,AP SEND fast IPC ID: 0x53f1ac , to start / wakeup CP... 
+1821,12:0589:05:24928,2024-11-24 00:40:33.625,PHY,start self-recovery for PHY_ASSERT 
+1822,12:0589:05:29376,2024-11-24 00:40:33.625,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+1823,12:0589:06:06784,2024-11-24 00:40:33.625,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+1834,12:0592:08:15840,2024-11-24 00:40:33.658,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+1848,11:0983:00:09248,2024-11-24 00:40:33.658,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1850,11:0983:00:09760,2024-11-24 00:40:33.660,P/A,AP SEND fast IPC ID: 0x53f1b4 , to start / wakeup CP... 
+1853,11:0991:04:06368,2024-11-24 00:40:33.741,PS,CAM Main , CEMM PARM setting: ( 18 ) , confirm failed: (  ) 
+1855,11:0991:04:08512,2024-11-24 00:40:33.741,PS,CCM REG , MANUAL PLMN search timer ( 0x43e140 ) is already created , when start request manual plmn search 
+1859,11:1003:00:16352,2024-11-24 00:40:33.857,PHY,Skip BandScan from start EARFCN: 6 , maxScore = 1425 
+1865,11:1020:01:10624,2024-11-24 00:40:34.023,PHY,EARFCN changed by Sib1Config , prev_EARFCN = 1425 new_EARFCN = 105 
+1867,12:0521:01:14336,2024-11-24 00:40:34.023,PHY,pCellDetected reached PHY_ICS_CELL_REPORTED_NUM! 
+1868,12:0521:01:18656,2024-11-24 00:40:34.023,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3303 
+1870,12:0521:01:20096,2024-11-24 00:40:34.023,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3305 
+1876,12:0521:02:02144,2024-11-24 00:40:34.023,PS,Receive CerrcPlmnSearchReq with no valid numOfFreq ( 1425 ) and numOfBand ( 105 ) ! 
+1877,12:0521:02:02336,2024-11-24 00:40:34.023,PS,MIB 8A0800
+1879,12:0521:02:04960,2024-11-24 00:40:34.023,P/A,CP Dump , AP is in ImageType = 12808 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1881,12:0521:02:05536,2024-11-24 00:40:34.023,P/A,AP SEND fast IPC ID: 0x53f1c4 , to start / wakeup CP... 
+1882,12:0521:02:06336,2024-11-24 00:40:34.023,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1884,12:0521:02:06816,2024-11-24 00:40:34.023,P/A,AP SEND fast IPC ID: 0x53f1cc , to start / wakeup CP... 
+1885,12:0522:06:06272,2024-11-24 00:40:34.037,PHY,Cell ( 1425 , 105 ) had beed reported , skip this time! 
+1887,12:0522:06:07520,2024-11-24 00:40:34.037,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3305 
+1891,12:0522:06:17856,2024-11-24 00:40:34.038,PS,MAC RESET , cause 0x591 
+1892,12:0522:06:18112,2024-11-24 00:40:34.038,PS,SIB1 48C940059280461AFCA87C81105044202102089846C246A52000
+1893,12:0522:06:21888,2024-11-24 00:40:34.038,PS,pPaging->ue_Identity.tag is wrong: 1425 
+1894,12:0522:06:25536,2024-11-24 00:40:34.038,PHY,sss offline presync try next candidate 
+1897,12:0522:07:00224,2024-11-24 00:40:34.038,P/A,CP Dump , AP is in ImageType = 12809 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1899,12:0522:07:00672,2024-11-24 00:40:34.038,P/A,AP SEND fast IPC ID: 0x53f1d4 , to start / wakeup CP... 
+1903,12:0522:07:04416,2024-11-24 00:40:34.038,P/A,CP Dump , AP is in ImageType = 12805 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1905,12:0522:07:04864,2024-11-24 00:40:34.038,P/A,AP SEND fast IPC ID: 0x53f1dc , to start / wakeup CP... 
+1906,12:0522:07:06176,2024-11-24 00:40:34.039,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1908,12:0522:07:07872,2024-11-24 00:40:34.039,PHY,skip spurEst process because spurAccuNum is 0 
+1909,12:0522:07:07936,2024-11-24 00:40:34.039,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1911,12:0522:07:09120,2024-11-24 00:40:34.039,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1912,12:0522:07:09632,2024-11-24 00:40:34.039,P/A,AP SEND fast IPC ID: 0x53f1e4 , to start / wakeup CP... 
+1918,11:1021:01:06880,2024-11-24 00:40:34.041,PHY,Pending PLMN start after paging cycle! 
+1992,12:0083:06:02080,2024-11-24 00:40:34.904,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+1993,12:0083:06:03648,2024-11-24 00:40:34.905,PHY,skip spurEst process because spurAccuNum is 0 
+1994,12:0083:06:03712,2024-11-24 00:40:34.905,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+1995,12:0717:05:19328,2024-11-24 00:40:34.905,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+1997,12:0717:05:22976,2024-11-24 00:40:34.907,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+1999,12:0717:05:23328,2024-11-24 00:40:34.907,P/A,AP SEND fast IPC ID: 0x53f1e8 , to start / wakeup CP... 
+2000,12:0717:05:24864,2024-11-24 00:40:34.907,PHY,start self-recovery for PHY_ASSERT 
+2001,12:0717:05:30048,2024-11-24 00:40:34.907,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+2002,12:0717:06:07296,2024-11-24 00:40:34.907,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2013,12:0720:08:15872,2024-11-24 00:40:34.938,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2027,12:0087:00:10112,2024-11-24 00:40:34.939,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2029,12:0087:00:10592,2024-11-24 00:40:34.939,P/A,AP SEND fast IPC ID: 0x53f1f0 , to start / wakeup CP... 
+2132,12:0211:06:01728,2024-11-24 00:40:36.185,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2133,12:0211:06:03424,2024-11-24 00:40:36.185,PHY,skip spurEst process because spurAccuNum is 0 
+2134,12:0211:06:03488,2024-11-24 00:40:36.185,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2135,12:0845:05:19136,2024-11-24 00:40:36.185,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2137,12:0845:05:22144,2024-11-24 00:40:36.185,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2139,12:0845:05:22496,2024-11-24 00:40:36.185,P/A,AP SEND fast IPC ID: 0x53f1f4 , to start / wakeup CP... 
+2140,12:0845:05:23808,2024-11-24 00:40:36.185,PHY,start self-recovery for PHY_ASSERT 
+2141,12:0845:05:29024,2024-11-24 00:40:36.187,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2142,12:0845:06:06144,2024-11-24 00:40:36.187,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2153,12:0848:08:15680,2024-11-24 00:40:36.218,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2167,12:0215:00:05184,2024-11-24 00:40:36.220,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2169,12:0215:00:05632,2024-11-24 00:40:36.220,P/A,AP SEND fast IPC ID: 0x53f1fc , to start / wakeup CP... 
+2180,12:0229:02:22208,2024-11-24 00:40:36.360,PS,CCM REG , manual PLMN search time expiry , need to abort the PLMN search 
+2186,12:0229:02:30528,2024-11-24 00:40:36.360,P/A,CP Dump , AP is in ImageType = 12809 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2189,12:0229:03:00320,2024-11-24 00:40:36.360,P/A,AP SEND fast IPC ID: 0x53f204 , to start / wakeup CP... 
+2190,12:0229:03:02560,2024-11-24 00:40:36.362,PHY,Previous PLMN has not been started when STOPPED! 
+2191,12:0229:03:02688,2024-11-24 00:40:36.362,PS,New DRB , rlc_ConfigPresent ( 2 ) , logicalChannelIdentityPresent ( 1 ) and logicalChannelConfigPresent ( 1725 ) should present ! 
+2192,12:0229:03:02848,2024-11-24 00:40:36.362,PS,New DRB , rlc_ConfigPresent ( 2 ) , logicalChannelIdentityPresent ( 2 ) and logicalChannelConfigPresent ( 100 ) should present ! 
+2194,12:0229:03:05888,2024-11-24 00:40:36.362,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2196,12:0229:03:06816,2024-11-24 00:40:36.362,PS,only support EUTRAN! 
+2197,12:0229:03:09792,2024-11-24 00:40:36.362,PS,PLMN , no valid band is left , just set current band to RF supported band 
+2200,12:0229:03:13472,2024-11-24 00:40:36.362,PS,PLMN , BCINFO Manual PLMN search aborted 
+2215,12:0229:04:02880,2024-11-24 00:40:36.362,PHY,Pending PLMN start signal need to handle in next paging cycle! 
+2216,12:0229:04:14432,2024-11-24 00:40:36.364,PHY,sss offline presync try next candidate 
+2219,12:0229:05:20736,2024-11-24 00:40:36.364,PHY,CP sleep long in Non-CpOff state! 
+2221,12:0229:06:02784,2024-11-24 00:40:36.364,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2230,12:0336:05:10688,2024-11-24 00:40:37.435,P/A,funcTestAPSleep1 Test 
+2231,12:0336:05:11200,2024-11-24 00:40:37.435,P/A,Ap go sleep1 
+2233,12:0336:05:21856,2024-11-24 00:40:37.435,P/A,HibTimer: User hibtimer delete failed ID = 7 
+2234,12:0336:05:22656,2024-11-24 00:40:37.435,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2238,12:0336:06:01600,2024-11-24 00:40:37.435,P/A,Can ' t read ' plat_config ' version:2428 file body , or body not right , ( 60 /  ) , use the defult value 
+2239,12:0336:06:09600,2024-11-24 00:40:37.435,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2241,12:0336:06:24288,2024-11-24 00:40:37.435,PHY,start self-recovery for PHY_ASSERT 
+2244,12:0970:05:27744,2024-11-24 00:40:37.438,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2246,12:0970:05:30624,2024-11-24 00:40:37.438,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2249,12:0970:06:00320,2024-11-24 00:40:37.438,P/A,AP SEND fast IPC ID: 0x53f208 , to start / wakeup CP... 
+2250,12:0970:06:06752,2024-11-24 00:40:37.438,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+2251,12:0970:06:14464,2024-11-24 00:40:37.438,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2252,12:0971:06:14112,2024-11-24 00:40:37.446,PHY,IPC pending too many cmd , pending number is 2 
+2253,12:0971:06:22592,2024-11-24 00:40:37.446,PHY,presync fail and sync flag is 195 
+2255,12:0971:09:15104,2024-11-24 00:40:37.449,PHY,freqErrPPM with value of 0x%X overflow 
+2257,12:0971:09:16512,2024-11-24 00:40:37.450,PHY,start self-recovery for PHY_ASSERT 
+2258,12:0973:04:28256,2024-11-24 00:40:37.464,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2259,12:0973:04:30272,2024-11-24 00:40:37.464,PHY,skip spurEst process because spurAccuNum is 0 
+2260,12:0973:04:30368,2024-11-24 00:40:37.464,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2263,12:0974:00:27168,2024-11-24 00:40:37.470,PHY,Incorrect ICS stage ( 1725 ) for new euArfcn arranged for ICS MEAS 
+2266,12:0977:00:27264,2024-11-24 00:40:37.504,PHY,skip post process of ICS MEAS because ICS_STAGE has been reset 
+2267,12:0977:05:30656,2024-11-24 00:40:37.505,PHY,skip post process of ICS MEAS because ICS_STAGE has been reset 
+2268,12:0978:00:30208,2024-11-24 00:40:37.514,PHY,skip post process of ICS MEAS because ICS_STAGE has been reset 
+2269,12:0978:06:01056,2024-11-24 00:40:37.515,PHY,Incorrect ICS stage ( 100 ) for new euArfcn arranged for ICS MEAS 
+2275,12:0980:08:08352,2024-11-24 00:40:37.541,PHY,skip post process of ICS MEAS because ICS_STAGE has been reset 
+2281,12:0984:06:15744,2024-11-24 00:40:37.576,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2288,12:0984:06:28576,2024-11-24 00:40:37.576,PHY,sss offline presync try next candidate 
+2293,12:0984:07:03904,2024-11-24 00:40:37.576,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2295,12:0984:07:04352,2024-11-24 00:40:37.576,P/A,AP SEND fast IPC ID: 0x53f210 , to start / wakeup CP... 
+2296,12:0984:07:05664,2024-11-24 00:40:37.576,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2297,12:0984:07:06240,2024-11-24 00:40:37.576,PS,only support EUTRAN! 
+2298,12:0984:08:12320,2024-11-24 00:40:37.579,PHY,sss offline presync try next candidate 
+2301,12:0984:09:18144,2024-11-24 00:40:37.579,PHY,CP sleep long in Non-CpOff state! 
+2304,12:0985:00:00288,2024-11-24 00:40:37.579,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2313,13:0074:03:06560,2024-11-24 00:40:38.713,P/A,funcTestAPSleep1 Test 
+2314,13:0074:03:07104,2024-11-24 00:40:38.713,P/A,Ap go sleep1 
+2316,13:0074:03:18048,2024-11-24 00:40:38.713,P/A,HibTimer: User hibtimer delete failed ID = 8 
+2317,13:0074:03:18848,2024-11-24 00:40:38.713,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2321,13:0074:03:28032,2024-11-24 00:40:38.713,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+2322,13:0074:04:05120,2024-11-24 00:40:38.713,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2324,13:0074:04:20640,2024-11-24 00:40:38.714,PHY,start self-recovery for PHY_ASSERT 
+2327,13:0074:04:28672,2024-11-24 00:40:38.717,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2329,13:0074:05:00832,2024-11-24 00:40:38.717,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2332,13:0074:05:01216,2024-11-24 00:40:38.717,P/A,AP SEND fast IPC ID: 0x53f214 , to start / wakeup CP... 
+2333,13:0074:05:07712,2024-11-24 00:40:38.717,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2334,13:0074:05:15424,2024-11-24 00:40:38.717,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2335,13:0075:06:14144,2024-11-24 00:40:38.726,PHY,IPC pending too many cmd , pending number is 2 
+2336,13:0075:06:22400,2024-11-24 00:40:38.726,PHY,presync fail and sync flag is 225 
+2338,13:0075:09:15200,2024-11-24 00:40:38.729,PHY,freqErrPPM with value of 0x%X overflow 
+2340,13:0075:09:16640,2024-11-24 00:40:38.729,PHY,start self-recovery for PHY_ASSERT 
+2341,13:0077:05:28128,2024-11-24 00:40:38.745,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2342,13:0077:05:30208,2024-11-24 00:40:38.745,PHY,skip spurEst process because spurAccuNum is 0 
+2343,13:0077:05:30272,2024-11-24 00:40:38.745,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2351,13:0080:08:15872,2024-11-24 00:40:38.777,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2358,13:0080:08:28608,2024-11-24 00:40:38.777,PHY,sss offline presync try next candidate 
+2363,13:0080:09:02400,2024-11-24 00:40:38.777,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2365,13:0080:09:02848,2024-11-24 00:40:38.777,P/A,AP SEND fast IPC ID: 0x53f21c , to start / wakeup CP... 
+2366,13:0080:09:03904,2024-11-24 00:40:38.779,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2367,13:0080:09:04384,2024-11-24 00:40:38.779,PS,only support EUTRAN! 
+2368,13:0081:00:12064,2024-11-24 00:40:38.779,PHY,sss offline presync try next candidate 
+2371,13:0081:01:18048,2024-11-24 00:40:38.781,PHY,CP sleep long in Non-CpOff state! 
+2374,13:0081:02:00928,2024-11-24 00:40:38.781,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2382,13:0202:03:06848,2024-11-24 00:40:39.994,P/A,funcTestAPSleep1 Test 
+2383,13:0202:03:07360,2024-11-24 00:40:39.994,P/A,Ap go sleep1 
+2385,13:0202:03:17760,2024-11-24 00:40:39.994,P/A,HibTimer: User hibtimer delete failed ID = 7 
+2386,13:0202:03:18528,2024-11-24 00:40:39.994,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2390,13:0202:03:27680,2024-11-24 00:40:39.994,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+2391,13:0202:04:04768,2024-11-24 00:40:39.994,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2393,13:0202:04:20320,2024-11-24 00:40:39.994,PHY,start self-recovery for PHY_ASSERT 
+2396,13:0202:04:28352,2024-11-24 00:40:39.997,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2398,13:0202:05:00352,2024-11-24 00:40:39.997,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2401,13:0202:05:00704,2024-11-24 00:40:39.997,P/A,AP SEND fast IPC ID: 0x53f220 , to start / wakeup CP... 
+2402,13:0202:05:07072,2024-11-24 00:40:39.997,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2403,13:0202:05:14816,2024-11-24 00:40:39.997,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2404,13:0203:06:13856,2024-11-24 00:40:40.006,PHY,IPC pending too many cmd , pending number is 2 
+2405,13:0203:06:22048,2024-11-24 00:40:40.006,PHY,presync fail and sync flag is 180 
+2407,13:0203:09:15456,2024-11-24 00:40:40.009,PHY,freqErrPPM with value of 0x%X overflow 
+2409,13:0203:09:16832,2024-11-24 00:40:40.010,PHY,start self-recovery for PHY_ASSERT 
+2410,13:0205:05:28000,2024-11-24 00:40:40.025,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2411,13:0205:05:30048,2024-11-24 00:40:40.025,PHY,skip spurEst process because spurAccuNum is 0 
+2412,13:0205:05:30112,2024-11-24 00:40:40.025,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2420,13:0208:08:15904,2024-11-24 00:40:40.057,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2427,13:0208:08:28672,2024-11-24 00:40:40.058,PHY,sss offline presync try next candidate 
+2432,13:0208:09:02240,2024-11-24 00:40:40.058,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2434,13:0208:09:02688,2024-11-24 00:40:40.058,P/A,AP SEND fast IPC ID: 0x53f228 , to start / wakeup CP... 
+2435,13:0208:09:03808,2024-11-24 00:40:40.059,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2436,13:0208:09:04320,2024-11-24 00:40:40.059,PS,only support EUTRAN! 
+2437,13:0209:00:12352,2024-11-24 00:40:40.060,PHY,sss offline presync try next candidate 
+2440,13:0209:01:18336,2024-11-24 00:40:40.061,PHY,CP sleep long in Non-CpOff state! 
+2443,13:0209:02:00768,2024-11-24 00:40:40.061,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2452,13:0330:03:06624,2024-11-24 00:40:41.273,P/A,funcTestAPSleep1 Test 
+2453,13:0330:03:07104,2024-11-24 00:40:41.273,P/A,Ap go sleep1 
+2455,13:0330:03:17792,2024-11-24 00:40:41.273,P/A,HibTimer: User hibtimer delete failed ID = 8 
+2456,13:0330:03:18592,2024-11-24 00:40:41.273,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2460,13:0330:03:27808,2024-11-24 00:40:41.273,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+2461,13:0330:04:04832,2024-11-24 00:40:41.273,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2463,13:0330:04:20480,2024-11-24 00:40:41.273,PHY,start self-recovery for PHY_ASSERT 
+2466,13:0330:04:28416,2024-11-24 00:40:41.277,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2468,13:0330:05:00416,2024-11-24 00:40:41.277,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2471,13:0330:05:00768,2024-11-24 00:40:41.277,P/A,AP SEND fast IPC ID: 0x53f22c , to start / wakeup CP... 
+2472,13:0330:05:07264,2024-11-24 00:40:41.277,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2473,13:0330:05:14944,2024-11-24 00:40:41.277,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2474,13:0331:06:14144,2024-11-24 00:40:41.285,PHY,IPC pending too many cmd , pending number is 2 
+2475,13:0331:06:22656,2024-11-24 00:40:41.286,PHY,presync fail and sync flag is 161 
+2477,13:0331:09:15360,2024-11-24 00:40:41.288,PHY,freqErrPPM with value of 0x%X overflow 
+2479,13:0331:09:16800,2024-11-24 00:40:41.289,PHY,start self-recovery for PHY_ASSERT 
+2480,13:0333:05:28256,2024-11-24 00:40:41.305,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2481,13:0333:05:30272,2024-11-24 00:40:41.305,PHY,skip spurEst process because spurAccuNum is 0 
+2482,13:0333:05:30368,2024-11-24 00:40:41.305,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2486,13:0336:09:15744,2024-11-24 00:40:41.338,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2493,13:0336:09:28544,2024-11-24 00:40:41.338,PHY,sss offline presync try next candidate 
+2498,13:0337:00:02080,2024-11-24 00:40:41.338,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2499,13:0337:00:02528,2024-11-24 00:40:41.338,P/A,AP SEND fast IPC ID: 0x53f234 , to start / wakeup CP... 
+2501,13:0337:00:03584,2024-11-24 00:40:41.340,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2502,13:0337:00:04160,2024-11-24 00:40:41.340,PS,only support EUTRAN! 
+2503,13:0337:01:12032,2024-11-24 00:40:41.340,PHY,sss offline presync try next candidate 
+2506,13:0337:02:18016,2024-11-24 00:40:41.341,PHY,CP sleep long in Non-CpOff state! 
+2509,13:0337:03:00000,2024-11-24 00:40:41.341,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2518,13:0458:03:05792,2024-11-24 00:40:42.553,P/A,funcTestAPSleep1 Test 
+2519,13:0458:03:06304,2024-11-24 00:40:42.553,P/A,Ap go sleep1 
+2521,13:0458:03:16704,2024-11-24 00:40:42.553,P/A,HibTimer: User hibtimer delete failed ID = 7 
+2522,13:0458:03:17568,2024-11-24 00:40:42.553,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2526,13:0458:03:26560,2024-11-24 00:40:42.553,P/A,Can ' t read ' plat_config ' version:2429 file body , or body not right , ( 60 /  ) , use the defult value 
+2527,13:0458:04:03776,2024-11-24 00:40:42.553,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2529,13:0458:04:19328,2024-11-24 00:40:42.553,PHY,start self-recovery for PHY_ASSERT 
+2532,13:0458:04:27232,2024-11-24 00:40:42.557,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2534,13:0458:04:29984,2024-11-24 00:40:42.557,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2537,13:0458:04:30400,2024-11-24 00:40:42.557,P/A,AP SEND fast IPC ID: 0x53f238 , to start / wakeup CP... 
+2538,13:0458:05:06080,2024-11-24 00:40:42.557,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2539,13:0458:05:13760,2024-11-24 00:40:42.557,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2540,13:0459:06:13952,2024-11-24 00:40:42.566,PHY,IPC pending too many cmd , pending number is 2 
+2541,13:0459:06:21184,2024-11-24 00:40:42.566,PHY,Start Frequency Scan in Score List , First EARFCN: 8 , Score =  , numOfFreq =  
+2542,13:0459:06:22496,2024-11-24 00:40:42.566,PHY,presync fail and sync flag is -25 
+2544,13:0459:09:15328,2024-11-24 00:40:42.568,PHY,freqErrPPM with value of 0x%X overflow 
+2546,13:0459:09:16768,2024-11-24 00:40:42.569,PHY,start self-recovery for PHY_ASSERT 
+2547,13:0461:04:28352,2024-11-24 00:40:42.584,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2548,13:0461:04:30496,2024-11-24 00:40:42.584,PHY,skip spurEst process because spurAccuNum is 0 
+2549,13:0461:04:30560,2024-11-24 00:40:42.584,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2553,13:0464:08:15872,2024-11-24 00:40:42.618,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2560,13:0464:08:28960,2024-11-24 00:40:42.618,PHY,sss offline presync try next candidate 
+2565,13:0464:09:01760,2024-11-24 00:40:42.618,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2567,13:0464:09:02208,2024-11-24 00:40:42.618,P/A,AP SEND fast IPC ID: 0x53f240 , to start / wakeup CP... 
+2568,13:0464:09:03200,2024-11-24 00:40:42.618,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2569,13:0464:09:03744,2024-11-24 00:40:42.618,PS,only support EUTRAN! 
+2570,13:0465:00:12672,2024-11-24 00:40:42.620,PHY,sss offline presync try next candidate 
+2573,13:0465:01:18592,2024-11-24 00:40:42.621,PHY,CP sleep long in Non-CpOff state! 
+2576,13:0465:02:01376,2024-11-24 00:40:42.621,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2584,13:0586:03:07360,2024-11-24 00:40:43.833,P/A,funcTestAPSleep1 Test 
+2585,13:0586:03:07840,2024-11-24 00:40:43.833,P/A,Ap go sleep1 
+2587,13:0586:03:18528,2024-11-24 00:40:43.833,P/A,HibTimer: User hibtimer delete failed ID = 8 
+2588,13:0586:03:19296,2024-11-24 00:40:43.833,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2592,13:0586:03:28608,2024-11-24 00:40:43.833,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+2593,13:0586:04:05728,2024-11-24 00:40:43.833,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2595,13:0586:04:21088,2024-11-24 00:40:43.834,PHY,start self-recovery for PHY_ASSERT 
+2598,13:0586:04:29024,2024-11-24 00:40:43.836,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2600,13:0586:05:00992,2024-11-24 00:40:43.836,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2603,13:0586:05:01408,2024-11-24 00:40:43.836,P/A,AP SEND fast IPC ID: 0x53f244 , to start / wakeup CP... 
+2604,13:0586:05:07840,2024-11-24 00:40:43.836,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2605,13:0586:05:15552,2024-11-24 00:40:43.836,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2606,13:0587:06:14144,2024-11-24 00:40:43.846,PHY,IPC pending too many cmd , pending number is 2 
+2607,13:0587:06:22272,2024-11-24 00:40:43.846,PHY,presync fail and sync flag is -151 
+2609,13:0587:09:15328,2024-11-24 00:40:43.849,PHY,freqErrPPM with value of 0x%X overflow 
+2611,13:0587:09:16736,2024-11-24 00:40:43.849,PHY,start self-recovery for PHY_ASSERT 
+2612,13:0589:05:28128,2024-11-24 00:40:43.865,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2613,13:0589:05:30208,2024-11-24 00:40:43.865,PHY,skip spurEst process because spurAccuNum is 0 
+2614,13:0589:05:30272,2024-11-24 00:40:43.865,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2618,13:0592:08:15712,2024-11-24 00:40:43.897,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2625,13:0592:08:28640,2024-11-24 00:40:43.897,PHY,sss offline presync try next candidate 
+2630,13:0592:09:01632,2024-11-24 00:40:43.897,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2632,13:0592:09:02112,2024-11-24 00:40:43.897,P/A,AP SEND fast IPC ID: 0x53f24c , to start / wakeup CP... 
+2633,13:0592:09:03296,2024-11-24 00:40:43.899,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2634,13:0592:09:03776,2024-11-24 00:40:43.899,PS,only support EUTRAN! 
+2635,13:0593:00:12320,2024-11-24 00:40:43.899,PHY,sss offline presync try next candidate 
+2638,13:0593:01:18208,2024-11-24 00:40:43.900,PHY,CP sleep long in Non-CpOff state! 
+2640,13:0593:02:00544,2024-11-24 00:40:43.900,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2657,13:0709:06:27008,2024-11-24 00:40:45.068,PS,UICC recovery failed , notify card removed 
+2658,13:0709:06:29248,2024-11-24 00:40:45.068,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2659,13:0709:06:29504,2024-11-24 00:40:45.068,PS,unexpected signal 0x8 recvd here 
+2660,13:0709:07:00352,2024-11-24 00:40:45.068,PS,UICC recovery failed , notify card removed 
+2662,13:0709:07:02944,2024-11-24 00:40:45.068,PS,Clock stop failed on busy state of UCR_REG... 
+2663,13:0709:07:04416,2024-11-24 00:40:45.068,PS,Unexpected signals ( sigId: 0x%x ) received , destroy it!!! 
+2664,13:0709:07:06752,2024-11-24 00:40:45.068,PS,UICC , MCC: 0xa , MNC: 0x , is a TEST SIM 
+2668,13:0709:07:12640,2024-11-24 00:40:45.068,PS,UICC recovery failed , notify card removed 
+2674,13:0714:03:06656,2024-11-24 00:40:45.113,P/A,funcTestAPSleep1 Test 
+2675,13:0714:03:07136,2024-11-24 00:40:45.113,P/A,Ap go sleep1 
+2677,13:0714:03:17760,2024-11-24 00:40:45.113,P/A,HibTimer: User hibtimer delete failed ID = 7 
+2678,13:0714:03:18688,2024-11-24 00:40:45.113,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2682,13:0714:03:28256,2024-11-24 00:40:45.113,P/A,Can ' t read ' plat_config ' version:2428 file body , or body not right , ( 60 /  ) , use the defult value 
+2683,13:0714:04:05344,2024-11-24 00:40:45.113,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2685,13:0714:04:20288,2024-11-24 00:40:45.113,PHY,start self-recovery for PHY_ASSERT 
+2688,13:0714:04:28352,2024-11-24 00:40:45.116,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+2690,13:0714:05:00512,2024-11-24 00:40:45.116,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2693,13:0714:05:00928,2024-11-24 00:40:45.116,P/A,AP SEND fast IPC ID: 0x53f250 , to start / wakeup CP... 
+2694,13:0714:05:07456,2024-11-24 00:40:45.116,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+2695,13:0714:05:15296,2024-11-24 00:40:45.116,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2699,13:0715:06:03424,2024-11-24 00:40:45.125,PS,ATR decode error 
+2702,13:0715:06:14144,2024-11-24 00:40:45.126,PHY,IPC pending too many cmd , pending number is 2 
+2703,13:0715:06:22496,2024-11-24 00:40:45.126,PHY,presync fail and sync flag is 117 
+2705,13:0715:09:15232,2024-11-24 00:40:45.129,PHY,freqErrPPM with value of 0x%X overflow 
+2707,13:0715:09:16608,2024-11-24 00:40:45.129,PHY,start self-recovery for PHY_ASSERT 
+2713,13:0717:03:17280,2024-11-24 00:40:45.145,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2718,13:0717:03:25664,2024-11-24 00:40:45.145,PS,UICC recovery failed , notify card removed 
+2719,13:0717:05:28352,2024-11-24 00:40:45.145,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+2720,13:0717:05:30432,2024-11-24 00:40:45.145,PHY,skip spurEst process because spurAccuNum is 0 
+2721,13:0717:05:30496,2024-11-24 00:40:45.145,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+2725,13:0720:09:15808,2024-11-24 00:40:45.179,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+2731,13:0720:09:28544,2024-11-24 00:40:45.179,PHY,sss offline presync try next candidate 
+2737,13:0721:00:05344,2024-11-24 00:40:45.180,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+2739,13:0721:00:05856,2024-11-24 00:40:45.180,P/A,AP SEND fast IPC ID: 0x53f258 , to start / wakeup CP... 
+2740,13:0721:00:07104,2024-11-24 00:40:45.180,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+2741,13:0721:00:07680,2024-11-24 00:40:45.180,PS,only support EUTRAN! 
+2742,13:0721:01:12160,2024-11-24 00:40:45.182,PHY,sss offline presync try next candidate 
+2745,13:0721:02:18144,2024-11-24 00:40:45.182,PHY,CP sleep long in Non-CpOff state! 
+2748,13:0721:03:00736,2024-11-24 00:40:45.182,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+2759,13:0723:08:21856,2024-11-24 00:40:45.208,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2762,13:0723:08:26304,2024-11-24 00:40:45.215,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2768,13:0724:04:05088,2024-11-24 00:40:45.215,PS,UICC recovery failed , notify card removed 
+2775,13:0726:02:19392,2024-11-24 00:40:45.231,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2778,13:0726:02:23680,2024-11-24 00:40:45.231,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2783,13:0726:03:04096,2024-11-24 00:40:45.235,PS,UICC recovery failed , notify card removed 
+2790,13:0726:07:02336,2024-11-24 00:40:45.240,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2799,13:0728:01:05632,2024-11-24 00:40:45.250,PS,Uicc verify USIM application initalization ok 
+2801,13:0728:01:09376,2024-11-24 00:40:45.250,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2805,13:0728:01:20320,2024-11-24 00:40:45.255,PS,UICC recovery failed , notify card removed 
+2811,13:0728:07:24640,2024-11-24 00:40:45.260,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2815,13:0728:08:03104,2024-11-24 00:40:45.260,PS,UICC recovery failed , notify card removed 
+2822,13:0729:01:28576,2024-11-24 00:40:45.264,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2831,13:0730:06:22976,2024-11-24 00:40:45.276,PS,Uicc verify USIM application initalization ok 
+2833,13:0730:06:26496,2024-11-24 00:40:45.279,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2839,13:0730:07:07552,2024-11-24 00:40:45.279,PS,UICC recovery failed , notify card removed 
+2844,13:0732:04:25312,2024-11-24 00:40:45.295,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2848,13:0732:05:04832,2024-11-24 00:40:45.295,PS,UICC recovery failed , notify card removed 
+2857,13:0733:04:25984,2024-11-24 00:40:45.305,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2866,13:0735:00:19392,2024-11-24 00:40:45.319,PS,Uicc verify USIM application initalization ok 
+2868,13:0735:00:23104,2024-11-24 00:40:45.320,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2869,13:0735:00:26432,2024-11-24 00:40:45.320,PS,unexpected tag: 1 
+2870,13:0735:00:26816,2024-11-24 00:40:45.320,PS,unexpected tag: 81 
+2871,13:0735:00:27008,2024-11-24 00:40:45.320,PS,unexpected tag: a 
+2875,13:0735:01:05632,2024-11-24 00:40:45.324,PS,UICC recovery failed , notify card removed 
+2882,13:0735:05:21824,2024-11-24 00:40:45.332,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2891,13:0736:09:24896,2024-11-24 00:40:45.339,PS,Uicc verify USIM application initalization ok 
+2893,13:0736:09:28672,2024-11-24 00:40:45.339,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2897,13:0737:00:07520,2024-11-24 00:40:45.345,PS,UICC recovery failed , notify card removed 
+2903,13:0737:05:29952,2024-11-24 00:40:45.345,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2909,13:0737:06:10272,2024-11-24 00:40:45.353,PS,UICC recovery failed , notify card removed 
+2913,13:0738:07:11072,2024-11-24 00:40:45.359,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2914,13:0738:07:12928,2024-11-24 00:40:45.359,PS,The IMSI is invalid , so the uicc intialization failed! 
+2918,13:0738:07:21536,2024-11-24 00:40:45.359,PS,UICC recovery failed , notify card removed 
+2925,13:0739:02:25184,2024-11-24 00:40:45.362,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2928,13:0739:02:29184,2024-11-24 00:40:45.362,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2929,13:0739:03:00128,2024-11-24 00:40:45.362,PS,cmdStatus: 3 incorrect can not Read EF_ACC 
+2931,13:0739:03:01728,2024-11-24 00:40:45.362,PS,UICC recovery failed , notify card removed 
+2944,13:0739:03:17984,2024-11-24 00:40:45.368,PS,UICC recovery failed , notify card removed 
+2949,13:0740:05:05792,2024-11-24 00:40:45.374,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2951,13:0740:05:10944,2024-11-24 00:40:45.374,PS,UICC , MCC: 0xa , MNC: 0x , is a TEST SIM 
+2952,13:0740:05:12160,2024-11-24 00:40:45.374,PS,UICC recovery failed , notify card removed 
+2956,13:0740:05:20736,2024-11-24 00:40:45.378,PS,UICC recovery failed , notify card removed 
+2965,13:0741:03:11040,2024-11-24 00:40:45.382,PS,Uicc verify USIM Access case: Authenticate / read_write SMS fail 
+2968,13:0741:03:15328,2024-11-24 00:40:45.383,PS,UICC , MCC: 0xb , MNC: 0x , is a TEST SIM 
+2988,13:0842:03:08672,2024-11-24 00:40:46.393,P/A,funcTestAPSleep1 Test 
+2989,13:0842:03:09184,2024-11-24 00:40:46.393,P/A,Ap go sleep1 
+2991,13:0842:03:20128,2024-11-24 00:40:46.393,P/A,HibTimer: User hibtimer delete failed ID = 7 
+2992,13:0842:03:21120,2024-11-24 00:40:46.393,P/A,APMU CpSleepEnd: Unknow sleep type! 
+2996,13:0842:04:00224,2024-11-24 00:40:46.393,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+2997,13:0842:04:08288,2024-11-24 00:40:46.393,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+2999,13:0842:04:22624,2024-11-24 00:40:46.393,PHY,start self-recovery for PHY_ASSERT 
+3002,13:0842:05:00096,2024-11-24 00:40:46.394,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+3004,13:0842:05:02976,2024-11-24 00:40:46.394,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3007,13:0842:05:03424,2024-11-24 00:40:46.394,P/A,AP SEND fast IPC ID: 0x53f25c , to start / wakeup CP... 
+3008,13:0842:05:09856,2024-11-24 00:40:46.394,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+3009,13:0842:05:17568,2024-11-24 00:40:46.394,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3010,13:0843:06:14208,2024-11-24 00:40:46.405,PHY,IPC pending too many cmd , pending number is 2 
+3011,13:0843:06:22656,2024-11-24 00:40:46.405,PHY,presync fail and sync flag is 76 
+3014,13:0843:09:16448,2024-11-24 00:40:46.408,PHY,start self-recovery for PHY_ASSERT 
+3015,13:0845:05:28352,2024-11-24 00:40:46.425,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+3016,13:0845:05:30400,2024-11-24 00:40:46.425,PHY,skip spurEst process because spurAccuNum is 0 
+3017,13:0845:05:30496,2024-11-24 00:40:46.425,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+3022,13:0848:08:15840,2024-11-24 00:40:46.457,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+3028,13:0848:08:28608,2024-11-24 00:40:46.457,PHY,sss offline presync try next candidate 
+3034,13:0848:09:06016,2024-11-24 00:40:46.457,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3036,13:0848:09:06496,2024-11-24 00:40:46.457,P/A,AP SEND fast IPC ID: 0x53f264 , to start / wakeup CP... 
+3037,13:0848:09:07776,2024-11-24 00:40:46.459,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+3038,13:0848:09:08320,2024-11-24 00:40:46.459,PS,only support EUTRAN! 
+3039,13:0849:00:12032,2024-11-24 00:40:46.459,PHY,sss offline presync try next candidate 
+3042,13:0849:01:18048,2024-11-24 00:40:46.460,PHY,CP sleep long in Non-CpOff state! 
+3045,13:0849:02:00960,2024-11-24 00:40:46.460,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+3053,13:0970:03:07968,2024-11-24 00:40:47.673,P/A,funcTestAPSleep1 Test 
+3054,13:0970:03:08448,2024-11-24 00:40:47.673,P/A,Ap go sleep1 
+3056,13:0970:03:18752,2024-11-24 00:40:47.673,P/A,HibTimer: User hibtimer delete failed ID = 7 
+3057,13:0970:03:19552,2024-11-24 00:40:47.673,P/A,APMU CpSleepEnd: Unknow sleep type! 
+3061,13:0970:03:28928,2024-11-24 00:40:47.674,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+3062,13:0970:04:06080,2024-11-24 00:40:47.674,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3064,13:0970:04:21184,2024-11-24 00:40:47.674,PHY,start self-recovery for PHY_ASSERT 
+3067,13:0970:04:29152,2024-11-24 00:40:47.676,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+3069,13:0970:05:01376,2024-11-24 00:40:47.676,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3072,13:0970:05:01760,2024-11-24 00:40:47.676,P/A,AP SEND fast IPC ID: 0x53f268 , to start / wakeup CP... 
+3073,13:0970:05:08192,2024-11-24 00:40:47.676,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+3074,13:0970:05:15744,2024-11-24 00:40:47.676,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3075,13:0971:06:13920,2024-11-24 00:40:47.686,PHY,IPC pending too many cmd , pending number is 2 
+3076,13:0971:06:22400,2024-11-24 00:40:47.686,PHY,presync fail and sync flag is 163 
+3079,13:0971:09:16352,2024-11-24 00:40:47.689,PHY,start self-recovery for PHY_ASSERT 
+3080,13:0973:05:28320,2024-11-24 00:40:47.705,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+3081,13:0973:05:30400,2024-11-24 00:40:47.705,PHY,skip spurEst process because spurAccuNum is 0 
+3082,13:0973:05:30496,2024-11-24 00:40:47.705,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+3086,13:0976:09:15904,2024-11-24 00:40:47.738,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+3093,13:0976:09:28832,2024-11-24 00:40:47.738,PHY,sss offline presync try next candidate 
+3098,13:0977:00:02496,2024-11-24 00:40:47.738,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3100,13:0977:00:02944,2024-11-24 00:40:47.738,P/A,AP SEND fast IPC ID: 0x53f270 , to start / wakeup CP... 
+3101,13:0977:00:04064,2024-11-24 00:40:47.740,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+3102,13:0977:00:04544,2024-11-24 00:40:47.740,PS,only support EUTRAN! 
+3103,13:0977:01:12448,2024-11-24 00:40:47.740,PHY,sss offline presync try next candidate 
+3106,13:0977:02:18496,2024-11-24 00:40:47.741,PHY,CP sleep long in Non-CpOff state! 
+3109,13:0977:03:00928,2024-11-24 00:40:47.741,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+3118,14:0074:03:07168,2024-11-24 00:40:48.952,P/A,funcTestAPSleep1 Test 
+3119,14:0074:03:07648,2024-11-24 00:40:48.952,P/A,Ap go sleep1 
+3121,14:0074:03:17952,2024-11-24 00:40:48.953,P/A,HibTimer: User hibtimer delete failed ID = 7 
+3122,14:0074:03:18624,2024-11-24 00:40:48.953,P/A,APMU CpSleepEnd: Unknow sleep type! 
+3126,14:0074:03:27904,2024-11-24 00:40:48.953,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+3127,14:0074:04:04960,2024-11-24 00:40:48.953,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3129,14:0074:04:20480,2024-11-24 00:40:48.953,PHY,start self-recovery for PHY_ASSERT 
+3132,14:0074:04:28512,2024-11-24 00:40:48.955,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+3134,14:0074:05:00544,2024-11-24 00:40:48.955,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3137,14:0074:05:00928,2024-11-24 00:40:48.955,P/A,AP SEND fast IPC ID: 0x53f274 , to start / wakeup CP... 
+3138,14:0074:05:07424,2024-11-24 00:40:48.955,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+3139,14:0074:05:15008,2024-11-24 00:40:48.955,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3140,14:0075:06:13792,2024-11-24 00:40:48.965,PHY,IPC pending too many cmd , pending number is 2 
+3141,14:0075:06:22016,2024-11-24 00:40:48.966,PHY,presync fail and sync flag is 86 
+3143,14:0075:09:15136,2024-11-24 00:40:48.968,PHY,freqErrPPM with value of 0x%X overflow 
+3145,14:0075:09:16544,2024-11-24 00:40:48.969,PHY,start self-recovery for PHY_ASSERT 
+3146,14:0077:05:28288,2024-11-24 00:40:48.985,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+3147,14:0077:05:30336,2024-11-24 00:40:48.985,PHY,skip spurEst process because spurAccuNum is 0 
+3148,14:0077:05:30400,2024-11-24 00:40:48.985,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+3152,14:0080:08:15872,2024-11-24 00:40:49.017,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+3159,14:0080:08:28800,2024-11-24 00:40:49.017,PHY,sss offline presync try next candidate 
+3164,14:0080:09:01920,2024-11-24 00:40:49.017,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3166,14:0080:09:02368,2024-11-24 00:40:49.017,P/A,AP SEND fast IPC ID: 0x53f27c , to start / wakeup CP... 
+3167,14:0080:09:03456,2024-11-24 00:40:49.019,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+3168,14:0080:09:04000,2024-11-24 00:40:49.019,PS,only support EUTRAN! 
+3169,14:0081:00:12192,2024-11-24 00:40:49.019,PHY,sss offline presync try next candidate 
+3172,14:0081:01:18016,2024-11-24 00:40:49.020,PHY,CP sleep long in Non-CpOff state! 
+3174,14:0081:02:00864,2024-11-24 00:40:49.020,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
+3182,14:0202:03:07040,2024-11-24 00:40:50.233,P/A,funcTestAPSleep1 Test 
+3183,14:0202:03:07488,2024-11-24 00:40:50.233,P/A,Ap go sleep1 
+3185,14:0202:03:18272,2024-11-24 00:40:50.233,P/A,HibTimer: User hibtimer delete failed ID = 8 
+3186,14:0202:03:19072,2024-11-24 00:40:50.233,P/A,APMU CpSleepEnd: Unknow sleep type! 
+3190,14:0202:03:28288,2024-11-24 00:40:50.233,P/A,Can ' t read ' plat_config ' version:2430 file body , or body not right , ( 60 /  ) , use the defult value 
+3191,14:0202:04:05280,2024-11-24 00:40:50.233,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3193,14:0202:04:20832,2024-11-24 00:40:50.234,PHY,start self-recovery for PHY_ASSERT 
+3196,14:0202:04:28832,2024-11-24 00:40:50.236,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3106 
+3198,14:0202:05:00896,2024-11-24 00:40:50.236,P/A,CP Dump , AP is in ImageType = 12293 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3201,14:0202:05:01248,2024-11-24 00:40:50.236,P/A,AP SEND fast IPC ID: 0x53f280 , to start / wakeup CP... 
+3202,14:0202:05:07808,2024-11-24 00:40:50.236,P/A,Can ' t read ' plat_config ' version:2431 file body , or body not right , ( 60 /  ) , use the defult value 
+3203,14:0202:05:15552,2024-11-24 00:40:50.236,P/A,Can ' t open / create ' plat_config ' file , save plat_config failed 
+3204,14:0203:06:13728,2024-11-24 00:40:50.245,PHY,IPC pending too many cmd , pending number is 2 
+3205,14:0203:06:22208,2024-11-24 00:40:50.245,PHY,presync fail and sync flag is 85 
+3207,14:0203:09:15200,2024-11-24 00:40:50.247,PHY,freqErrPPM with value of 0x%X overflow 
+3209,14:0203:09:16576,2024-11-24 00:40:50.248,PHY,start self-recovery for PHY_ASSERT 
+3210,14:0205:05:28032,2024-11-24 00:40:50.265,PHY,Wait to send dump command in PHY IDLE or CONNECT state! 
+3211,14:0205:05:30080,2024-11-24 00:40:50.265,PHY,skip spurEst process because spurAccuNum is 0 
+3212,14:0205:05:30144,2024-11-24 00:40:50.265,PHY,unexpected axcHold4SwRead with value zero in CEAXC ISR 
+3220,14:0208:08:15808,2024-11-24 00:40:50.297,P/A,SCT USB channel , can ' t waiting for reset done , chanlState: 0x3306 
+3227,14:0208:08:28832,2024-11-24 00:40:50.297,PHY,sss offline presync try next candidate 
+3232,14:0208:09:01696,2024-11-24 00:40:50.297,P/A,CP Dump , AP is in ImageType = 12290 , ( 0 ) AP Paging ( 1 ) AP FullImage 
+3233,14:0208:09:02144,2024-11-24 00:40:50.297,P/A,AP SEND fast IPC ID: 0x53f288 , to start / wakeup CP... 
+3235,14:0208:09:03200,2024-11-24 00:40:50.299,PS,NW config ue_RxTxTimeDiffPeriodicalTDD! 
+3236,14:0208:09:03712,2024-11-24 00:40:50.299,PS,only support EUTRAN! 
+3237,14:0209:00:12448,2024-11-24 00:40:50.299,PHY,sss offline presync try next candidate 
+3240,14:0209:01:18400,2024-11-24 00:40:50.300,PHY,CP sleep long in Non-CpOff state! 
+3242,14:0209:02:01216,2024-11-24 00:40:50.300,P/A,CPmuStatus = 0x0 , IntCtrl = 0x0 
