@@ -1,5 +1,0 @@
-## LuatOS-SoC@EC618 Release Notes
-
-Please check the new address
-
-https://wiki.luatos.com/chips/air780e/changelog.html
