@@ -153,7 +153,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // Delay a moment to let sensor pull data line low.
     OS_SleepUs(self->pullTime);
 
-    uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
+    //uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
     // Now start reading the data line to get the value from the DHT sensor.
     // Turn off interrupts temporarily because the next sections
     // are timing critical and we don't want any interruptions.
@@ -162,13 +162,13 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     uint32_t lowCyclesInit = 0;
     uint32_t highCyclesInit = 0;
     if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
-        MICROPY_END_ATOMIC_SECTION(status);
+        //MICROPY_END_ATOMIC_SECTION(status);
         Trace(1, "DHT timeout waiting for pulse LOW init(1).");
         self->_lastresult = false;
         return self->_lastresult;
     }
     if ((highCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_HIGH)) == DHT_TIMEOUT) {
-        MICROPY_END_ATOMIC_SECTION(status);
+        //MICROPY_END_ATOMIC_SECTION(status);
         Trace(1, "DHT timeout waiting for pulse HIGH init(1).");
         self->_lastresult = false;
         return self->_lastresult;
@@ -176,13 +176,13 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
 
     if(lowCyclesInit < 20 || highCyclesInit < 20) {
         if ((lowCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_LOW)) == DHT_TIMEOUT) {
-            MICROPY_END_ATOMIC_SECTION(status);
+            //MICROPY_END_ATOMIC_SECTION(status);
             Trace(1, "DHT timeout waiting for pulse LOW init(2).");
             self->_lastresult = false;
             return self->_lastresult;
         }
         if ((highCyclesInit = moddht_expectPulse(self, GPIO_LEVEL_HIGH)) == DHT_TIMEOUT) {
-            MICROPY_END_ATOMIC_SECTION(status);
+            //MICROPY_END_ATOMIC_SECTION(status);
             Trace(1, "DHT timeout waiting for pulse HIGH init(2).");
             self->_lastresult = false;
             return self->_lastresult;
@@ -204,7 +204,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // -------------------------
     // Time critical code end
     // -------------------------
-    MICROPY_END_ATOMIC_SECTION(status);
+    //MICROPY_END_ATOMIC_SECTION(status);
 
     // Trace(1, "DHT highCyclesInit = %d, lowCyclesInit = %d", (int)((float)highCyclesInit/3.64), (int)((float)lowCyclesInit/3.64));
     // Inspect pulses and determine which ones are 0 (high state cycle count < low
@@ -276,19 +276,18 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
     self->_type = args[ARG_type].u_int;
     self->_maxcycles = moddht_microsecondsToClockCycles(1000);
 
-    if(dht_pins[self->_pin] == 0) {
-        //init pin via machine_pin to turn on pin "power on"
-        mp_obj_t pin_args[1];
-        pin_args[0] = MP_OBJ_NEW_SMALL_INT(args[ARG_pin].u_int);
-        mp_obj_t pin_obj = mp_pin_make_new(NULL, 1, 0, pin_args);
-        self->pin_obj = pin_obj;
-        dht_pins[self->_pin] = 1;
-
-        return MP_OBJ_FROM_PTR(self);
-    } else {
+    if(dht_pins[self->_pin] != 0) {
         mp_warning(MP_WARN_CAT(RuntimeWarning), "Another DHT sensor already use this pin");
-        return mp_const_none;
     }
+    //init pin via machine_pin to turn on pin "power on"
+    mp_obj_t pin_args[1];
+    pin_args[0] = MP_OBJ_NEW_SMALL_INT(args[ARG_pin].u_int);
+    mp_obj_t pin_obj = mp_pin_make_new(NULL, 1, 0, pin_args);
+    self->pin_obj = pin_obj;
+    dht_pins[self->_pin] = 1;
+
+
+    return MP_OBJ_FROM_PTR(self);
 }
 
 STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
@@ -381,7 +380,7 @@ STATIC mp_obj_t moddht_deinit(mp_obj_t self_in) {
     dht_inited[self->_pin] = 0;
     dht_pins[self->_pin] = 0;
     OS_Sleep(DHT_MIN_INTERVAL);
-    mp_warning(MP_WARN_CAT(RuntimeWarning), "DHT object deleted");
+    //mp_warning(MP_WARN_CAT(RuntimeWarning), "DHT object deleted");
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_deinit_obj, &moddht_deinit);
