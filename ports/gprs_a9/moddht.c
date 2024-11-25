@@ -173,7 +173,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             Trace(1, "DHT timeout waiting for pulse LOW init(1).");
             self->_lastresult = false;
             if(retry < DHT_RETRY_INIT) {
-                OS_SleepUs(DHT_MIN_INTERVAL);
+                OS_Sleep(DHT_MIN_INTERVAL);
                 continue;
             } else return self->_lastresult;
         }
@@ -182,7 +182,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             Trace(1, "DHT timeout waiting for pulse HIGH init(1).");
             self->_lastresult = false;
             if(retry < DHT_RETRY_INIT) {
-                OS_SleepUs(DHT_MIN_INTERVAL);
+                OS_Sleep(DHT_MIN_INTERVAL);
                 continue;
             } else return self->_lastresult;
         }
@@ -193,7 +193,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 Trace(1, "DHT timeout waiting for pulse LOW init(2).");
                 self->_lastresult = false;
                 if(retry < DHT_RETRY_INIT) {
-                    OS_SleepUs(DHT_MIN_INTERVAL);
+                    OS_Sleep(DHT_MIN_INTERVAL);
                     continue;
                 } else return self->_lastresult;
             }
@@ -202,7 +202,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 Trace(1, "DHT timeout waiting for pulse HIGH init(2).");
                 self->_lastresult = false;
                 if(retry < DHT_RETRY_INIT) {
-                    OS_SleepUs(DHT_MIN_INTERVAL);
+                    OS_Sleep(DHT_MIN_INTERVAL);
                     continue;
                 } else return self->_lastresult;
             }
@@ -235,7 +235,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                Trace(1, "DHT timeout waiting for pulse.");
                self->_lastresult = false;
                if(retry < DHT_RETRY_INIT) {
-                    OS_SleepUs(DHT_MIN_INTERVAL);
+                    OS_Sleep(DHT_MIN_INTERVAL);
                     continue;
                } else return self->_lastresult;
             }
@@ -263,7 +263,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             Trace(1, "DHT checksum failure: %02x, %02x, %02x, %02x -> %02x", self->data[0], self->data[1], self->data[2], self->data[3], self->data[4]);
             self->_lastresult = false;
             if(retry < DHT_RETRY_CRC) {
-                OS_SleepUs(DHT_MIN_INTERVAL);
+                OS_Sleep(DHT_MIN_INTERVAL);
             } else break;
         }
     }
