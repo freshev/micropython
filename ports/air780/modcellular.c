@@ -225,7 +225,6 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
 
 
 void modcellular_init0(void) {
-    // Reset callbacks
     network_status_callback = mp_const_none;
     sms_callback = mp_const_none;
     ussd_callback = mp_const_none;
@@ -788,12 +787,17 @@ STATIC const mp_map_elem_t mp_module_cellular_globals_table[] = {
 
     // { MP_ROM_QSTR(MP_QSTR_SMS_SENT), MP_ROM_INT(SMS_SENT) },
 
+    { MP_ROM_QSTR(MP_QSTR_OPERATOR_STATUS_UNKNOWN), MP_ROM_INT(0) },
+    { MP_ROM_QSTR(MP_QSTR_OPERATOR_STATUS_AVAILABLE), MP_ROM_INT(1) },
+    { MP_ROM_QSTR(MP_QSTR_OPERATOR_STATUS_CURRENT), MP_ROM_INT(2) },
+    { MP_ROM_QSTR(MP_QSTR_OPERATOR_STATUS_DISABLED), MP_ROM_INT(3) },
+
     { MP_ROM_QSTR(MP_QSTR_ENOSIM), MP_ROM_INT(NTW_EXC_NOSIM) },
     { MP_ROM_QSTR(MP_QSTR_EREGD), MP_ROM_INT(NTW_EXC_REG_DENIED) },
     { MP_ROM_QSTR(MP_QSTR_ESMSSEND), MP_ROM_INT(NTW_EXC_SMS_SEND) },
     { MP_ROM_QSTR(MP_QSTR_ESMSDROP), MP_ROM_INT(NTW_EXC_SMS_DROP) },
-    { MP_ROM_QSTR(MP_QSTR_ESIMDROP), MP_ROM_INT(NTW_EXC_SIM_DROP) },
-    { MP_ROM_QSTR(MP_QSTR_EATTACHMENT), MP_ROM_INT(NTW_EXC_ATT_FAILED) },
+    //{ MP_ROM_QSTR(MP_QSTR_ESIMDROP), MP_ROM_INT(NTW_EXC_SIM_DROP) },
+    //{ MP_ROM_QSTR(MP_QSTR_EATTACHMENT), MP_ROM_INT(NTW_EXC_ATT_FAILED) },
     { MP_ROM_QSTR(MP_QSTR_EACTIVATION), MP_ROM_INT(NTW_EXC_ACT_FAILED) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_sms_delete_by_index), (mp_obj_t)&modcellular_sms_delete_by_index_obj },

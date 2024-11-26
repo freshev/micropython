@@ -1,13 +1,13 @@
-# Micropython for Ai-Thinker A9G GPRS module
+# Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
-![A9G](https://raw.githubusercontent.com/Ai-Thinker-Open/GPRS_C_SDK/master/doc/assets/pudding_pin.png)
+Module documentation at [Air780e](https://docs.openluat.com/air780e/)
 
 ## Build
 
-### Ubuntu
+### Ubuntu (not tested)
 1. Install dependencies:
    ```bash
-   sudo apt-get install build-essential gcc-multilib g++-multilib libzip-dev zlib1g lib32z1
+   sudo apt-get install build-essential xmake
    ```
 2. Clone this repo:
    ```bash
@@ -17,22 +17,16 @@
    ```bash
    cd micropython
    make -C mpy-cross
-   cd ports/gprs_a9
-   make
-   ```
-4. Make OTA (upgrade packs)
-   ```bash
-   make ota
+   cd ports/air780
+   configure.bat
+   make.bat
    ```
 
-5. Firmware LOD files `.lod` is in `micropython/ports/gprs_a9/version/` folder.  
-   Upgrade OTA files `.pack` is in `micropython/ports/gprs_a9/fota/` folder.
+4. Firmware `.binpkg` file is in `micropython/ports/air780/out/` folder.
 
-6. Notes:  
-  Version number configured in mpconfigport.h.  
-  Use simple `make` to build current version.  
-  Use `make ota` to build all upgrade packs from old version to current version in `fota` folder.  
-  To remove some version delete unused `.lod` files from `version` folder and unused `.pack` and `.lod` files from `fota` folder.
+5. Notes:  
+  Version number configured runing `configure.bat`  
+  Use simple `xmake` to build current version.  
 
 
 ### Windows
@@ -42,27 +36,32 @@
    ```
 2. Make
    ```bash
-   cd micropython/ports/gprs_a9
+   cd micropython/ports/air780
+   configure.bat
    make.bat
    ```
-3. Firmware LOD files `.lod` is in `micropython/ports/gprs_a9/version/` folder.  
-   Upgrade OTA files `.pack` is in `micropython/ports/gprs_a9/fota/` folder.
+3. Firmware `.binpkg` file is in `micropython/ports/air780/out/` folder.
 
 4. Notes:  
-  Version number configured in mpconfigport.h.  
-  `make ota` disabled in Windows build (Feel free to contribute).
+  Version number configured runing `configure.bat`  
+  Use simple `make` to build current version.  
 
 ## Burn (Windows only)
 
-1. Go to `./lib/csdtk42-windows/`
+1. Get `Luatools` at [LuatOS](https://wiki.luatos.org/pages/tools.html)
 
-2. Unzip `cooltools.zip`
+2. Run Luatools_v3.exe at new prepared folder
 
-3. Run `coolwatcher.exe`
+3. Press `Download Firmware` button at upper right corner
 
-4. Follow vendor [documentation](https://ai-thinker-open.github.io/GPRS_C_SDK_DOC/en/c-sdk/installation_linux.html)  
-   or read `./cooltools/DOC/Coolwatcher_User_Guide_EN.pdf`
+4. Press `Select the file` button and select `.binpkg` file from `micropython/ports/air780/out/` folder.
 
+5. Press `download` button at `Luatools`
+
+6. Set module to `download state` by pressing module 'BOOT' button.  
+   Press and release module `RESET` button or `power OFF` and `power ON` the module.  
+   Release module `BOOT` button.  
+   The firmware download at `Luatools` should start.
 
 
 ## Connect
@@ -99,20 +98,20 @@ blink.blink(1)
 ## Functionality
 
 - [x] GPIO: `machine.Pin`
-- [x] ADC: `machine.ADC`
-- [ ] PWM: `machine.PWM`
+- [x] ADC: `machine.ADC` (NOT TESTED - have no test module)
+- [x] PWM: `machine.PWM` (NOT TESTED - have no test module)
 - [x] UART: `machine.UART` (HW)
-- [x] SPI: `machine.SPI` (SW & HW)
-- [x] SPI: `machine.I2C` (SW & HW)
-- [x] RTC: `machine.RTC`
+- [x] SPI: `machine.SPI` (NOT TESTED - have no test module)
+- [x] SPI: `machine.I2C` (NOT TESTED - have no test module)
+- [x] RTC: `machine.RTC` (NOT TESTED - have no test module)
 - [x] Cellular misc (IMEI, ICCID, SMS, ...): `cellular`
-- [x] GPS: `gps`
+- [ ] GPS: `gps`
 - [x] time: `time`
-- [x] File system (vfat)
-- [x] GPRS, DNS: `cellular`, `socket`, `ssl`
+- [x] File system (littlefs)
+- [x] DNS: `cellular`, `socket`, `ssl`
 - [x] Power: `machine`, `watchdog`
-- [x] Calls: `cellular`
-- [x] DHT: `DHT`
+- [ ] CC1101: `DHT`
+- [ ] DHT: `DHT`
 
 ## Examples
 
@@ -123,7 +122,7 @@ See [examples](examples) folder.
 Featured:
 
 1. [`cellular`](#cellular), `network`: SMS, calls, connectivity
-2. [`socket`](#socket): sockets over GPRS
+2. [`socket`](#socket): sockets over 4G
 3. [`ssl`](#ssl): SSL over sockets
 4. [`gps`](#gps): everything related to GPS and assisted positioning
 5. [`machine`](#machine): hardware and power control
@@ -139,15 +138,13 @@ Featured:
 
 Provides cellular functionality.
 As usual, the original API does not give access to radio-level and low-level functionality such as controlling the registration on the cellular network: these are performed in the background automatically.
-The purpose of this module is to have an access to high-level networking (SMS, GPRS, calls) as well as to read the status of various components of cellular networking.
+The purpose of this module is to have an access to high-level networking (SMS, network) as well as to read the status of various components of cellular networking.
 
 #### Constants
 
-* `NETWORK_FREQ_BAND_GSM_900P`, `NETWORK_FREQ_BAND_GSM_900E`, `NETWORK_FREQ_BAND_GSM_850`, `NETWORK_FREQ_BAND_DCS_1800`, `NETWORK_FREQ_BAND_PCS_1900`, `NETWORK_FREQ_BANDS_ALL`: frequencies;
+* `NETWORK_FREQ_BAND_1`, `NETWORK_FREQ_BAND_3`, `NETWORK_FREQ_BAND_5`, `NETWORK_FREQ_BAND_8`, `NETWORK_FREQ_BAND_34`, `NETWORK_FREQ_BAND_38`, `NETWORK_FREQ_BAND_39`, `NETWORK_FREQ_BAND_40`, `NETWORK_FREQ_BAND_41`, `NETWORK_FREQ_BANDS_ALL`: frequencies;
 * `OPERATOR_STATUS_UNKNOWN`, `OPERATOR_STATUS_AVAILABLE`, `OPERATOR_STATUS_CURRENT`, `OPERATOR_STATUS_DISABLED`: operator statuses;
-* `NETWORK_MODE_MANUAL`, `NETWORK_MODE_AUTO`, `NETWORK_MODE_MANUAL_AUTO`: network registration modes;
-* `SMS_SENT`: constant for event handler `on_sms`;
-* `ENOSIM`, `EREGD`, `ESMSSEND`, `ESMSDROP`, `ESIMDROP`, `EATTACHMENT`, `EACTIVATION`, `ENODIALTONE`, `EBUSY`, `ENOANSWER`, `ENOCARRIER`, `ECALLTIMEOUT`, `ECALLINPROGRESS`, `ECALLUNKNOWN`: extended codes for `OSError`s raised by the module;
+* `ENOSIM`, `EREGD`, `ESMSSEND`, `ESMSDROP`, `EACTIVATION` : extended codes for `OSError`s raised by the module;
 
 #### Classes
 
@@ -174,38 +171,36 @@ The purpose of this module is to have an access to high-level networking (SMS, G
 * `get_signal_quality()` (int, int): the signal quality (0-31) and RXQUAL. These are replaced by `None` if no signal quality information is available. **TODO**: The RXQUAL output is always `None`;
 * `flight_mode([flag: bool])` (bool): the flight mode status. Turns in on or off if the argument is specified;
 * `set_bands(bands: int = NETWORK_FREQ_BANDS_ALL)`: sets frequency bands;
-* `scan()` (list): lists available operators: returns `(op_id: bytearray[6], op_name: str, op_status: int)` for each;
-* `register([operator_id: bytearray[6], register_mode: int])` (op_id: bytearray[6], op_name: str, reg_status: int): registered network operator information. Registers on the network if arguments supplied. **TODO**: Figure out how (and whether) registration works at all;
+* `scan()` (list): lists available operators: returns `(op_id: str, op_name: str, op_status: int)` for each;
 * `stations()` (list): a list of nearby stations: `(mcc, mnc, lac, cell_id, bsic, rx_full, rx_sub, arfcn)`: all ints;
-* `agps_station_data()` (int, int, list): a convenience function returning `(mcc, mnc, [(lac, cell_id, signal_strength), ...])` for use in agps location: all ints;
-* `reset()`: resets network settings to defaults. Disconnects GPRS;
-* `gprs([apn: {str, bool}[, user: str, pass: str[, timeout: int]]])` (bool): activate (3 or 4 arguments), deactivate (`gprs(False)`) or obtain the status of GPRS (on/off) if no arguments supplied;
-* `dial(tn: {str, bool})`: dial a telephone number if string is supplied or hang up a call if `False`;
-* `ussd(code: str[, timeout: int])` (int, str): USSD request. Unless zero timeout specified, returns USSD response option code and the response text;
+* `reset()`: resets network settings to defaults. 
+* `gprs([apn: {str, bool}[, user: str, pass: str[, timeout: int]]])` (bool): activate (3 or 4 arguments), deactivate (`gprs(False)`) or obtain the status of network interface (on/off) if no arguments supplied; Stub code for A9G compatibility.
+* `ussd(code: str[, timeout: int])` (int, str): USSD request. Stub code for A9G compatibility.
 * `on_status_event(callback: Callable)`: sets a callback `function(status: int)` for network status change;
 * `on_sms(callback: Callable)`: sets a callback `function(sms_or_status)` on SMS sent or received;;
-* `on_call(callback: Callable)`: sets a callback `function(number_or_hangup)` on call events (incoming, hangup, etc.);
 * `sms_delete_by_index()`: deletes SMS from SIM `read` storage by index;
 * `sms_delete_all_read()`: deletes all `read` SMS from SIM storage;
 * `sms_read_all()`: read all `unread` SMSs from the `unread` storage at the SIM card;
 * `sms_list_read()` (list): returns all `read` SMS from the SIM card;
+* `sms_list()` (list): returns all SMS from the SIM card;
 * `get_storage_size()` (tuple): SIM SMS storage info;
 
 ### `socket` ###
 
 *Alias: `usocket`*
 
-TCP/IP stack over GPRS based on lwIP.
+TCP/IP stack over 4G based on lwIP.
 See [micropython docs](https://docs.micropython.org/en/latest/library/usocket.html) for details.
 
 ### `ssl` ###
 
 *Alias: `ussl`*
 
-TCP/IP stack over GPRS based on AXTLS .
+TCP/IP stack over 4G based on Mbedtls.
 See [micropython docs](https://docs.micropython.org/en/latest/library/ussl.html) for details.
 
 
+<del>
 ### `gps` ###
 
 Provides the GPS functionality.
@@ -232,6 +227,7 @@ This is only available in the A9G module where GPS is a separate chip connected 
   Time is given in seconds since the epoch or since `00:00` today.
   Status flags `mode`, `status` are ASCII indexes.
   For more info (units, etc) please consult the [minmea](https://github.com/kosma/minmea) project.
+</del>
 
 ### `machine`
 
@@ -239,16 +235,14 @@ Provides power-related functions: power, watchdogs.
 
 #### Constants
 
-* `POWER_ON_CAUSE_ALARM`, `POWER_ON_CAUSE_CHARGE`, `POWER_ON_CAUSE_EXCEPTION`, `POWER_ON_CAUSE_KEY`, `POWER_ON_CAUSE_MAX`, `POWER_ON_CAUSE_RESET`: power-on flags.
+* `HARD_RESET`, `PWRON_RESET`, `WDT_RESET`, `DEEPSLEEP_RESET`, `SOFT_RESET`: reset causes.
+
 
 #### Classes
 
 * `WDT(wd: int, timeout: int)`: arms the watchdog with a timeout in milliseconds.  
   `wd` parameter is one of:  
-  0: use CSDK watchdog;  
-  1: use external hardware watchdog (i.e. based on IMP706RESA);  
-  Hardware watchdog Pin and Timout configured in mpconfigport.h  
-  Hardware watchdog can not be rearmed.  
+  0: use module watchdog;  
   `timeout` parameter can be:  
   > 0: sets watchdog timeout to `timeout` milliseconds
   = 0: turns off `wd` watchdog
@@ -258,13 +252,15 @@ Provides power-related functions: power, watchdogs.
 #### Methods
 
 * `reset()`: hard-resets the module;
-* `off()`: powers the module down. **TODO**: By fact, hard-resets the module, at least when USB-powered. Figure out what's wrong;
 * `idle()`: tunes the clock rate down and turns off peripherials;
+* `sleep()`: turnes on light sleep mode;
+* `deep_sleep()`: turnes on deep sleep mode;
 * `get_input_voltage()` (float, float): the input voltage (mV) and the battery level (percents);
-* `power_on_cause()` (int): the power-on flag, one of `POWER_ON_CAUSE_*`.  **TODO**: never saw anything except `POWER_ON_CAUSE_CHARGE` returned, needs investigation;
-* `on_power_key(callback: Callable)`: sets a callback `function(is_power_key_down: bool)` on power key events.
-* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured in mpconfigport.h.
+* `reset_cause()` (int): the reset cause, one of `*_RESET` constants.
+* `wdt_test()`: Just wait forever with no watchdog feed().
+<del>* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured in mpconfigport.h.</del>
 
+<del>
 ### `I2C` ###
 
 I2C interface
@@ -557,7 +553,7 @@ DHT sensors like DHT21, DHT22, AM2301 need external pullup resistor (i.e. 10k oh
   * Returns humidity as float or `nan` if reading failed.
 
 * `deinit()`: deinit sensor. Free pin for other application.
-
+</del>
 
 ### umqtt ###
 Rewritten from umqtt.simple to support python 1.5.2 syntax.  
@@ -570,24 +566,10 @@ To use other methods, uncomment needed methods in `modules/urequests.py` and reb
 
 ## Notes ##
 
-* The size of micropython heap is roughly 512 Kb. 400k can be realistically allocated right after hard reset.
-* The external memory card is [mounted under `/t`](https://ai-thinker-open.github.io/GPRS_C_SDK_DOC/en/c-sdk/function-api/file-system.html).
+* The size of micropython heap is roughly 512 Kb. 200k can be realistically allocated right after hard reset.
 * Firmware removes *.txt files in SOC file system by SMS 'rmconfig'
 * Firmware removes *.py files in SOC file system by SMS 'rmcode'
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall'
-* Firmware resets the A9G by SMS 'reset'
+* Firmware resets the module by SMS 'reset'
 
-## Features in CSDK added ##
-* Added CSDK patch to reboot module on voice call. To disable this feature comment corresponding lines in ./libcsdk-patches/patch-lod.py
-
-## Bugs in CSDK corrected ##
-* timeout.h code rewritten because of well known `32bit clock counter` bug, which leads to A9G hanging with long timeout (more than 3.5 hours). Now A9G timeouts are 64bit counters.
-* cellular.gprs() code rewritten to reattach and reactivate PDP context after long timeouts
-* Patch to make hardware watchdog feed during boot (if watchdog timer less than 1.5 seconds like in IMP706RESA)
-* Patch to avoid freezing while GPRS sends/receives data (for sys_arch_mbox_fetch() timeout changed from 100 to 50)
-* Patch to avoid freezing while GPRS sends/receives data (in netconn_drain()->lwip_netconn_is_err_msg() check mem for NULL)
-* Initial PIN state patches (disabled in ./libcsdk-patches/patch-lod.py)
-
-## Bugs known ##
-* SMS with UCS2 encoding is not fully supported (TODO: add support for UCS2 encoding using `iconv` library)
 
