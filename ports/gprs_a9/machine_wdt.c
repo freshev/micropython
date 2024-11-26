@@ -130,3 +130,4 @@ void ChangeWDPinState(HANDLE* mainTaskHandle) {
         OS_StartCallbackTimer(*mainTaskHandle, MACHINE_HW_WATCHDOG_TIMEOUT, (void *)ChangeWDPinState, mainTaskHandle); // rearm timer
     }
 }
+
