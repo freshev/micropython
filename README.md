@@ -3,7 +3,7 @@
 The MicroPython project (v1.22.2 forked)
 ========================================
 <p align="center">
-  <img src="https://github.com/freshev/micropython/blob/master/logo/logo.jpg" alt="MicroPython Logo"/>
+  <img src="https://github.com/freshev/micropython/blob/master/logo/logo.jpg?raw=true" alt="MicroPython Logo"/>
 </p>
 
 This is the MicroPython project, which aims to put an implementation
