@@ -1,8 +1,9 @@
 # Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
-Original module documentation at [Air780e](https://docs.openluat.com/air780e/)  
-Translated module documentation including `Windows Help` at [Docs](docs/)
+Original module documentation at [OpenLuat.com](https://docs.openluat.com/air780e/)  
+Translated module documentation at [Docs](docs/)
 
+## Test board 
 ![Air780e test board](https://wiki.luatos.org/_images/pinout2.png)
 
 
@@ -111,10 +112,10 @@ blink.blink(1)
 - [x] ADC: `machine.ADC` (NOT TESTED - have no test module)
 - [x] PWM: `machine.PWM` (NOT TESTED - have no test module)
 - [x] UART: `machine.UART` (HW)
-- [x] SPI: `machine.SPI` (NOT TESTED - have no test module)
-- [x] SPI: `machine.I2C` (NOT TESTED - have no test module)
+- [ ] SPI: `machine.SPI` (NOT TESTED - have no test module)
+- [ ] I2C: `machine.I2C` (NOT TESTED - have no test module)
 - [x] RTC: `machine.RTC` (NOT TESTED - have no test module)
-- [x] Cellular misc (IMEI, ICCID, SMS, ...): `cellular`
+- [x] 4G networking (IMEI, ICCID, SMS, ...): `cellular`
 - [ ] GPS: `gps`
 - [x] time: `time`
 - [x] File system (littlefs)
@@ -122,6 +123,9 @@ blink.blink(1)
 - [x] Power: `machine`, `watchdog`
 - [ ] CC1101: `DHT`
 - [ ] DHT: `DHT`
+Missed software modules actively developed now (At least at 2024).  
+I would be very grateful for a test board to test `NOT TESTED` functionality.  
+Make a [pull request](https://github.com/freshev/micropython/pulls) for contact.
 
 ## Examples
 
@@ -178,7 +182,7 @@ The purpose of this module is to have an access to high-level networking (SMS, n
 * `is_sim_present()` (bool): checks whether a SIM card is present;
 * `is_network_registered()` (bool): checks whether registered on the cellular network;
 * `is_roaming()` (bool): checks whether registered on the roaming network;
-* `get_signal_quality()` (int, int): the signal quality (0-31) and RXQUAL. These are replaced by `None` if no signal quality information is available. **TODO**: The RXQUAL output is always `None`;
+* `get_signal_quality()` (int, int): the signal quality (0-31), RXLEVEL and signal_to_noise_ratio(SNR);
 * `flight_mode([flag: bool])` (bool): the flight mode status. Turns in on or off if the argument is specified;
 * `set_bands(bands: int = NETWORK_FREQ_BANDS_ALL)`: sets frequency bands;
 * `scan()` (list): lists available operators: returns `(op_id: str, op_name: str, op_status: int)` for each;
