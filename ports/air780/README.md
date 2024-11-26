@@ -1,6 +1,6 @@
 # Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
-Original module documentation at [OpenLuat.com](https://docs.openluat.com/air780e/)  
+Original module documentation at [OpenLuat](https://docs.openluat.com/air780e/)  
 Translated module documentation at [Docs](docs/)
 
 ## Test board 
@@ -123,9 +123,10 @@ blink.blink(1)
 - [x] Power: `machine`, `watchdog`
 - [ ] CC1101: `DHT`
 - [ ] DHT: `DHT`
+
 Missed software modules actively developed now (At least at 2024).  
 I would be very grateful for a test board to test `NOT TESTED` functionality.  
-Make a [pull request](https://github.com/freshev/micropython/pulls) for contact.
+Make a [pull request](https://github.com/freshev/micropython/pulls) to contact.
 
 ## Examples
 
@@ -272,6 +273,8 @@ Provides power-related functions: power, watchdogs.
 * `get_input_voltage()` (float, float): the input voltage (mV) and the battery level (percents);
 * `reset_cause()` (int): the reset cause, one of `*_RESET` constants.
 * `wdt_test()`: Just wait forever with no watchdog feed().
+
+
 <del>* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured in mpconfigport.h.</del>
 
 <del>
