@@ -56,16 +56,16 @@
 #include "mw_nvm_sms.h"
 
 // priority in %
-#define MICROPYTHON_TASK_PRIORITY	(20) 
+#define MICROPYTHON_TASK_PRIORITY   (20) 
 
-#define MICROPY_HEAP_MAX_SIZE    	(1024 * 2048)
-#define MICROPY_HEAP_MIN_SIZE    	(2048)
+#define MICROPY_HEAP_MAX_SIZE       (1024 * 2048)
+#define MICROPY_HEAP_MIN_SIZE       (2048)
 
-#define MP_TASK_STACK_LIMIT_MARGIN 	(2048)
+#define MP_TASK_STACK_LIMIT_MARGIN  (2048)
 #define MICROPY_TASK_STACK_SIZE     (16 * 1024)
 
-#define MP_FATAL_REASON_NLR_JUMP_FAIL 	(1)
-#define MP_FATAL_REASON_HEAP_INIT 		(2)
+#define MP_FATAL_REASON_NLR_JUMP_FAIL   (1)
+#define MP_FATAL_REASON_HEAP_INIT       (2)
 
 
 static luat_rtos_task_handle microPyTaskHandle = NULL;
@@ -97,7 +97,7 @@ void mp_task(void *param) {
     
 soft_reset:
     
-	mp_stack_set_top((void *)sp);
+    mp_stack_set_top((void *)sp);
     mp_stack_set_limit(MICROPY_TASK_STACK_SIZE - MP_TASK_STACK_LIMIT_MARGIN);
     gc_init(mp_task_heap, mp_task_heap + mp_task_heap_size);
     
@@ -134,7 +134,7 @@ soft_reset:
     gc_sweep_all();
 #endif
 
-	modmachine_deinit0();
+    modmachine_deinit0();
     mp_deinit();
     luat_heap_free(mp_task_heap);
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
@@ -211,18 +211,18 @@ void NORETURN mp_fatal_error(uint8_t reason, void* ptr1) {
     luat_uart_write(HW_UART_REPL, (uint8_t*)msg2, sizeof(msg2));
     snprintf(mp_fatal_buffer, sizeof(mp_fatal_buffer), "%p\r\n", ptr1);
     luat_uart_write(HW_UART_REPL, (uint8_t*)mp_fatal_buffer, strlen(mp_fatal_buffer)+1);
-    luat_uart_write(HW_UART_REPL, msg_reboot, sizeof(msg_reboot));
+    luat_uart_write(HW_UART_REPL, (uint8_t*)msg_reboot, sizeof(msg_reboot));
     #endif
     
-    luat_rtos_task_sleep(1000);
+    luat_rtos_task_sleep(1000); 
     
     luat_pm_reboot();
     while(1);
 }
 
 
-void task_init(void) {	
-	luat_rtos_task_create(&microPyTaskHandle, MICROPY_TASK_STACK_SIZE, MICROPYTHON_TASK_PRIORITY, "mp_task", mp_task, NULL, NULL);
+void task_init(void) {  
+    luat_rtos_task_create(&microPyTaskHandle, MICROPY_TASK_STACK_SIZE, MICROPYTHON_TASK_PRIORITY, "mp_task", mp_task, NULL, NULL);
 }
 
 INIT_TASK_EXPORT(task_init, "0");

@@ -339,7 +339,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     socklen_t addr_len = sizeof(addr);
 
     int new_fd = -1;
-    for (int i = 0; i <= self->retries; i++) {
+    for (int i = 0; i <= (int)self->retries; i++) {
         MP_THREAD_GIL_EXIT();
         new_fd = lwip_accept(self->fd, &addr, &addr_len);
         MP_THREAD_GIL_ENTER();
@@ -586,7 +586,7 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     }
 
     // XXX Would be nicer to use RTC to handle timeouts
-    for (int i = 0; i <= sock->retries; ++i) {
+    for (int i = 0; i <= (int)sock->retries; ++i) {
         // Poll the socket to see if it has waiting data and only release the GIL if it doesn't.
         // This ensures higher performance in the case of many small reads, eg for readline.
         bool release_gil;
@@ -660,7 +660,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 
 int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
     int sentlen = 0;
-    for (int i = 0; i <= sock->retries && sentlen < datalen; i++) {
+    for (int i = 0; i <= (int)sock->retries && sentlen < (int)datalen; i++) {
         MP_THREAD_GIL_EXIT();
         int r = lwip_write(sock->fd, data + sentlen, datalen - sentlen);
         MP_THREAD_GIL_ENTER();
@@ -695,7 +695,7 @@ STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(arg1, &bufinfo, MP_BUFFER_READ);
     int r = _socket_send(sock, bufinfo.buf, bufinfo.len);
-    if (r < bufinfo.len) {
+    if (r < (int)bufinfo.len) {
         mp_raise_OSError(MP_ETIMEDOUT);
     }
     return mp_const_none;
@@ -716,7 +716,7 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
     to.sin_port = lwip_htons(netutils_parse_inet_addr(addr_in, (uint8_t *)&to.sin_addr, NETUTILS_BIG));
 
     // send the data
-    for (int i = 0; i <= self->retries; i++) {
+    for (int i = 0; i <= (int)self->retries; i++) {
         MP_THREAD_GIL_EXIT();
         int ret = lwip_sendto(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr *)&to, sizeof(to));
         MP_THREAD_GIL_ENTER();
@@ -750,7 +750,7 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *sock = self_in;
-    for (int i = 0; i <= sock->retries; i++) {
+    for (int i = 0; i <= (int)sock->retries; i++) {
         MP_THREAD_GIL_EXIT();
         int r = lwip_write(sock->fd, buf, size);
         MP_THREAD_GIL_ENTER();

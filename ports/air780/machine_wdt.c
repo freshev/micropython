@@ -55,7 +55,7 @@ STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
     switch (id) {
         case 0: // software watchdog
             if(timeout_ms > 0) {
-            	if(timeout_ms > 60000) timeout_ms = 60000;
+                if(timeout_ms > 60000) timeout_ms = 60000;
                 luat_wdt_close();
                 luat_wdt_setup(timeout_ms / 1000);
             }
@@ -74,20 +74,17 @@ STATIC void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t t
     switch (self_in->id) {
         case 0: // software watchdog
             if(timeout_ms > 0) {
-            	if(timeout_ms > 60000) timeout_ms = 60000;
+                if(timeout_ms > 60000) timeout_ms = 60000;
                 luat_wdt_close();
                 luat_wdt_setup(timeout_ms / 1000);
             }
             else if(timeout_ms == 0) luat_wdt_close();
             else mp_raise_ValueError("Watchdog timeout should be >= 0");
+            break;
         default: mp_raise_ValueError("Watchdog id should be 0");
+            break;
     }
 }
-
-
-void machine_wdt_test(void) {
-	while(1);
-}                                
 
 /*
 # Test case

@@ -107,7 +107,7 @@ void mp_hal_delay_us_fast(uint32_t us) {
 }
 
 int mp_hal_pin_read(mp_hal_pin_obj_t pin) {
-	return luat_gpio_get(pin);
+    return luat_gpio_get(pin);
 }
 
 // Wake up the main task if it is sleeping, to be called from an ISR.

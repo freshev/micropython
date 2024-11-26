@@ -78,9 +78,12 @@ STATIC void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t t
             }
             else if(timeout_ms == 0) WatchDog_Close();
             else mp_raise_ValueError("Watchdog timeout should be in interval 0-512000");
+            break;
         case 1: // A9 hardware watchdog
             machine_hw_watchdog_active = (timeout_ms > 0);
+            break;
         default: mp_raise_ValueError("Watchdog id should be 0 (software wd) or 1 (hardware wd)");
+            break;
     }
 }
 

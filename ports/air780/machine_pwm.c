@@ -41,7 +41,7 @@
 #include "modmachine.h"
 
 // Total number of channels
-#define PWM_CHANNEL_MAX 	(6) 
+#define PWM_CHANNEL_MAX     (6) 
 
 // Params for PWM operation
 // 1khz is default frequency
@@ -64,7 +64,7 @@ typedef struct _pwm_chan_t {
 
 // List of PWM channels
 STATIC pwm_chan_t pwm_channels[PWM_CHANNEL_MAX];
-	
+    
 
 typedef struct _pwm_gpio_t {
     int8_t pin;
@@ -75,38 +75,38 @@ typedef struct _pwm_gpio_t {
 // List of PWM GPIOs
 // See https://docs.openluat.com/air780e/luatos/app/driver/pwm/
 STATIC pwm_gpio_t machine_pwm_gpio_table[] = {
-	{0, HAL_GPIO_0, -1}, 	// no channel
-	{1, HAL_GPIO_1, 0},   	// channel = 10
-	{2, HAL_GPIO_2, 1},   	// channel = 11
-	{3, HAL_GPIO_3, -1},	// no channel
-	{4, HAL_GPIO_4, -1},   // no channel
-	{5, HAL_GPIO_5, -1},   // no channel
-	{6, HAL_GPIO_6, -1},   // no channel
-	{7, HAL_GPIO_7, -1},   // no channel
-	{8, HAL_GPIO_8, -1},   // no channel
-	{9, HAL_GPIO_9, -1},   // no channel
-	{10, HAL_GPIO_10, -1},	// no channel
-	{11, HAL_GPIO_11, -1},	// no channel
-	{12, HAL_GPIO_12, -1},	// no channel
-	{13, HAL_GPIO_13, -1},	// no channel
-	{14, HAL_GPIO_14, -1},	// no channel
-	{15, HAL_GPIO_15, -1},	// no channel
-	{16, HAL_GPIO_16, 2},	// channel = 12
-	{17, HAL_GPIO_17, -1},	// no channel
-	{18, HAL_GPIO_18, 4},	// channel = 14
-	{19, HAL_GPIO_19, -1},	// no channel
-	{20, HAL_GPIO_20, -1},	// no channel
-	{21, HAL_GPIO_21, -1},	// no channel
-	{22, HAL_GPIO_22, -1},	// no channel
-	{23, HAL_GPIO_23, 0},	// channel = 0
-	{24, HAL_GPIO_24, 1},	// channel = 1
-	{25, HAL_GPIO_25, 2},	// channel = 2
-	{26, HAL_GPIO_26, -1},	// no channel
-	{27, HAL_GPIO_27, 4},	// channel = 4
-	{28, HAL_GPIO_28, -1},	// no channel
-	{29, HAL_GPIO_29, 1},	// channel = 21
-	{30, HAL_GPIO_30, 2},	// channel = 22
-	{31, HAL_GPIO_30, -1},	// no channel
+    {0, HAL_GPIO_0, -1},    // no channel
+    {1, HAL_GPIO_1, 0},     // channel = 10
+    {2, HAL_GPIO_2, 1},     // channel = 11
+    {3, HAL_GPIO_3, -1},    // no channel
+    {4, HAL_GPIO_4, -1},   // no channel
+    {5, HAL_GPIO_5, -1},   // no channel
+    {6, HAL_GPIO_6, -1},   // no channel
+    {7, HAL_GPIO_7, -1},   // no channel
+    {8, HAL_GPIO_8, -1},   // no channel
+    {9, HAL_GPIO_9, -1},   // no channel
+    {10, HAL_GPIO_10, -1},  // no channel
+    {11, HAL_GPIO_11, -1},  // no channel
+    {12, HAL_GPIO_12, -1},  // no channel
+    {13, HAL_GPIO_13, -1},  // no channel
+    {14, HAL_GPIO_14, -1},  // no channel
+    {15, HAL_GPIO_15, -1},  // no channel
+    {16, HAL_GPIO_16, 2},   // channel = 12
+    {17, HAL_GPIO_17, -1},  // no channel
+    {18, HAL_GPIO_18, 4},   // channel = 14
+    {19, HAL_GPIO_19, -1},  // no channel
+    {20, HAL_GPIO_20, -1},  // no channel
+    {21, HAL_GPIO_21, -1},  // no channel
+    {22, HAL_GPIO_22, -1},  // no channel
+    {23, HAL_GPIO_23, 0},   // channel = 0
+    {24, HAL_GPIO_24, 1},   // channel = 1
+    {25, HAL_GPIO_25, 2},   // channel = 2
+    {26, HAL_GPIO_26, -1},  // no channel
+    {27, HAL_GPIO_27, 4},   // channel = 4
+    {28, HAL_GPIO_28, -1},  // no channel
+    {29, HAL_GPIO_29, 1},   // channel = 21
+    {30, HAL_GPIO_30, 2},   // channel = 22
+    {31, HAL_GPIO_30, -1},  // no channel
 };
 
 // MicroPython PWM object struct
@@ -125,15 +125,15 @@ void modmachine_pwm_init0(void) {
         pwm_channels[i].pin = -1;
         // luat_pwm_setup always returns -1 ...
         /*luat_pwm_conf_t config = {
-         	.channel = i,
-         	.period = 1000, 		// Hz
-         	.pulse = 500, 			// half a period
-         	.pnum = 0, 				// 0 - continuous output
-         	.precision = PWM_FREQ 	// 100, 256 or 1000
+            .channel = i,
+            .period = 1000,         // Hz
+            .pulse = 500,           // half a period
+            .pnum = 0,              // 0 - continuous output
+            .precision = PWM_FREQ   // 100, 256 or 1000
         };
         if(i != 3 && i != 5) {
-        	int res = luat_pwm_setup(&config);
-        	if (res != 0) LUAT_DEBUG_PRINT("PWM init for channel %d failed (%d)", i, res);
+            int res = luat_pwm_setup(&config);
+            if (res != 0) LUAT_DEBUG_PRINT("PWM init for channel %d failed (%d)", i, res);
         }*/
     }    
 }
@@ -143,7 +143,7 @@ void modmachine_pwm_deinit(int channel_idx) {
     if ((channel_idx >= 0) && (channel_idx < PWM_CHANNEL_MAX)) {
         int pin = pwm_channels[channel_idx].pin;
         if (pin != -1) {
-        	luat_pwm_close(channel_idx);
+            luat_pwm_close(channel_idx);
         }
         pwm_channels[channel_idx].pin = -1;
     }
@@ -151,25 +151,25 @@ void modmachine_pwm_deinit(int channel_idx) {
 
 // This called from Ctrl-D soft reboot
 void modmachine_pwm_deinit0(void) {
-	for (int channel_idx = 0; channel_idx < PWM_CHANNEL_MAX; ++channel_idx) {
-    	modmachine_pwm_deinit(channel_idx);
-	}
+    for (int channel_idx = 0; channel_idx < PWM_CHANNEL_MAX; ++channel_idx) {
+        modmachine_pwm_deinit(channel_idx);
+    }
 }
 
 int pwm_find_channel(int pin) {
     int gpio_idx;
     for (gpio_idx = 0; gpio_idx < HAL_GPIO_MAX; ++gpio_idx) {
         if (machine_pwm_gpio_table[gpio_idx].pin == pin) {
-        	return machine_pwm_gpio_table[gpio_idx].channel;
-		}
+            return machine_pwm_gpio_table[gpio_idx].channel;
+        }
     }
     return -1;
 }
 
 
 STATIC void set_duty_internal(machine_pwm_obj_t *self) {
-	LUAT_DEBUG_PRINT("duty_in = %d", self->duty);
-	if (self->duty == 0) {
+    LUAT_DEBUG_PRINT("duty_in = %d", self->duty);
+    if (self->duty == 0) {
         self->duty = 1;
     } else if (self->duty > LUAT_DUTY_MAX) {
         self->duty = LUAT_DUTY_MAX;
@@ -297,7 +297,7 @@ STATIC void mp_machine_pwm_init_helper(machine_pwm_obj_t *self,
         if (res == -2) mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("PWM frequency setting error"));
         if (res == -3) mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("PWM duty cycle setting error"));
         if (res == -4) mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("PWM channel already used"));
-        pwm_channels[channel].pin = self->pin;                                                        	
+        pwm_channels[channel].pin = self->pin;                                                          
     } else if (pwm_channels[channel].pin == self->pin) {        
         // reopen PWM with new freq and/or duty
         luat_pwm_close(self->channel); 

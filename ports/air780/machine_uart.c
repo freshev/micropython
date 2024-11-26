@@ -125,14 +125,14 @@ STATIC void luat_uart_recv_callback(int uart_num, uint32_t data_len) {
 }
 
 STATIC void luat_uart_sent_callback(int uart_num, void *param) {
-	int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
-	uart_tx_done[uart] = 1;
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    uart_tx_done[uart] = 1;
 }
 
 STATIC uint8_t uart_wait_tx_done(int uart_num, int timeout) {
     uint64_t start = mp_hal_ticks_ms_64();
     int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
-    while (uart_tx_done[uart] == 0 && mp_hal_ticks_ms_64() - start < timeout) {
+    while (uart_tx_done[uart] == 0 && mp_hal_ticks_ms_64() - start < (uint64_t)timeout) {
         luat_rtos_task_sleep(1);
         MICROPY_EVENT_POLL_HOOK
     }
@@ -164,7 +164,7 @@ STATIC int uart_tx_any_room(uint8_t uart) {
 }
 
 STATIC void uart_set_rxbuf(uint8_t uart_num, uint8_t *buf, int len) {
-	int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
     uart_ringbuf[uart].buf = buf;
     uart_ringbuf[uart].size = len;
     uart_ringbuf[uart].iget = 0;
@@ -236,7 +236,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     // uart_wait_tx_done(self->uart_num, 100); ????
 
     luat_uart_t uart = {
-    	.id = self->uart_num,
+        .id = self->uart_num,
         .baud_rate = 115200,
         .data_bits = 8,
         .stop_bits = 1,
@@ -257,22 +257,22 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         if (args[ARG_rxbuf].u_int >= 0) {
             self->rxbuf = args[ARG_rxbuf].u_int;
             uint16_t len = args[ARG_rxbuf].u_int + 1; // account for usable items in ringbuf
-        	uint8_t *buf;
-        	int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
-        	if (len <= UART_STATIC_RXBUF_LEN) {
-            	buf = uart_ringbuf_array[uart];
-            	MP_STATE_PORT(uart_rxbuf[uart]) = NULL; // clear any old pointer
-        	} else {
-            	buf = m_new(uint8_t, len);
-            	MP_STATE_PORT(uart_rxbuf[uart]) = buf; // retain root pointer
-        	}
-	        uart_set_rxbuf(self->uart_num, buf, len);
+            uint8_t *buf;
+            int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
+            if (len <= UART_STATIC_RXBUF_LEN) {
+                buf = uart_ringbuf_array[uart];
+                MP_STATE_PORT(uart_rxbuf[uart]) = NULL; // clear any old pointer
+            } else {
+                buf = m_new(uint8_t, len);
+                MP_STATE_PORT(uart_rxbuf[uart]) = buf; // retain root pointer
+            }
+            uart_set_rxbuf(self->uart_num, buf, len);
         }
     }
     
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
-    	self->baudrate = uart.baud_rate = args[ARG_baudrate].u_int;    	
+        self->baudrate = uart.baud_rate = args[ARG_baudrate].u_int;     
     }    
     
     // set data bits
@@ -347,7 +347,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     // if (self->uart_num != HW_UART_REPL)
     #endif
     {
-    	luat_uart_close(self->uart_num);
+        luat_uart_close(self->uart_num);
         luat_uart_setup(&uart);
     }
     luat_uart_ctrl(self->uart_num, LUAT_UART_SET_RECV_CALLBACK, luat_uart_recv_callback);
@@ -381,7 +381,7 @@ STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
 }
 
 STATIC void mp_machine_uart_deinit(machine_uart_obj_t *self) {
-	luat_uart_close(self->uart_num);
+    luat_uart_close(self->uart_num);
 }
 
 STATIC mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
@@ -392,7 +392,7 @@ STATIC mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
 }
 
 STATIC bool mp_machine_uart_txdone(machine_uart_obj_t *self) {
-	int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
+    int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
     return uart_tx_done[uart];
 }
 
@@ -402,8 +402,8 @@ STATIC mp_int_t mp_machine_uart_readchar(machine_uart_obj_t *self) {
 }
 
 STATIC void mp_machine_uart_writechar(machine_uart_obj_t *self, uint16_t data) {
-	int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
-	uart_tx_done[uart] = 0;
+    int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
+    uart_tx_done[uart] = 0;
     uart_tx_one_char(self->uart_num, (byte)data);
 }
 

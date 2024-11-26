@@ -117,7 +117,7 @@ As you can see from the picture above, there are only two areas that can be move
 #define FLASH_FS_REGION_START           (0x384000)
 #define FLASH_FS_REGION_END             (0x3cc000)
 #define FLASH_FS_REGION_SIZE            (FLASH_FS_REGION_END-FLASH_FS_REGION_START) // 352KB
-#define FLASH_FDB_REGION_START			(0x3cc000)	//FDB 64KB
+#define FLASH_FDB_REGION_START          (0x3cc000)  //FDB 64KB
 #define FLASH_FDB_REGION_END            (0x3dc000)
 //softsim addr and size
 #define SOFTSIM_FLASH_PHYSICAL_BASEADDR (0xfcc000)
@@ -228,7 +228,7 @@ STATIC mp_obj_t modair_flash_read(mp_obj_t offset_in, mp_obj_t len_or_buf_in) {
     LUAT_DEBUG_PRINT("flash read at 0x%06x, len: %d", offset, len);
 
     // We know that allocation will be 4-byte aligned for sure
-    int res = luat_flash_read((uint32_t *)buf, offset, len);
+    int res = luat_flash_read((char *)buf, offset, len);
     if (res > 0) {
         if (alloc_buf) {
             return mp_obj_new_bytes(buf, len);
@@ -290,20 +290,20 @@ STATIC mp_obj_t modair_flash_user_end(void) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(modair_flash_user_end_obj, modair_flash_user_end);
 
 STATIC mp_obj_t modair_freemem() {
-	size_t total;
-	size_t used;
-	size_t max_used;
-	luat_meminfo_sys(&total, &used, &max_used);
+    size_t total;
+    size_t used;
+    size_t max_used;
+    luat_meminfo_sys(&total, &used, &max_used);
     return MP_OBJ_NEW_SMALL_INT((uint32_t)(total - used));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(modair_freemem_obj, modair_freemem);
 
 STATIC mp_obj_t modair_meminfo() {
     size_t total;
-	size_t used;
-	size_t max_used;
-	luat_meminfo_sys(&total, &used, &max_used);
-	mp_printf(&mp_plat_print, "Total: %d, Used: %d, Max used: %d\n", total, used, max_used);
+    size_t used;
+    size_t max_used;
+    luat_meminfo_sys(&total, &used, &max_used);
+    mp_printf(&mp_plat_print, "Total: %d, Used: %d, Max used: %d\n", total, used, max_used);
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(modair_meminfo_obj, modair_meminfo);
@@ -336,7 +336,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(modair_flash_mount_obj, modair_flash_mount);
 MP_DEFINE_CONST_STATICMETHOD_OBJ(modair_flash_mount_static_class_obj, &modair_flash_mount_obj);
 
 mp_obj_t modair_flash_umount() {
-	// LFS_init LFS_deinit LFS_format functions are prohibited
+    // LFS_init LFS_deinit LFS_format functions are prohibited
     return mp_const_none;
 }
 
@@ -360,7 +360,7 @@ STATIC mp_obj_t modair_ilistdir_it_iternext(mp_obj_t self_in) {
     // LUAT_DEBUG_PRINT("lsdir->next %s: %s, index = %d, result = %d", self->dir, fs_entry->d_name, self->fs_index, res);
 
     if(res == 1) {
-    	mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
+        mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(3, NULL));
         t->items[0] = mp_obj_new_str(fs_entry->d_name, strlen(fs_entry->d_name)),
         t->items[1] = MP_OBJ_NEW_SMALL_INT(fs_entry->d_type == 0 ? MP_S_IFREG : MP_S_IFDIR),
         t->items[2] = MP_OBJ_NEW_SMALL_INT(0), // no inode number
@@ -375,13 +375,13 @@ STATIC mp_obj_t modair_ilistdir_it_iternext(mp_obj_t self_in) {
 }
 
 mp_obj_t modair_flash_ilistdir(mp_obj_t path_in) {
-	const char* path = mp_obj_str_get_str(path_in);
+    const char* path = mp_obj_str_get_str(path_in);
     if (strlen(path) == 0) path = mp_obj_str_get_str(MP_OBJ_NEW_QSTR(MP_QSTR_));
     else if (!luat_fs_dexist(path)) mp_raise_OSError(MP_ENOTDIR);
 
     mp_air_lfs_ilistdir_it_t *iter = mp_obj_malloc(mp_air_lfs_ilistdir_it_t, &mp_type_polymorph_iter);
     iter->iternext = modair_ilistdir_it_iternext;
-    iter->dir = path;
+    iter->dir = (char*)path;
     iter->fs_index = 2; // skip "." and ".." folders
     // LUAT_DEBUG_PRINT("lsdir %s:", iter->dir);
     return MP_OBJ_FROM_PTR(iter);
@@ -394,8 +394,8 @@ MP_DEFINE_CONST_STATICMETHOD_OBJ(modair_flash_ilistdir_static_class_obj, &modair
 mp_obj_t modair_flash_mkdir(mp_obj_t path_in) {
     const char* path = mp_obj_str_get_str(path_in);
     if (!luat_fs_dexist(path)) {
-    	int res = luat_fs_mkdir(path);
-    	if (res != 0) mp_raise_OSError(MP_EIO);
+        int res = luat_fs_mkdir(path);
+        if (res != 0) mp_raise_OSError(MP_EIO);
     } else mp_raise_OSError(MP_EEXIST);
     return mp_const_none;
 }
@@ -407,8 +407,8 @@ MP_DEFINE_CONST_STATICMETHOD_OBJ(modair_flash_mkdir_static_class_obj, &modair_fl
 mp_obj_t modair_flash_remove(mp_obj_t path_in) {
     const char* path = mp_obj_str_get_str(path_in);
     if (luat_fs_fexist(path)) {
-    	int res = luat_fs_remove(path);
-    	if (res != 0) mp_raise_OSError(MP_EIO);
+        int res = luat_fs_remove(path);
+        if (res != 0) mp_raise_OSError(MP_EIO);
     } else mp_raise_OSError(MP_ENOENT);
     return mp_const_none;
 }
@@ -422,8 +422,8 @@ mp_obj_t modair_flash_rename(mp_obj_t old_path_in, mp_obj_t new_path_in) {
     const char* path_new = mp_obj_str_get_str(new_path_in);
     //ensure_exists(path_old);
     if (luat_fs_fexist(path_old)) {
-    	int res = luat_fs_rename(path_old, path_new);
-    	if (res != 0) mp_raise_OSError(MP_EIO);
+        int res = luat_fs_rename(path_old, path_new);
+        if (res != 0) mp_raise_OSError(MP_EIO);
     } else mp_raise_OSError(MP_ENOENT);
     return mp_const_none;
 }
@@ -435,8 +435,8 @@ MP_DEFINE_CONST_STATICMETHOD_OBJ(modair_flash_rename_static_class_obj, &modair_f
 mp_obj_t modair_flash_rmdir(mp_obj_t path_in) {
     const char* path = mp_obj_str_get_str(path_in);
     if (luat_fs_dexist(path)) {
-    	int res = luat_fs_rmdir(path);
-    	if (res != 0) mp_raise_OSError(MP_EIO);
+        int res = luat_fs_rmdir(path);
+        if (res != 0) mp_raise_OSError(MP_EIO);
     } else mp_raise_OSError(MP_ENOENT);
     return mp_const_none;
 }
@@ -454,11 +454,11 @@ mp_obj_t modair_flash_stat(mp_obj_t path_in) {
     //LUAT_DEBUG_PRINT("fexist %s, %d", path, luat_fs_fexist(path)); // reboots if luat_fs_dexist(path) == true 
 
     if (luat_fs_dexist(path)) {
-	    st_mode = MP_S_IFDIR;
+        st_mode = MP_S_IFDIR;
     }
     else if (luat_fs_fexist(path)) {
-    	st_mode = MP_S_IFREG;
-    	size = luat_fs_fsize(path);
+        st_mode = MP_S_IFREG;
+        size = luat_fs_fsize(path);
     }
     else mp_raise_OSError(MP_ENOENT);
 
@@ -466,7 +466,7 @@ mp_obj_t modair_flash_stat(mp_obj_t path_in) {
     t->items[0] = MP_OBJ_NEW_SMALL_INT(st_mode); // st_mode
     for (int i = 1; i <= 9; ++i) {
         if (i == 6) t->items[i] = MP_OBJ_NEW_SMALL_INT(size);
-    	else t->items[i] = MP_OBJ_NEW_SMALL_INT(0); // dev, nlink, uid, gid, size, atime, mtime, ctime
+        else t->items[i] = MP_OBJ_NEW_SMALL_INT(0); // dev, nlink, uid, gid, size, atime, mtime, ctime
     }
     return MP_OBJ_FROM_PTR(t);
 }
@@ -482,7 +482,7 @@ mp_obj_t modair_flash_statvfs(mp_obj_t path_in) {
 
     mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(10, NULL));
     t->items[0] = MP_OBJ_NEW_SMALL_INT(fs_info.block_size); // bsize
-    t->items[1] = MP_OBJ_NEW_SMALL_INT(0); 					// frsize
+    t->items[1] = MP_OBJ_NEW_SMALL_INT(0);                  // frsize
     t->items[2] = MP_OBJ_NEW_SMALL_INT(fs_info.total_block);// blocks
     t->items[3] = MP_OBJ_NEW_SMALL_INT(fs_info.total_block - fs_info.block_used);// bfree
     t->items[4] = MP_OBJ_NEW_SMALL_INT(fs_info.total_block - fs_info.block_used);// bavail
@@ -515,7 +515,7 @@ STATIC void modair_file_print(const mp_print_t * print, mp_obj_t self_in, mp_pri
 }
 
 STATIC mp_obj_t modair_file_open_internal(mp_obj_t path_in, mp_obj_t mode_in) {
-	const char *path = mp_obj_str_get_str(path_in);
+    const char *path = mp_obj_str_get_str(path_in);
     const mp_obj_type_t *type = &modair_textio;
     const char *mode = mp_obj_str_get_str(mode_in);
     const char *mode_str = mode;
@@ -559,7 +559,7 @@ STATIC mp_uint_t modair_file_write(mp_obj_t self_in, const void *buf, mp_uint_t 
         *errcode = -MP_EIO;
         return MP_STREAM_ERROR;
     }
-    if (res != size) {
+    if (res != (int)size) {
         *errcode = MP_ENOSPC;
         return MP_STREAM_ERROR;
     }
@@ -584,7 +584,7 @@ STATIC mp_uint_t modair_file_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_
         s->offset = res;
         return 0;
     } else if (request == MP_STREAM_FLUSH) {
-    	int res = luat_fs_fflush(self->f);
+        int res = luat_fs_fflush(self->f);
         if (res < 0) {
             *errcode = -MP_EIO;
             return MP_STREAM_ERROR;

@@ -92,7 +92,7 @@ machine_adc_obj_t machine_adc_obj_table[] = {
     {{&machine_adc_type}, 1}
 };
 
-#define ADC_ATTEN_DB_0 	 (0)
+#define ADC_ATTEN_DB_0   (0)
 #define ADC_ATTEN_DB_1_5 (1)
 #define ADC_ATTEN_DB_3_0 (2)
 #define ADC_ATTEN_DB_4_0 (3)
@@ -112,13 +112,13 @@ machine_adc_obj_t machine_adc_obj_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ATTN_10DB), MP_ROM_INT(ADC_ATTEN_DB_10) }
 
 void modmachine_adc_init0(void) {
-	int i ;
-	for(int i = 0; i < 2; i++) {
-		machine_adc_obj_table[i].active = (luat_adc_open(i, NULL) == 0);
-	}
+    int i ;
+    for(int i = 0; i < 2; i++) {
+        machine_adc_obj_table[i].active = (luat_adc_open(i, NULL) == 0);
+    }
 }
 void modmachine_adc_deinit0(void) {
-	for(int i = 0; i < 2; i++) luat_adc_close(i);
+    for(int i = 0; i < 2; i++) luat_adc_close(i);
 }
 
 
@@ -143,14 +143,14 @@ void mp_machine_adc_init_helper_internal(machine_adc_obj_t *self, size_t n_pos_a
     mp_int_t atten_in = args[ARG_atten].u_int;
     
     switch(atten_in) {
-    	case ADC_ATTEN_DB_0:   atten = 00;break;
-    	case ADC_ATTEN_DB_1_5: atten = 15;break;
-    	case ADC_ATTEN_DB_3_0: atten = 30;break;
-    	case ADC_ATTEN_DB_4_0: atten = 40;break;
-    	case ADC_ATTEN_DB_6_0: atten = 60;break;
-    	case ADC_ATTEN_DB_7_5: atten = 75;break;
-    	case ADC_ATTEN_DB_8_7: atten = 87;break;
-    	case ADC_ATTEN_DB_10: atten = 100;break;
+        case ADC_ATTEN_DB_0:   atten = 00;break;
+        case ADC_ATTEN_DB_1_5: atten = 15;break;
+        case ADC_ATTEN_DB_3_0: atten = 30;break;
+        case ADC_ATTEN_DB_4_0: atten = 40;break;
+        case ADC_ATTEN_DB_6_0: atten = 60;break;
+        case ADC_ATTEN_DB_7_5: atten = 75;break;
+        case ADC_ATTEN_DB_8_7: atten = 87;break;
+        case ADC_ATTEN_DB_10: atten = 100;break;
     }
 
     if(atten >= 100) { range = LUAT_ADC_AIO_RANGE_1_2; maxV = 12; }
@@ -167,8 +167,8 @@ void mp_machine_adc_init_helper_internal(machine_adc_obj_t *self, size_t n_pos_a
     //LUAT_DEBUG_PRINT("ADC channel %u, atten = %f, range = %u, maxV = %f", self->channel_id, self->atten/10.0, self->range, self->maxV/10.0);
     
     luat_adc_ctrl_param_t ctrl_param;
-	ctrl_param.range = self->range;
-	luat_adc_ctrl(self->channel_id, LUAT_ADC_SET_GLOBAL_RANGE, ctrl_param);
+    ctrl_param.range = self->range;
+    luat_adc_ctrl(self->channel_id, LUAT_ADC_SET_GLOBAL_RANGE, ctrl_param);
 }
 
 STATIC void mp_machine_adc_init_helper(machine_adc_obj_t *self, size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -179,11 +179,11 @@ STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type, size_t n_pos_
     mp_arg_check_num(n_pos_args, n_kw_args, 1, MP_OBJ_FUN_ARGS_MAX, true);
     uint8_t adc_channel = machine_pin_get_id(args[0]);
     
-    if (adc_channel < 0 || adc_channel > 1) {
+    if (adc_channel > 1) {
         mp_raise_ValueError(MP_ERROR_TEXT("Invalid ADC channel"));
     }
     if(!machine_adc_obj_table[adc_channel].active) {
-    	mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("ADC channel %u not active"), adc_channel);
+        mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("ADC channel %u not active"), adc_channel);
     }
 
     machine_adc_obj_t *self = &machine_adc_obj_table[adc_channel];
@@ -196,16 +196,16 @@ STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type, size_t n_pos_
 }
 
 STATIC mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
-	int val1, val2;
-	luat_adc_read(self->channel_id , &val1, &val2);
-	mp_int_t u16 = val1;
+    int val1, val2;
+    luat_adc_read(self->channel_id , &val1, &val2);
+    mp_int_t u16 = val1;
     return u16;
 }
 
 STATIC mp_int_t mp_machine_adc_read_uv(machine_adc_obj_t *self) {
-	int val1, val2;
-	luat_adc_read(self->channel_id , &val1, &val2);
-	mp_int_t uv = val2;
+    int val1, val2;
+    luat_adc_read(self->channel_id , &val1, &val2);
+    mp_int_t uv = val2;
     return uv;
 }
 

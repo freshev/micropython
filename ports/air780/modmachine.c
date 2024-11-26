@@ -55,18 +55,21 @@ typedef enum {
     MP_SOFT_RESET
 } reset_reason_t;
 
-extern void machine_wdt_test(void);
+STATIC mp_obj_t machine_wdt_test(void) {
+    while(1);
+    return mp_const_none;
+}                                
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_wdt_test_obj, machine_wdt_test);
 
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
- 	/* Reset reasons */ 														\
-    { MP_ROM_QSTR(MP_QSTR_HARD_RESET), MP_ROM_INT(MP_HARD_RESET) }, 			\
-    { MP_ROM_QSTR(MP_QSTR_PWRON_RESET), MP_ROM_INT(MP_PWRON_RESET) }, 			\
-    { MP_ROM_QSTR(MP_QSTR_WDT_RESET), MP_ROM_INT(MP_WDT_RESET) }, 				\
-    { MP_ROM_QSTR(MP_QSTR_DEEPSLEEP_RESET), MP_ROM_INT(MP_DEEPSLEEP_RESET) }, 	\
-    { MP_ROM_QSTR(MP_QSTR_SOFT_RESET), MP_ROM_INT(MP_SOFT_RESET) },				\
-                                                               					\
-    { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },				\
+    /* Reset reasons */                                                         \
+    { MP_ROM_QSTR(MP_QSTR_HARD_RESET), MP_ROM_INT(MP_HARD_RESET) },             \
+    { MP_ROM_QSTR(MP_QSTR_PWRON_RESET), MP_ROM_INT(MP_PWRON_RESET) },           \
+    { MP_ROM_QSTR(MP_QSTR_WDT_RESET), MP_ROM_INT(MP_WDT_RESET) },               \
+    { MP_ROM_QSTR(MP_QSTR_DEEPSLEEP_RESET), MP_ROM_INT(MP_DEEPSLEEP_RESET) },   \
+    { MP_ROM_QSTR(MP_QSTR_SOFT_RESET), MP_ROM_INT(MP_SOFT_RESET) },             \
+                                                                                \
+    { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                \
                                                                                 \
     { MP_ROM_QSTR(MP_QSTR_wdt_test), MP_ROM_PTR(&machine_wdt_test_obj) }
 
@@ -96,10 +99,10 @@ void modmachine_init0(void) {
     luat_adc_close(LUAT_ADC_CH_VBAT);
 }
 void modmachine_deinit0(void) {
-	modmachine_adc_deinit0();
-	modmachine_pwm_deinit0();
-	modmachine_uart_deinit0();
-	modmachine_pin_deinit0();	
+    modmachine_adc_deinit0();
+    modmachine_pwm_deinit0();
+    modmachine_uart_deinit0();
+    modmachine_pin_deinit0();   
 }
 
 
@@ -125,7 +128,7 @@ NORETURN STATIC void mp_machine_reset(void) {
 STATIC mp_int_t mp_machine_reset_cause(void) {
     switch (luat_pm_get_poweron_reason()) {
         case LUAT_PM_POWERON_REASON_SWRESET:
-        	return MP_SOFT_RESET;
+            return MP_SOFT_RESET;
         case LUAT_PM_POWERON_REASON_HWRESET:
             return MP_HARD_RESET;
         case LUAT_PM_POWERON_REASON_WDT:
@@ -137,7 +140,7 @@ STATIC mp_int_t mp_machine_reset_cause(void) {
 
 
 STATIC void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
-	mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Chip set freq operation not supported"));
+    mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Chip set freq operation not supported"));
 }
 
 STATIC mp_obj_t mp_machine_get_freq(void) {

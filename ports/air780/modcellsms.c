@@ -50,36 +50,39 @@ uint8_t sms_read_flag = 0;
 uint8_t sms_send_flag = 0;
 uint8_t ussd_send_flag = 0;
 
+static void modcellular_sms_recv_cb(uint8_t event,void *param) {
+}
+
 void modcellular_sms_process(sms_obj_t *sms);
-void modcellular_sms_recv_cb(sms_obj_t *sms) {
-	LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
-	modcellular_sms_process(sms); // process internal commands
-	if (sms_callback && sms_callback != mp_const_none) {
-    	mp_sched_schedule(sms_callback, sms);
+void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
+    LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
+    modcellular_sms_process(sms); // process internal commands
+    if (sms_callback && sms_callback != mp_const_none) {
+        mp_sched_schedule(sms_callback, sms);
     }
 }
 void modcellular_sms_send_cb(int ret) {
-	LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
+    LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
 }
 
 // --------------------------------------------
 //              SIM storage info
 // --------------------------------------------
 void modcellular_get_storage_info_cb(uint16_t param_size, void* p_param) { 
-	smsGetPrefMemStorageInfoInSim(PS_DIAL_REQ_HANDLER, CMI_SMS_OPER_STORE_INFO_GETTING); 
+    smsGetPrefMemStorageInfoInSim(PS_DIAL_REQ_HANDLER, CMI_SMS_OPER_STORE_INFO_GETTING); 
 }
 BOOL modcellular_get_storage_info() {
-	storage_flag = 0;
+    storage_flag = 0;
     storage = (CmiSmsGetStorageStatusCnf*)LUAT_MEM_MALLOC(sizeof(CmiSmsGetStorageStatusCnf));
     if(storage != NULL) {
-    	memset(storage, 0, sizeof(CmiSmsGetStorageStatusCnf));
-  		cmsNonBlockApiCall(modcellular_get_storage_info_cb, 0, NULL);
-	    WAIT_UNTIL(storage_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SIM storage info");); // wait for CMI_SMS_GET_SMS_STORAGE_STATUS_CNF
-		//LUAT_DEBUG_PRINT("SMS storage info:");
-    	//LUAT_DEBUG_PRINT("usedNumOfSim %d", storage->usedNumOfSim);
-		//LUAT_DEBUG_PRINT("totalNumOfSim %d", storage->totalNumOfSim);
-    	//for(int i = 0; i < MIN(CI_SMS_RECORD_MAX_NUMBER,10); i++) LUAT_DEBUG_PRINT("usedIndexOfSim[%d] %d", i, storage->usedIndexOfSim[i]);
-    	return true;
+        memset(storage, 0, sizeof(CmiSmsGetStorageStatusCnf));
+        cmsNonBlockApiCall(modcellular_get_storage_info_cb, 0, NULL);
+        WAIT_UNTIL(storage_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SIM storage info");); // wait for CMI_SMS_GET_SMS_STORAGE_STATUS_CNF
+        //LUAT_DEBUG_PRINT("SMS storage info:");
+        //LUAT_DEBUG_PRINT("usedNumOfSim %d", storage->usedNumOfSim);
+        //LUAT_DEBUG_PRINT("totalNumOfSim %d", storage->totalNumOfSim);
+        //for(int i = 0; i < MIN(CI_SMS_RECORD_MAX_NUMBER,10); i++) LUAT_DEBUG_PRINT("usedIndexOfSim[%d] %d", i, storage->usedIndexOfSim[i]);
+        return true;
     }
     return false;
 }
@@ -91,26 +94,26 @@ void modcellular_clear_storage_info() {
 //                   SMS list
 // --------------------------------------------
 /* typedef enum CmiSmsRecStorStatus_Enum {
-		CMI_SMS_STOR_STATUS_REC_UNREAD = 0,  // Received unread message, i.e new message 
-		CMI_SMS_STOR_STATUS_REC_READ   = 1,  // Received read message 
-		CMI_SMS_STOR_STATUS_STO_UNSENT = 2,  // Stored unsent message only applicable to SMs 
-		CMI_SMS_STOR_STATUS_STO_SENT   = 3,  // Stored sent message only applicable to SMs 
-		CMI_SMS_STOR_STATUS_ALL        = 4,  // All message, only applicable to +CGML command 
-		CMI_SMS_STOR_STATUS_END
+        CMI_SMS_STOR_STATUS_REC_UNREAD = 0,  // Received unread message, i.e new message 
+        CMI_SMS_STOR_STATUS_REC_READ   = 1,  // Received read message 
+        CMI_SMS_STOR_STATUS_STO_UNSENT = 2,  // Stored unsent message only applicable to SMs 
+        CMI_SMS_STOR_STATUS_STO_SENT   = 3,  // Stored sent message only applicable to SMs 
+        CMI_SMS_STOR_STATUS_ALL        = 4,  // All message, only applicable to +CGML command 
+        CMI_SMS_STOR_STATUS_END
 } CmiSmsRecStorStatus; */
 
 void modcellular_get_sms_list_cb(uint16_t param_size, void* p_param) { 
-	smsListSmsStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, *((uint8_t*)p_param));
+    smsListSmsStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, *((uint8_t*)p_param));
 }
 BOOL modcellular_get_sms_list(CmiSmsRecStorStatus status) {
-	sms_list_flag = 0;
-	if(sms_list_buffer == NULL) sms_list_buffer = mp_obj_new_list(0, NULL);
+    sms_list_flag = 0;
+    if(sms_list_buffer == NULL) sms_list_buffer = mp_obj_new_list(0, NULL);
     if(sms_list_buffer != NULL) {
-  		cmsNonBlockApiCall(modcellular_get_sms_list_cb, sizeof(uint8_t), &status);
-	    WAIT_UNTIL(sms_list_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SMS list");); // wait for CMI_SMS_LIST_SMS_MSG_RECORD_CNF
-		//LUAT_DEBUG_PRINT("SMS list with status %d:", status, sms_list_buffer->len);
-    	//for(int i = 0; i < sms_list_buffer->len; i++) LUAT_DEBUG_PRINT("%d: %p", i, sms_list_buffer->items[i]);
-    	return true;
+        cmsNonBlockApiCall(modcellular_get_sms_list_cb, sizeof(uint8_t), &status);
+        WAIT_UNTIL(sms_list_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SMS list");); // wait for CMI_SMS_LIST_SMS_MSG_RECORD_CNF
+        //LUAT_DEBUG_PRINT("SMS list with status %d:", status, sms_list_buffer->len);
+        //for(int i = 0; i < sms_list_buffer->len; i++) LUAT_DEBUG_PRINT("%d: %p", i, sms_list_buffer->items[i]);
+        return true;
     }
     return false;
 }
@@ -127,12 +130,12 @@ void modcellular_clear_sms_list() {
 //                   SMS delete
 // --------------------------------------------
 void modcellular_sms_delete_internal_cb(uint16_t param_size, void* p_param) { 
-	smsDelStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, *((uint8_t*)p_param), 0);
+    smsDelStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, *((uint8_t*)p_param), 0);
 }
 BOOL modcellular_sms_delete_internal(uint8_t index) {
     sms_delete_flag = 0;
-  	cmsNonBlockApiCall(modcellular_sms_delete_internal_cb, sizeof(uint8_t), &index);
-	WAIT_UNTIL(sms_delete_flag, TIMEOUT_SMS_DELETE, 100, mp_raise_RuntimeError("Can not delete SMS");); // wait for CMI_SMS_DEL_SMS_MSG_RECORD_CNF
+    cmsNonBlockApiCall(modcellular_sms_delete_internal_cb, sizeof(uint8_t), &index);
+    WAIT_UNTIL(sms_delete_flag, TIMEOUT_SMS_DELETE, 100, mp_raise_RuntimeError("Can not delete SMS");); // wait for CMI_SMS_DEL_SMS_MSG_RECORD_CNF
     return true;
 }
 
@@ -140,69 +143,69 @@ BOOL modcellular_sms_delete_internal(uint8_t index) {
 // --------------------------------------------
 //               SMS event handler
 // --------------------------------------------
-extern void luat_sms_proc(uint32_t event, void *param); 			// from "luat_sms_ec618.c"
+extern void luat_sms_proc(uint32_t event, void *param);             // from "luat_sms_ec618.c"
 // extern void luat_sms_nw_report_urc(CmiSmsNewMsgInd *p_cmi_msg_ind); // from "luat_sms_ec618.c"
 mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record);
 
 void sms_event_cb(uint32_t event, void *param) {
 
-	void (*default_sms_proc)(uint32_t event, void *param) = luat_sms_proc;
-	switch(event) {
-	    // call default handler from "luat_sms_ec618.c" only for sending
-	    case CMI_SMS_SEND_MSG_CNF: // 2
-        	default_sms_proc(event, param);
-			break;
+    void (*default_sms_proc)(uint32_t event, void *param) = luat_sms_proc;
+    switch(event) {
+        // call default handler from "luat_sms_ec618.c" only for sending
+        case CMI_SMS_SEND_MSG_CNF: // 2
+            default_sms_proc(event, param);
+            break;
 
-		// rewrite logic from "luat_sms_ec618.c" to store new message to U(SIM) storage
-		case CMI_SMS_NEW_MSG_MEM_LOCATION_IND: { // 7
-		    CmiSmsNewMsgMemLocationInd * pSms_loc = (CmiSmsNewMsgMemLocationInd *)param;
-			//LUAT_DEBUG_PRINT("New SIM loc: rc=%d, index=%d, opMode=%d", pSms_loc->rc, pSms_loc->index, pSms_loc->operatmode);
-			}
-			break;
+        // rewrite logic from "luat_sms_ec618.c" to store new message to U(SIM) storage
+        case CMI_SMS_NEW_MSG_MEM_LOCATION_IND: { // 7
+            CmiSmsNewMsgMemLocationInd * pSms_loc = (CmiSmsNewMsgMemLocationInd *)param;
+            //LUAT_DEBUG_PRINT("New SIM loc: rc=%d, index=%d, opMode=%d", pSms_loc->rc, pSms_loc->index, pSms_loc->operatmode);
+            }
+            break;
 
-		case CMI_SMS_NEW_MSG_IND: // 8
+        case CMI_SMS_NEW_MSG_IND: // 8
             switch (((CmiSmsNewMsgInd*)param)->smsType) {
                 case CMI_SMS_TYPE_DELIVER:
                 case CMI_SMS_TYPE_STATUS_REPORT:
                 case CMI_SMS_TYPE_CB_ETWS_CMAS: {
-                	// store to U(SIM)
-                	CmiSmsNewMsgInd *p_cmi_msg_ind = (CmiSmsNewMsgInd*)param;                	
-                	smsSetStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, CMI_SMS_OPER_STORE_MT_MSG, CMI_SMS_STOR_STATUS_REC_UNREAD, p_cmi_msg_ind->smscPresent, &(p_cmi_msg_ind->smscAddress), &(p_cmi_msg_ind->pdu));
-                	// call luat default handler, which calls sms_recv_cb(p_cmi_msg_ind->smsType, &recv_msg_info) via "luat_sms_cfg.cb" delegate; 
-					// luat_sms_nw_report_urc(p_cmi_msg_ind); // rewritten
-					/* typedef struct CmiSmsNewMsgInd_Tag {
-    					UINT8               smsType;       // CmiSmsMessageType 
-    					UINT8               smsId;
-    					UINT8               smsCoding;     // CmiSmsMsgCoding 
-    					UINT8               smsClass;      // SmsMessageClass 
-    					BOOL                smscPresent;
-    					UINT8               reserved0;
-    					UINT16              reserved1;
-    					CmiSmsAddressInfo   smscAddress;
-    					CmiSmsPdu           pdu;
-					} CmiSmsNewMsgInd; 
-					typedef struct CmiSmsListSmsMsgRecCnf_Tag {
-						CmiSmsErrorCode         errorCode;
-    					UINT8                   endStatus;          // where or not is the last item 
-						BOOL                    scAddrPresent;      // SC Address info present or not 
-						UINT8                   index;            	// the index of the SMS reocord in SIM 
-						UINT8                   smsStatus;          // SMS record status. CmiSmsRecStorStatus 
-						UINT8                   smsMsgType;         // SMS message type, defined type CmiSmsMessageType 
-						UINT8                   reserved0;
-						CmiSmsAddressInfo       scAddrInfo;         // SC address info 
-						CmiSmsPdu               smsPduData;         // SMS PDU contents 
-					} CmiSmsListSmsMsgRecCnf; */
-					// convert CmiSmsNewMsgInd to CmiSmsListSmsMsgRecCnf
-					CmiSmsListSmsMsgRecCnf record;
-					record.errorCode = 0;
-					record.endStatus = 1;
-					record.scAddrPresent = p_cmi_msg_ind->smscPresent;
-					record.index = 1;
-					record.smsStatus = CMI_SMS_STOR_STATUS_REC_UNREAD;
-					record.smsMsgType = p_cmi_msg_ind->smsType;
-					record.scAddrInfo = p_cmi_msg_ind->smscAddress;
-					record.smsPduData = p_cmi_msg_ind->pdu;
-					modcellular_sms_recv_cb(modcellular_sms_from_list_record(&record));
+                    // store to U(SIM)
+                    CmiSmsNewMsgInd *p_cmi_msg_ind = (CmiSmsNewMsgInd*)param;                   
+                    smsSetStoredInSimSmsMsg(PS_DIAL_REQ_HANDLER, CMI_SMS_OPER_STORE_MT_MSG, CMI_SMS_STOR_STATUS_REC_UNREAD, p_cmi_msg_ind->smscPresent, &(p_cmi_msg_ind->smscAddress), &(p_cmi_msg_ind->pdu));
+                    // call luat default handler, which calls sms_recv_cb(p_cmi_msg_ind->smsType, &recv_msg_info) via "luat_sms_cfg.cb" delegate; 
+                    // luat_sms_nw_report_urc(p_cmi_msg_ind); // rewritten
+                    /* typedef struct CmiSmsNewMsgInd_Tag {
+                        UINT8               smsType;       // CmiSmsMessageType 
+                        UINT8               smsId;
+                        UINT8               smsCoding;     // CmiSmsMsgCoding 
+                        UINT8               smsClass;      // SmsMessageClass 
+                        BOOL                smscPresent;
+                        UINT8               reserved0;
+                        UINT16              reserved1;
+                        CmiSmsAddressInfo   smscAddress;
+                        CmiSmsPdu           pdu;
+                    } CmiSmsNewMsgInd; 
+                    typedef struct CmiSmsListSmsMsgRecCnf_Tag {
+                        CmiSmsErrorCode         errorCode;
+                        UINT8                   endStatus;          // where or not is the last item 
+                        BOOL                    scAddrPresent;      // SC Address info present or not 
+                        UINT8                   index;              // the index of the SMS reocord in SIM 
+                        UINT8                   smsStatus;          // SMS record status. CmiSmsRecStorStatus 
+                        UINT8                   smsMsgType;         // SMS message type, defined type CmiSmsMessageType 
+                        UINT8                   reserved0;
+                        CmiSmsAddressInfo       scAddrInfo;         // SC address info 
+                        CmiSmsPdu               smsPduData;         // SMS PDU contents 
+                    } CmiSmsListSmsMsgRecCnf; */
+                    // convert CmiSmsNewMsgInd to CmiSmsListSmsMsgRecCnf
+                    CmiSmsListSmsMsgRecCnf record;
+                    record.errorCode = 0;
+                    record.endStatus = 1;
+                    record.scAddrPresent = p_cmi_msg_ind->smscPresent;
+                    record.index = 1;
+                    record.smsStatus = CMI_SMS_STOR_STATUS_REC_UNREAD;
+                    record.smsMsgType = p_cmi_msg_ind->smsType;
+                    record.scAddrInfo = p_cmi_msg_ind->smscAddress;
+                    record.smsPduData = p_cmi_msg_ind->pdu;
+                    modcellular_sms_recv_custom_cb(modcellular_sms_from_list_record(&record));
                     }
                     break;
                 default:
@@ -224,73 +227,73 @@ void sms_event_cb(uint32_t event, void *param) {
             p_cac_cmi_rsp->header.rspHandler = BROADCAST_IND_HANDLER;
             memcpy(p_cac_cmi_rsp->body, &new_msg_rsp, sizeof(CmiSmsNewMsgRsp));
             OsaSendSignal(CCM_TASK_ID, &p_signal);
-			break;
+            break;
 
-		// custom handlers
+        // custom handlers
 
-		/* typedef struct CmiSmsGetSmsMsgRecCnf_Tag {
-    		CmiSmsErrorCode         errorCode;      // Response result 
-    		UINT8                   operatmode;     // CmiSmsOperationMode 
-    		UINT8                   smsStatus;      // SMS record status. CmiSmsRecStorStatus 
-    		UINT8                   smsMsgType;     // SMS message type, defined type CmiSmsMessageType 
-    		BOOL                    scAddrPresent;  / SC Address info present or not 
-    		UINT16                  reserved;
-    		CmiSmsAddressInfo       scAddrInfo;     // SC address info 
-    		CmiSmsPdu               smsPduData;     // SMS PDU contents 
-		} CmiSmsGetSmsMsgRecCnf; */
+        /* typedef struct CmiSmsGetSmsMsgRecCnf_Tag {
+            CmiSmsErrorCode         errorCode;      // Response result 
+            UINT8                   operatmode;     // CmiSmsOperationMode 
+            UINT8                   smsStatus;      // SMS record status. CmiSmsRecStorStatus 
+            UINT8                   smsMsgType;     // SMS message type, defined type CmiSmsMessageType 
+            BOOL                    scAddrPresent;  / SC Address info present or not 
+            UINT16                  reserved;
+            CmiSmsAddressInfo       scAddrInfo;     // SC address info 
+            CmiSmsPdu               smsPduData;     // SMS PDU contents 
+        } CmiSmsGetSmsMsgRecCnf; */
         case CMI_SMS_GET_SMS_MSG_RECORD_CNF: { // 29
             CmiSmsGetSmsMsgRecCnf * sms_rec = (CmiSmsGetSmsMsgRecCnf *)param;
             //LUAT_DEBUG_PRINT("SMS record (GET_SMS_MSG): ");
             //LUAT_DEBUG_PRINT("smsStatus %d", sms_rec->smsStatus); // read|unread|unsent|sent
-        	//LUAT_DEBUG_PRINT("errorCode %d", sms_rec->errorCode);
-        	//LUAT_DEBUG_PRINT("pdu len %d", sms_rec->smsPduData.pduLength);
-        	}
-        	break;
-		
-		case CMI_SMS_SET_SMS_MSG_RECORD_CNF: { // 31
-		    CmiSmsSetSmsMsgRecCnf * pSms_res = (CmiSmsSetSmsMsgRecCnf *)param;
-		    //LUAT_DEBUG_PRINT("Set SIM mess: error=%d, index=%d, opMode=%d", pSms_res->errorCode, pSms_res->index, pSms_res->operatmode);
-		    if(pSms_res->errorCode != 0) LUAT_DEBUG_PRINT("Failed to store SMS into U(SIM)");
-		    }
-			break;
+            //LUAT_DEBUG_PRINT("errorCode %d", sms_rec->errorCode);
+            //LUAT_DEBUG_PRINT("pdu len %d", sms_rec->smsPduData.pduLength);
+            }
+            break;
+        
+        case CMI_SMS_SET_SMS_MSG_RECORD_CNF: { // 31
+            CmiSmsSetSmsMsgRecCnf * pSms_res = (CmiSmsSetSmsMsgRecCnf *)param;
+            //LUAT_DEBUG_PRINT("Set SIM mess: error=%d, index=%d, opMode=%d", pSms_res->errorCode, pSms_res->index, pSms_res->operatmode);
+            if(pSms_res->errorCode != 0) LUAT_DEBUG_PRINT("Failed to store SMS into U(SIM)");
+            }
+            break;
 
-		case CMI_SMS_DEL_SMS_MSG_RECORD_CNF: { // 33
-		    CmiSmsDelSmsMsgRecCnf * pSms_res = (CmiSmsSetSmsMsgRecCnf *)param;
-		    //LUAT_DEBUG_PRINT("Delete SIM: error=%d", pSms_res->errorCode);
-		    if(pSms_res->errorCode == 0) sms_delete_flag = 1;
-		    }
-        	break;
+        case CMI_SMS_DEL_SMS_MSG_RECORD_CNF: { // 33
+            CmiSmsDelSmsMsgRecCnf * pSms_res = (CmiSmsDelSmsMsgRecCnf *)param;
+            //LUAT_DEBUG_PRINT("Delete SIM: error=%d", pSms_res->errorCode);
+            if(pSms_res->errorCode == 0) sms_delete_flag = 1;
+            }
+            break;
 
-		case CMI_SMS_LIST_SMS_MSG_RECORD_CNF: { // 35
+        case CMI_SMS_LIST_SMS_MSG_RECORD_CNF: { // 35
             CmiSmsListSmsMsgRecCnf * sms_rec = (CmiSmsListSmsMsgRecCnf *)param;
             //LUAT_DEBUG_PRINT("SMS record (LIST_SMS_MSG) %d: status=%d, end=%d, error=%d", sms_rec->index, sms_rec->smsStatus, sms_rec->endStatus, sms_rec->errorCode);
-        	if (sms_list_buffer && sms_rec->errorCode == 0) {
-        		if(sms_rec->smsStatus < CMI_SMS_STOR_STATUS_ALL) {
-        			mp_obj_list_append(sms_list_buffer, modcellular_sms_from_list_record(sms_rec));
-        		}
-    		} else network_exception = NTW_EXC_SMS_DROP;   	
-		    if(sms_rec->endStatus == 1) sms_list_flag = 1;
-        	}
-        	break;
-
-		case CMI_SMS_GET_SMS_STORAGE_STATUS_CNF: { // 37
-        	CmiSmsGetStorageStatusCnf * storage_info = (CmiSmsGetStorageStatusCnf *)param;
-        	if(storage) { memcpy(storage, storage_info, sizeof(CmiSmsGetStorageStatusCnf)); storage_flag = 1; }
+            if (sms_list_buffer && sms_rec->errorCode == 0) {
+                if(sms_rec->smsStatus < CMI_SMS_STOR_STATUS_ALL) {
+                    mp_obj_list_append(sms_list_buffer, modcellular_sms_from_list_record(sms_rec));
+                }
+            } else network_exception = NTW_EXC_SMS_DROP;    
+            if(sms_rec->endStatus == 1) sms_list_flag = 1;
             }
-        	break;
-		
+            break;
+
+        case CMI_SMS_GET_SMS_STORAGE_STATUS_CNF: { // 37
+            CmiSmsGetStorageStatusCnf * storage_info = (CmiSmsGetStorageStatusCnf *)param;
+            if(storage) { memcpy(storage, storage_info, sizeof(CmiSmsGetStorageStatusCnf)); storage_flag = 1; }
+            }
+            break;
+        
         case CMI_SMS_MEM_CAP_IND: // 40, Report SMS Memory Capacity Exceeded flag
-        	LUAT_DEBUG_PRINT("SMS storage overflow");
-        	break;
+            LUAT_DEBUG_PRINT("SMS storage overflow");
+            break;
 
         case CMI_SMS_IDLE_STATUS_IND: // 43, Report SMS Task IDLE state
-        	LUAT_DEBUG_PRINT("SMS task IDLE");  			
-        	break;        
+            LUAT_DEBUG_PRINT("SMS task IDLE");              
+            break;        
         
         default:
-    		LUAT_DEBUG_PRINT("SMS event%d,%x",event, param);
-    		break;
-	}   
+            LUAT_DEBUG_PRINT("SMS event%d,%x",event, param);
+            break;
+    }   
 }
 
 
@@ -308,29 +311,29 @@ void modcellular_init_sms() {
     memset(&cpmsConfig, 0, sizeof(MWNvmCfgCPMSParam));
     mwNvmCfgGetCpmsConfig(&cpmsConfig);
     if(cpmsConfig.mem1 != PSIL_SMS_STOR_MEM_TYPE_SM || cpmsConfig.mem2 != PSIL_SMS_STOR_MEM_TYPE_SM || cpmsConfig.mem3 != PSIL_SMS_STOR_MEM_TYPE_SM) {
-    	LUAT_DEBUG_PRINT("mem1: %d", cpmsConfig.mem1);
-    	LUAT_DEBUG_PRINT("mem2: %d", cpmsConfig.mem2);
-    	LUAT_DEBUG_PRINT("mem3: %d", cpmsConfig.mem3);
-    	// Formally set storage to U(SIM)
-    	MWNvmCfgSetCPMSParam pSetCpms;
-    	memset(&pSetCpms, 0, sizeof(MWNvmCfgSetCPMSParam));
-    	pSetCpms.mem1Present = pSetCpms.mem2Present = pSetCpms.mem3Present = true;
-    	pSetCpms.cpmsParam.mem1 = pSetCpms.cpmsParam.mem2 = pSetCpms.cpmsParam.mem3 = PSIL_SMS_STOR_MEM_TYPE_SM;  // 2 - (U)SIM, 1 - ME
-    	mwNvmCfgSetAndSaveCpmsConfig(&pSetCpms);
+        LUAT_DEBUG_PRINT("mem1: %d", cpmsConfig.mem1);
+        LUAT_DEBUG_PRINT("mem2: %d", cpmsConfig.mem2);
+        LUAT_DEBUG_PRINT("mem3: %d", cpmsConfig.mem3);
+        // Formally set storage to U(SIM)
+        MWNvmCfgSetCPMSParam pSetCpms;
+        memset(&pSetCpms, 0, sizeof(MWNvmCfgSetCPMSParam));
+        pSetCpms.mem1Present = pSetCpms.mem2Present = pSetCpms.mem3Present = true;
+        pSetCpms.cpmsParam.mem1 = pSetCpms.cpmsParam.mem2 = pSetCpms.cpmsParam.mem3 = PSIL_SMS_STOR_MEM_TYPE_SM;  // 2 - (U)SIM, 1 - ME
+        mwNvmCfgSetAndSaveCpmsConfig(&pSetCpms);
     }
 
     MWNvmCfgCNMIParam cnmiConfig;
     memset(&cnmiConfig, 0, sizeof(MWNvmCfgCNMIParam));
     mwNvmCfgGetCnmiConfig(&cnmiConfig);
     if(cnmiConfig.mode != 2 || cnmiConfig.mt != 1) {
-    	LUAT_DEBUG_PRINT("mode: %d", cnmiConfig.mode); 	// the control mode for buffering URC, should be 2
-    	LUAT_DEBUG_PRINT("mt: %d", cnmiConfig.mt);		// SMS-DELIVER URC mode, should be 1
-    	// Formally set new incoming message store to U(SIM)
-    	MWNvmCfgSetCNMIParam pSetCnmi;
-    	pSetCnmi.modePresent = pSetCnmi.mtPresent = true;
-    	pSetCnmi.cnmiParam.mode = 2;
-    	pSetCnmi.cnmiParam.mt = 1;
-    	mwNvmCfgSetAndSaveCnmiConfig(&pSetCnmi);
+        LUAT_DEBUG_PRINT("mode: %d", cnmiConfig.mode);  // the control mode for buffering URC, should be 2
+        LUAT_DEBUG_PRINT("mt: %d", cnmiConfig.mt);      // SMS-DELIVER URC mode, should be 1
+        // Formally set new incoming message store to U(SIM)
+        MWNvmCfgSetCNMIParam pSetCnmi;
+        pSetCnmi.modePresent = pSetCnmi.mtPresent = true;
+        pSetCnmi.cnmiParam.mode = 2;
+        pSetCnmi.cnmiParam.mt = 1;
+        mwNvmCfgSetAndSaveCnmiConfig(&pSetCnmi);
     }
 }
 
@@ -346,22 +349,22 @@ int modcellular_endswith(const char *str, const char *suffix) {
 }
 
 void modcellular_remove_files(char *suffix) {
-	luat_fs_dirent_t *fs_dirent = LUAT_MEM_MALLOC(sizeof(luat_fs_dirent_t)*100);
+    luat_fs_dirent_t *fs_dirent = LUAT_MEM_MALLOC(sizeof(luat_fs_dirent_t)*100);
     memset(fs_dirent, 0, sizeof(luat_fs_dirent_t)*100);
     int lsdir_cnt = luat_fs_lsdir("/", fs_dirent, 0, 100);
     if (lsdir_cnt > 0) {
-        for (size_t i = 0; i < lsdir_cnt; i++) {
+        for (int i = 0; i < lsdir_cnt; i++) { // was size_t
             switch ((fs_dirent+i)->d_type) {
-            	case 0: // a file, not directory
-            		if(modcellular_endswith((fs_dirent + i)->d_name, suffix)) {
-            			mp_printf(&mp_plat_print, "Remove %s ... ", (fs_dirent + i)->d_name);
-            			int res = luat_fs_remove((fs_dirent+i)->d_name);
-            			if(res == 0) mp_printf(&mp_plat_print, "success\n");
-            			else mp_printf(&mp_plat_print, "failed\n");
-        			}
-                	break;
-            	default: 
-            	break;
+                case 0: // a file, not directory
+                    if(modcellular_endswith((fs_dirent + i)->d_name, suffix)) {
+                        mp_printf(&mp_plat_print, "Remove %s ... ", (fs_dirent + i)->d_name);
+                        int res = luat_fs_remove((fs_dirent+i)->d_name);
+                        if(res == 0) mp_printf(&mp_plat_print, "success\n");
+                        else mp_printf(&mp_plat_print, "failed\n");
+                    }
+                    break;
+                default: 
+                break;
             }
         }        
     }
@@ -381,7 +384,7 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
             memset(buff, 0, buff_len);
             int res = luat_fs_fread((uint8_t*)buff, buff_len, 1, fd);
             luat_fs_fclose(fd);
-            if(res > 0 && res < sizeof(buff) - 1) {
+            if(res > 0 && res < (int)sizeof(buff) - 1) {
                 cJSON *json = cJSON_Parse(buff);
                 if(json != NULL) {
                     if(cJSON_HasObjectItem(json, "sname") && cJSON_HasObjectItem(json, "ssub") &&
@@ -395,7 +398,7 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
                                 fd = luat_fs_fopen(file, "w");
                                 if(fd != NULL) {
                                     res = luat_fs_fwrite((uint8_t*)mess, strlen(mess), 1, fd);
-                                    if(res == strlen(mess)) {
+                                    if(res == (int)strlen(mess)) {
                                         mp_printf(&mp_plat_print, "success\n");
                                         result = 1;
                                     }
@@ -419,7 +422,7 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
 
 void modcellular_sms_process(sms_obj_t *sms) {
 
-    uint8_t* content = mp_obj_str_get_str(sms->message);
+    const uint8_t* content = (const uint8_t*)mp_obj_str_get_str(sms->message);
 
     bool to_reset = false;
     char *pfiles = ".py";
@@ -551,7 +554,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_sms_send_obj, 1, 2, modcellular_
 */
 
 STATIC mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
-	REQUIRES_NETWORK_REGISTRATION; // checks network_status
+    REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_int_t int_index = mp_obj_get_int(index);
@@ -611,12 +614,12 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
     sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
     char *type_string = "UNKNOWN";
     switch(self->type) {
-    	case CMI_SMS_STOR_STATUS_REC_UNREAD: type_string = "UNREAD";break;
-    	case CMI_SMS_STOR_STATUS_REC_READ:   type_string = "READ";  break;
-    	case CMI_SMS_STOR_STATUS_STO_UNSENT: type_string = "UNSENT";break;
-    	case CMI_SMS_STOR_STATUS_STO_SENT:   type_string = "SENT";  break;
-    	case CMI_SMS_STOR_STATUS_ALL:        type_string = "ALL";break; // should not print ever
-    	case CMI_SMS_STOR_STATUS_END:        type_string = "END";break; // should not print ever
+        case CMI_SMS_STOR_STATUS_REC_UNREAD: type_string = "UNREAD";break;
+        case CMI_SMS_STOR_STATUS_REC_READ:   type_string = "READ";  break;
+        case CMI_SMS_STOR_STATUS_STO_UNSENT: type_string = "UNSENT";break;
+        case CMI_SMS_STOR_STATUS_STO_SENT:   type_string = "SENT";  break;
+        case CMI_SMS_STOR_STATUS_ALL:        type_string = "ALL";break; // should not print ever
+        case CMI_SMS_STOR_STATUS_END:        type_string = "END";break; // should not print ever
     }
     mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, type=%d(%s)), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d\n",
             mp_obj_str_get_str(self->phone_number),
@@ -700,7 +703,7 @@ uint8_t * util_unpack_bytes(uint8_t* packed_bytes, uint16_t packed_bytes_len, ui
     }
 
     for(i= 0; i < packed_bytes_len; i++) {
-	uint8_t b = packed_bytes[i];
+    uint8_t b = packed_bytes[i];
         if (unpack_index != shifted_bytes_len) {
             if (move_offset == 7) {
                 move_offset = 0;
@@ -730,51 +733,49 @@ uint8_t * util_unpack_bytes(uint8_t* packed_bytes, uint16_t packed_bytes_len, ui
     }
 }
 
-uint8_t* util_decode_7Bit_ASCII(uint8_t* packed_bytes, uint16_t packed_bytes_len, uint8_t* unpacked_bytes, uint16_t *unpacked_bytes_len) {    
+void util_decode_7Bit_ASCII(uint8_t* packed_bytes, uint16_t packed_bytes_len, uint8_t* unpacked_bytes, uint16_t *unpacked_bytes_len) {    
     // sms_debug_print("decode_7Bit_ASCII packed    ", packed_bytes, packed_bytes_len);
     if (packed_bytes != NULL) {
         if(util_unpack_bytes(packed_bytes, packed_bytes_len, unpacked_bytes, unpacked_bytes_len)) {
-        	sms_debug_print("decode_7Bit_ASCII unpacked  ", unpacked_bytes, unpacked_bytes_len);
-            return unpacked_bytes;
+            sms_debug_print("decode_7Bit_ASCII unpacked  ", unpacked_bytes, *unpacked_bytes_len);
         }
     } 
-    return NULL;
 }
 
-uint8_t* util_decode_UCS(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
+void util_decode_UCS(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     // sms_debug_print("util_decode_UCS", b, len);
     luat_iconv_t cd = luat_iconv_open("utf8", "ucs2be");
     size_t in_bytes_left = len;
-    int res = luat_iconv_convert(cd, &b, &in_bytes_left, &pOutData, pSmsLength);    
+    int res = luat_iconv_convert(cd, (char **)&b, &in_bytes_left, (char **)&pOutData, (size_t *)pSmsLength);    
     luat_iconv_close(cd);
 }
 
-uint8_t* util_decode_UTF8(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength){
+void util_decode_UTF8(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength){
     // sms_debug_print("util_decode_UTF8", b, len);
     *pSmsLength = MIN(len, *pSmsLength);
     memcpy(pOutData, b, *pSmsLength);
 }
 
-uint8_t* util_decode_mms(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
+void util_decode_mms(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     //sms_debug_print("util_decode_mms", b, len);
-    strcpy(pOutData, "decode MMS not implemented");
+    strcpy((char*)pOutData, "decode MMS not implemented");
     *pSmsLength = *pSmsLength;
 }
 
-uint8_t* util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength, uint8_t encoding) {
+void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength, uint8_t encoding) {
     sms_debug_print("util_decode_vcard", b, len);
 
-    char *mess = LUAT_MEM_MALLOC(LUAT_SMS_MAX_TXT_SIZE + 1);
+    uint8_t *mess = LUAT_MEM_MALLOC(LUAT_SMS_MAX_TXT_SIZE + 1);
     uint16_t mess_len = LUAT_SMS_MAX_TXT_SIZE + 1;
     if(mess != NULL) {
         uint8_t decoded = 0;
         memset(mess, 0, LUAT_SMS_MAX_TXT_SIZE + 1);
         if(encoding == UTF7ENCODING) {
-        	util_decode_7Bit_ASCII(b, len, mess, &mess_len);
-        	decoded = 1;
+            util_decode_7Bit_ASCII(b, len, mess, &mess_len);
+            decoded = 1;
         } else if(encoding == UTF8ENCODING) {
-        	util_decode_7Bit_ASCII(b, len, mess, &mess_len);
-        	decoded = 1;
+            util_decode_7Bit_ASCII(b, len, mess, &mess_len);
+            decoded = 1;
         };
 
         if(decoded) { 
@@ -786,56 +787,56 @@ uint8_t* util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t
             uint8_t vcard_tel_len = strlen(vcard_tel);
 
             for(uint8_t i = 0; i < mess_len; i++) {
-                if(i + vcard_begin_len < mess_len && strncmp(mess + i, vcard_begin, vcard_begin_len) == 0)  {
+                if(i + vcard_begin_len < mess_len && strncmp((char*)(mess + i), vcard_begin, vcard_begin_len) == 0)  {
                     for(uint8_t j = i + vcard_begin_len + 1; j < mess_len; j++, i++) {
-                        if(j + vcard_name_len < mess_len && strncmp(mess + j, vcard_name, vcard_name_len) == 0)  {
+                        if(j + vcard_name_len < mess_len && strncmp((char*)(mess + j), vcard_name, vcard_name_len) == 0)  {
                             uint8_t crlf = j + vcard_name_len;
                             while(crlf < mess_len && mess[crlf] != '\r' && mess[crlf] != '\n') crlf++;
-                        	strcat(pOutData, "Name: ");strncat(pOutData, mess + j + vcard_name_len, crlf);
+                            strcat((char*)pOutData, "Name: ");strncat((char*)pOutData, (char*)(mess + j + vcard_name_len), crlf);
                         }
-                        if(j + vcard_tel_len < mess_len && strncmp(mess + j, vcard_tel, vcard_tel_len) == 0)  {
+                        if(j + vcard_tel_len < mess_len && strncmp((char*)(mess + j), vcard_tel, vcard_tel_len) == 0)  {
                             uint8_t crlf = j + vcard_tel_len;
                             while(crlf < mess_len && mess[crlf] != '\r' && mess[crlf] != '\n') crlf++;
-                        	strcat(pOutData, "Tel: ");strncat(pOutData, mess + j + vcard_tel_len, crlf);
+                            strcat((char*)pOutData, "Tel: ");strncat((char*)pOutData, (char*)(mess + j + vcard_tel_len), crlf);
                         }
                     }
                 }
             }
-            *pSmsLength = strlen(pOutData);
+            *pSmsLength = strlen((char*)pOutData);
             LUAT_MEM_FREE(mess);
             return;
         }
         LUAT_MEM_FREE(mess);
     }
-    strcpy(pOutData, "decode VCARD failed");
-    *pSmsLength = strlen(pOutData);
+    strcpy((char*)pOutData, "decode VCARD failed");
+    *pSmsLength = strlen((char*)pOutData);
 }
 
-uint8_t* util_decode_stk(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
+void util_decode_stk(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     sms_debug_print("util_decode_stk", b, len);
     char *mess = LUAT_MEM_MALLOC(len * 3 + 1);
     if(mess != NULL) {
         memset(b, 0, len * 3 + 1);
-        for(int i = 0; i < len; i++) sprintf(b + i * 3 , "%02X ", *(uint8_t *)(b + i));
-    	uint8_t *dst = pOutData;
-    	sprintf(pOutData, "%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
-    	*pSmsLength = strlen(pOutData);
-    	LUAT_MEM_FREE(mess);
+        for(int i = 0; i < len; i++) sprintf((char*)(b + i * 3) , "%02X ", *(uint8_t *)(b + i));
+        uint8_t *dst = pOutData;
+        sprintf((char*)pOutData, "%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
+        *pSmsLength = strlen((char*)pOutData);
+        LUAT_MEM_FREE(mess);
     }
 }
 
-uint8_t* util_decode_wap(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
+void util_decode_wap(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     sms_debug_print("util_decode_wap", b, len);
 
     u_int16_t c = 0;
     uint8_t transaction_id = b[c++];
     uint8_t pdu_type = b[c++];
-    uint8_t content_type = 0;
-
     if (pdu_type == 0x06) {  // PUSH
         u_int8_t pdu_hlen = b[c++];
         if (pdu_hlen == 1) {
-        	content_type = b[c++]; 
+            
+            //uint8_t content_type = b[c++]; 
+            c++;
             uint8_t version = b[c++];
             byte public_idenifier = b[c++];
             byte character_set = b[c++];
@@ -850,31 +851,31 @@ uint8_t* util_decode_wap(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOu
                 while (c < len) {
                     uint8_t header = (byte)(b[c++] & 0x0F);
                     switch (header) {
-                        case 0x01: strcat(pOutData, "</>"); break;
-                        case 0x05: strcat(pOutData, "<si>"); break;
-                        case 0x06: strcat(pOutData, "<indication>"); break;
-                        case 0x0C: strcat(pOutData, "href=http://"); break;
+                        case 0x01: strcat((char*)pOutData, "</>"); break;
+                        case 0x05: strcat((char*)pOutData, "<si>"); break;
+                        case 0x06: strcat((char*)pOutData, "<indication>"); break;
+                        case 0x0C: strcat((char*)pOutData, "href=http://"); break;
                         case 0x03:
-                        	mess_offset = c;
-                        	while (c < len && b[c] != 0) { mess_len++; c++; }
-                        	util_decode_UTF8((uint8_t *)(b + mess_offset), mess_len + 1, pOutData + strlen(pOutData), &out_len);
+                            mess_offset = c;
+                            while (c < len && b[c] != 0) { mess_len++; c++; }
+                            util_decode_UTF8((uint8_t *)(b + mess_offset), mess_len + 1, pOutData + strlen((char*)pOutData), &out_len);
                             c++;
                             break;
-                        case 0x07: strcat(pOutData, "action='signal-medium'"); 
-                        	break;
+                        case 0x07: strcat((char*)pOutData, "action='signal-medium'"); 
+                            break;
                         default: 
-                        	break;
+                            break;
                     }
                 }
-            } else strcpy(pOutData, "decode WAP failed");
-        } else strcpy(pOutData, "decode WAP failed");
-        *pSmsLength = strlen(pOutData);
+            } else strcpy((char*)pOutData, "decode WAP failed");
+        } else strcpy((char*)pOutData, "decode WAP failed");
+        *pSmsLength = strlen((char*)pOutData);
     } else {
         util_decode_stk(self, b, len, pOutData, pSmsLength);
     }
 }
 
-uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint16_t pduDataLen, PsilSmsDcsInfo dcs, uint8_t hdrPresent, 
+void modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint16_t pduDataLen, PsilSmsDcsInfo dcs, uint8_t hdrPresent, 
                                           uint8_t *pOutData, uint16_t *pSmsLength) {
 
     uint16_t c = 0;
@@ -916,7 +917,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                         self->combined_sms_part_number = pUserData[c + 4];
                     } else {
                         LUAT_DEBUG_PRINT("Incorrect user data header\n");
-                        return 0;
+                        return;
                     }
                     break;
                 case 0x01: // Special SMS Message Indication
@@ -949,7 +950,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                         self->combined_sms_part_number = pUserData[c + 5];
                     } else {
                         LUAT_DEBUG_PRINT("Incorrect user data header\n");
-                        return 0;
+                        return;
                     }
                     break;                
                 case 0x09: // Wireless Control Message Protocol
@@ -977,6 +978,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                 case 0x24: // National Language Single Shift
                 case 0x25: // National Language Locking Shift                
                     LUAT_DEBUG_PRINT("TPDU header not implemented - 0x%02x\n", pUserData[c]);
+                    break;
                 case 0x70: // (U)SIM Toolkit Security Headers
                     self->usim_toolkit = 1;
                     break;
@@ -985,7 +987,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                     break;
                 default:
                     LUAT_DEBUG_PRINT("Unknown IE TPDU header 0x%02x\n", pUserData[c]);
-                    return 0;
+                    return;
                 }
                 c += cLen + 2;
             }
@@ -1007,7 +1009,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
         
         if (message_len < sizeof(mess)) {
             uint8_t lshift = 0;
-            uint8_t lshift2 = 0;
+            //uint8_t lshift2 = 0;
             if ((dcs.dcs & 0x0C) == 0x00 && hdrPresent) {
                 // shifting for Decoding 7 bit ACSII
                 if (user_data_header_len == 0x03) lshift = 5;
@@ -1018,7 +1020,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                 else if (user_data_header_len == 0x0B) lshift = 6;
                 else if (user_data_header_len == 0x2A) lshift = 2;
                 else lshift = (uint8_t)((((user_data_header_len + 2) << 3)) % 7);
-                lshift2 = (uint8_t)((((user_data_header_len + 2) << 3)) % 7);
+                //lshift2 = (uint8_t)((((user_data_header_len + 2) << 3)) % 7);
                 uint8_t rshift = (uint8_t)(8 - lshift);
                 memcpy(mess2, pUserData + c, MIN(message_len, pduDataLen - c));
                 for (int i = 0; i < message_len; i++) {
@@ -1059,7 +1061,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                     break;
                 default:
                     LUAT_DEBUG_PRINT("Unknown data coding scheme 0x%02x\n", dcs.dcs);
-                    return 0;
+                    return;
             }
         } else {
             switch (dcs.dcs & 0x0C) {
@@ -1080,7 +1082,7 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
                     break;
                 default:
                     LUAT_DEBUG_PRINT("Unknown data coding scheme 0x%02x\n", dcs.dcs);
-                    return 0;
+                    return;
             }
         }
         c += message_len;
@@ -1089,8 +1091,8 @@ uint16_t modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, u
 
 
 void modcellular_sms_decode_pdu(sms_obj_t *self, CmiSmsPdu *smsPduData, uint8_t *phoneNumberType, char *phone, uint8_t *dcs, 
-								PsilSmsTimeStampInfo *tem_time, uint8_t *message, uint16_t *message_len) {
-	uint16_t start_offset = 0;
+                                PsilSmsTimeStampInfo *tem_time, uint8_t *message, uint16_t *message_len) {
+    uint8_t start_offset = 0;
     bool hdr_present = false;
     UdhIe hIe = {0};
     uint8_t fix_year = 0;
@@ -1098,7 +1100,7 @@ void modcellular_sms_decode_pdu(sms_obj_t *self, CmiSmsPdu *smsPduData, uint8_t 
     if ((smsPduData->pduData[start_offset]) & (0x40)) hdr_present = true;
     start_offset++;
     //Get the sender's mobile phone number
-    smsPduDecodeAddress(smsPduData->pduData, &start_offset, phoneNumberType, phone, (LUAT_MSG_MAX_ADDR_LEN + 1));
+    smsPduDecodeAddress(smsPduData->pduData, &start_offset, phoneNumberType, (UINT8*)phone, (LUAT_MSG_MAX_ADDR_LEN + 1));
     // LUAT_DEBUG_PRINT("phone: %s", phone);
     start_offset++;
     PsilSmsDcsInfo msg_dcs_info;
@@ -1115,15 +1117,15 @@ void modcellular_sms_decode_pdu(sms_obj_t *self, CmiSmsPdu *smsPduData, uint8_t 
 }
 
 /* typedef struct CmiSmsListSmsMsgRecCnf_Tag {
-	CmiSmsErrorCode         errorCode;
+    CmiSmsErrorCode         errorCode;
     UINT8                   endStatus;          // where or not is the last item 
-	BOOL                    scAddrPresent;      // SC Address info present or not 
-	UINT8                   index;            	// the index of the SMS record in SIM 
-	UINT8                   smsStatus;          // SMS record status. CmiSmsRecStorStatus 
-	UINT8                   smsMsgType;         // SMS message type, defined type CmiSmsMessageType 
-	UINT8                   reserved0;
-	CmiSmsAddressInfo       scAddrInfo;         // SC address info 
-	CmiSmsPdu               smsPduData;         // SMS PDU contents 
+    BOOL                    scAddrPresent;      // SC Address info present or not 
+    UINT8                   index;              // the index of the SMS record in SIM 
+    UINT8                   smsStatus;          // SMS record status. CmiSmsRecStorStatus 
+    UINT8                   smsMsgType;         // SMS message type, defined type CmiSmsMessageType 
+    UINT8                   reserved0;
+    CmiSmsAddressInfo       scAddrInfo;         // SC address info 
+    CmiSmsPdu               smsPduData;         // SMS PDU contents 
 } CmiSmsListSmsMsgRecCnf; */
 mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
 
@@ -1141,13 +1143,13 @@ mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
     memset(message, 0, LUAT_SMS_MAX_TXT_SIZE + 1);
 
     if(phone != NULL && message != NULL) {
-    	modcellular_sms_decode_pdu(self, &(record->smsPduData), &phoneNumberType, phone, &dcs, &tem_time, message, &message_len);
+        modcellular_sms_decode_pdu(self, &(record->smsPduData), &phoneNumberType, phone, &dcs, &tem_time, message, &message_len);
         self->dcs = dcs;        
-    	self->phone_number = mp_obj_new_str(phone, strlen(phone));
-    	self->message = mp_obj_new_str(message, message_len);
+        self->phone_number = mp_obj_new_str(phone, strlen(phone));
+        self->message = mp_obj_new_str((const char*)message, message_len);
     } else {
-    	self->phone_number = mp_obj_new_str(phone, strlen(phone));
-    	self->message = mp_obj_new_str(message, message_len);
+        self->phone_number = mp_obj_new_str(phone, strlen(phone));
+        self->message = mp_obj_new_str((const char*)message, message_len);
     }
     self->pn_type = phoneNumberType;
     self->dcs = dcs;
@@ -1168,10 +1170,10 @@ mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
 
 STATIC mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
-	mp_printf(&mp_plat_print, "USSD over IMS not supported and module does not support 2G fallback");
-	mp_obj_t tuple[2];
-	uint8_t dummy[0];
-	tuple[0] = mp_obj_new_int(0);
+    mp_printf(&mp_plat_print, "USSD over IMS not supported and module does not support 2G fallback");
+    mp_obj_t tuple[2];
+    uint8_t dummy[0];
+    tuple[0] = mp_obj_new_int(0);
     tuple[1] = mp_obj_new_bytes(dummy, 0); 
     return mp_obj_new_tuple(2, tuple);
 }
@@ -1194,23 +1196,23 @@ STATIC mp_obj_t modcellular_on_ussd(mp_obj_t callable) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_ussd_obj, modcellular_on_ussd);
 
 STATIC mp_obj_t modcellular_sms_delete_by_index(mp_obj_t index) {
-	REQUIRES_NETWORK_REGISTRATION; // checks network_status
+    REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     mp_int_t int_index = mp_obj_get_int(index);
     if(modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
-        for(int i = 0; i < sms_list_buffer->len; i++) {
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) {
             sms_obj_t *sms = MP_OBJ_TO_PTR(sms_list_buffer->items[i]);
-        	if(sms->index == int_index) {
-        		if(!modcellular_sms_delete_internal(int_index)) {
-        			modcellular_clear_sms_list();
-        			mp_raise_ValueError("Failed to delete SMS (index not found)");
-        		}
-        		mp_hal_delay_ms(500); // wait SIM storage update
-        		modcellular_clear_sms_list();
-        		return mp_const_none;
-        	}
+            if(sms->index == int_index) {
+                if(!modcellular_sms_delete_internal(int_index)) {
+                    modcellular_clear_sms_list();
+                    mp_raise_ValueError("Failed to delete SMS (index not found)");
+                }
+                mp_hal_delay_ms(500); // wait SIM storage update
+                modcellular_clear_sms_list();
+                return mp_const_none;
+            }
         }
-    	modcellular_clear_sms_list();
+        modcellular_clear_sms_list();
     } 
     mp_raise_ValueError("Failed to delete SMS (index not found)");
     return mp_const_none;
@@ -1222,17 +1224,17 @@ STATIC mp_obj_t modcellular_sms_delete_all_read() {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     if(modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
-        for(int i = 0; i < sms_list_buffer->len; i++) {
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) {
             sms_obj_t *sms = MP_OBJ_TO_PTR(sms_list_buffer->items[i]);
             if(sms->type == CMI_SMS_STOR_STATUS_REC_READ) {
-	        	if(!modcellular_sms_delete_internal(sms->index)) {
-        			modcellular_clear_sms_list();
-        			mp_raise_ValueError("Failed to delete SMSs");
-        		}
-        	}
+                if(!modcellular_sms_delete_internal(sms->index)) {
+                    modcellular_clear_sms_list();
+                    mp_raise_ValueError("Failed to delete SMSs");
+                }
+            }
         }
         mp_hal_delay_ms(500); // wait SIM storage update
-    	modcellular_clear_sms_list();
+        modcellular_clear_sms_list();
     } else mp_raise_ValueError("Failed to delete SMSs");
     return mp_const_none;
 }
@@ -1245,10 +1247,10 @@ mp_obj_t modcellular_sms_read_all(void) {
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
     if(modcellular_get_sms_list(CMI_SMS_STOR_STATUS_REC_UNREAD)) {
-    	for(int i = 0; i < sms_list_buffer->len; i++) {
-    		mp_obj_list_append(result, sms_list_buffer->items[i]);
-    	}    	
-    	modcellular_clear_sms_list(); 
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) {
+            mp_obj_list_append(result, sms_list_buffer->items[i]);
+        }       
+        modcellular_clear_sms_list(); 
     }
     return (mp_obj_t)result;    
 }
@@ -1261,9 +1263,9 @@ STATIC mp_obj_t modcellular_sms_list_read(void) {
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_REC_READ)) {
-    	for(int i = 0; i < sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
-    	modcellular_clear_storage_info();
-    	modcellular_clear_sms_list(); 
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
+        modcellular_clear_storage_info();
+        modcellular_clear_sms_list(); 
     }
     return (mp_obj_t)result;
 }
@@ -1276,9 +1278,9 @@ STATIC mp_obj_t modcellular_sms_list(void) {
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
-    	for(int i = 0; i < sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
-    	modcellular_clear_storage_info();
-    	modcellular_clear_sms_list(); 
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
+        modcellular_clear_storage_info();
+        modcellular_clear_sms_list(); 
     }
     return (mp_obj_t)result;
 }
@@ -1288,20 +1290,20 @@ MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_list_obj, modcellular_sms_list);
 
 STATIC mp_obj_t modcellular_sms_get_storage_size(void) {
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
-    	// count statuses
-    	int unReadRecords = 0;
-    	int readRecords = 0;
-    	int sentRecords = 0;
-    	int unsentRecords = 0;
-    	int unknownRecords = 0;
-    	for(int i = 0; i < sms_list_buffer->len; i++) {
-    		sms_obj_t *sms = MP_OBJ_TO_PTR(sms_list_buffer->items[i]);
-    		if(sms->type == CMI_SMS_STOR_STATUS_REC_UNREAD) unReadRecords++;
-    		if(sms->type == CMI_SMS_STOR_STATUS_REC_READ) readRecords++;
-    		if(sms->type == CMI_SMS_STOR_STATUS_STO_UNSENT) unsentRecords++;
-    		if(sms->type == CMI_SMS_STOR_STATUS_STO_SENT) sentRecords++;
-    	}
-    	unknownRecords = storage->usedNumOfSim - (unReadRecords + readRecords + unsentRecords + sentRecords);
+        // count statuses
+        int unReadRecords = 0;
+        int readRecords = 0;
+        int sentRecords = 0;
+        int unsentRecords = 0;
+        int unknownRecords = 0;
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) {
+            sms_obj_t *sms = MP_OBJ_TO_PTR(sms_list_buffer->items[i]);
+            if(sms->type == CMI_SMS_STOR_STATUS_REC_UNREAD) unReadRecords++;
+            if(sms->type == CMI_SMS_STOR_STATUS_REC_READ) readRecords++;
+            if(sms->type == CMI_SMS_STOR_STATUS_STO_UNSENT) unsentRecords++;
+            if(sms->type == CMI_SMS_STOR_STATUS_STO_SENT) sentRecords++;
+        }
+        unknownRecords = storage->usedNumOfSim - (unReadRecords + readRecords + unsentRecords + sentRecords);
 
         mp_obj_t tuple[8] = {
             mp_obj_new_int(storage->usedNumOfSim),
@@ -1317,6 +1319,7 @@ STATIC mp_obj_t modcellular_sms_get_storage_size(void) {
         modcellular_clear_sms_list();
         return mp_obj_new_tuple(8, tuple);
     }
+    return mp_const_none;
 }
 
 MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_get_storage_size_obj, modcellular_sms_get_storage_size);

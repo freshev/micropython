@@ -46,38 +46,38 @@ const mp_obj_type_t machine_pin_irq_type;
 const mp_obj_type_t machine_pin_type;
 
 machine_pin_obj_t machine_pin_obj_table[] = {
-	{{&machine_pin_type},  0, HAL_GPIO_0, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  1, HAL_GPIO_1, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  2, HAL_GPIO_2, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  3, HAL_GPIO_3, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  4, HAL_GPIO_4, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  5, HAL_GPIO_5, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  6, HAL_GPIO_6, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  7, HAL_GPIO_7, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  8, HAL_GPIO_8, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  9, HAL_GPIO_9, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  10, HAL_GPIO_10, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  11, HAL_GPIO_11, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  12, HAL_GPIO_12, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  13, HAL_GPIO_13, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  14, HAL_GPIO_14, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  15, HAL_GPIO_15, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  16, HAL_GPIO_16, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  17, HAL_GPIO_17, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  18, HAL_GPIO_18, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  19, HAL_GPIO_19, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  20, HAL_GPIO_20, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  21, HAL_GPIO_21, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  22, HAL_GPIO_22, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  23, HAL_GPIO_23, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  24, HAL_GPIO_24, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  25, HAL_GPIO_25, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  26, HAL_GPIO_26, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  27, HAL_GPIO_27, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  28, HAL_GPIO_28, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  29, HAL_GPIO_29, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  30, HAL_GPIO_30, {{&machine_pin_irq_type}}},
-	{{&machine_pin_type},  31, HAL_GPIO_31, {{&machine_pin_irq_type}}}
+    {{&machine_pin_type},  0, HAL_GPIO_0, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  1, HAL_GPIO_1, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  2, HAL_GPIO_2, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  3, HAL_GPIO_3, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  4, HAL_GPIO_4, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  5, HAL_GPIO_5, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  6, HAL_GPIO_6, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  7, HAL_GPIO_7, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  8, HAL_GPIO_8, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  9, HAL_GPIO_9, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  10, HAL_GPIO_10, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  11, HAL_GPIO_11, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  12, HAL_GPIO_12, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  13, HAL_GPIO_13, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  14, HAL_GPIO_14, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  15, HAL_GPIO_15, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  16, HAL_GPIO_16, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  17, HAL_GPIO_17, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  18, HAL_GPIO_18, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  19, HAL_GPIO_19, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  20, HAL_GPIO_20, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  21, HAL_GPIO_21, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  22, HAL_GPIO_22, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  23, HAL_GPIO_23, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  24, HAL_GPIO_24, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  25, HAL_GPIO_25, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  26, HAL_GPIO_26, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  27, HAL_GPIO_27, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  28, HAL_GPIO_28, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  29, HAL_GPIO_29, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  30, HAL_GPIO_30, {{&machine_pin_irq_type}}},
+    {{&machine_pin_type},  31, HAL_GPIO_31, {{&machine_pin_irq_type}}}
 };
 
 // Return the mp_hal_pin_obj_t index for a given machine_pin_obj_t pointer.
@@ -95,7 +95,7 @@ void modmachine_pin_init0(void) {
 }
 
 void modmachine_pin_deinit0(void) {
-    for (int i = 0; i < MP_ARRAY_SIZE(machine_pin_obj_table); ++i) {
+    for (int i = 0; i < (int)MP_ARRAY_SIZE(machine_pin_obj_table); ++i) {
         if (machine_pin_obj_table[i].base.type != NULL) {
             //gpio_isr_handler_remove(i);
             luat_gpio_close(machine_pin_obj_table[i].pin);
@@ -106,36 +106,37 @@ void modmachine_pin_deinit0(void) {
 // IRQ handler 
 // to avoid module freeze when trigger == IRQ_LOW_LEVEL or IRQ_HIGH_LEVEL, call "luat_gpio_ctrl" with "LUAT_GPIO_NO_IRQ" parameter
 // After that reinstall IRQ_LOW_LEVEL or IRQ_HIGH_LEVEL, calling Pin.irq(...)
-STATIC void mp_machine_pin_isr_handler(int pin, void *arg) {
+STATIC int mp_machine_pin_isr_handler(int pin, void *arg) {
 
-	machine_pin_obj_t pin_obj = machine_pin_obj_table[pin];
-	uint8_t trigger = pin_obj.irq.trigger;
+    machine_pin_obj_t pin_obj = machine_pin_obj_table[pin];
+    uint8_t trigger = pin_obj.irq.trigger;
 
-	if(trigger == LUAT_GPIO_HIGH_IRQ || trigger == LUAT_GPIO_LOW_IRQ) {
-		// reset IRQ mode
-		luat_gpio_ctrl(pin, LUAT_GPIO_CMD_SET_IRQ_MODE, LUAT_GPIO_NO_IRQ);
-	}   
+    if(trigger == LUAT_GPIO_HIGH_IRQ || trigger == LUAT_GPIO_LOW_IRQ) {
+        // reset IRQ mode
+        luat_gpio_ctrl(pin, LUAT_GPIO_CMD_SET_IRQ_MODE, LUAT_GPIO_NO_IRQ);
+    }   
     
     mp_obj_t handler = MP_STATE_PORT(mp_machine_pin_irq_handler)[pin];
     if(handler != MP_OBJ_NULL) {
-    	mp_sched_schedule(handler, MP_OBJ_FROM_PTR(&machine_pin_obj_table[pin]));
+        mp_sched_schedule(handler, MP_OBJ_FROM_PTR(&machine_pin_obj_table[pin]));
     }
 
     // WAKEUP
     mp_hal_wake_main_task_from_isr();
+    return 0;
 }
 
-STATIC const machine_pin_obj_t *machine_pin_find(mp_obj_t pin_in) {	
+STATIC const machine_pin_obj_t *machine_pin_find(mp_obj_t pin_in) { 
     if (mp_obj_is_type(pin_in, &machine_pin_type)) {
         return pin_in;
     }
 
     // Try to find the pin via integer index into the array of all pins.
-    if (mp_obj_is_int(pin_in)) {    	
+    if (mp_obj_is_int(pin_in)) {        
         int wanted_pin = mp_obj_get_int(pin_in);
-        if (0 <= wanted_pin && wanted_pin < MP_ARRAY_SIZE(machine_pin_obj_table)) {
+        if (0 <= wanted_pin && wanted_pin < (int)MP_ARRAY_SIZE(machine_pin_obj_table)) {
             const machine_pin_obj_t *self = (machine_pin_obj_t *)&machine_pin_obj_table[wanted_pin];
-            if (self->base.type != NULL) {            	
+            if (self->base.type != NULL) {              
                 return self;
             }
         }
@@ -171,15 +172,15 @@ STATIC mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
     mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(self);
 
     // do not use GPIOs: 14, 18, 19, 23, 20(Rising DNTW), 21(Rising, Falling DNTW), 22(Rising, Falling DNTW)
-	if(index == 14 || index == 23) {
-		mp_raise_ValueError(MP_ERROR_TEXT("Failed. GPIO14 and GPIO23 use prohibited"));	
-	}
-	if(index == 18 || index == 19) {
-		mp_raise_ValueError(MP_ERROR_TEXT("Failed. GPIO18 and GPIO19 used for UART1"));	
-	}
-	if(index == 20 || index == 21 || index == 22) {
-		mp_printf(&mp_plat_print, "Warning: GPIO20, GPIO21 and GPIO22 used for WAKEUP\n");
-	}
+    if(index == 14 || index == 23) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed. GPIO14 and GPIO23 use prohibited")); 
+    }
+    if(index == 18 || index == 19) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed. GPIO18 and GPIO19 used for UART1")); 
+    }
+    if(index == 20 || index == 21 || index == 22) {
+        mp_printf(&mp_plat_print, "Warning: GPIO20, GPIO21 and GPIO22 used for WAKEUP\n");
+    }
 
     // reset the pin to digital if this is a mode-setting init (grab it back from ADC)
     if (args[ARG_mode].u_obj != mp_const_none) {
@@ -189,15 +190,15 @@ STATIC mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
     // configure the pin for gpio
     // esp_rom_gpio_pad_select_gpio(index);
     luat_gpio_cfg_t gpio_cfg;
-	luat_gpio_set_default_cfg(&gpio_cfg); 
-	gpio_cfg.pin = index;	
+    luat_gpio_set_default_cfg(&gpio_cfg); 
+    gpio_cfg.pin = index;   
 
-	// set initial value (do this before configuring mode/pull)
+    // set initial value (do this before configuring mode/pull)
     if (args[ARG_value].u_obj != MP_OBJ_NULL) {
-    	gpio_cfg.output_level = mp_obj_is_true(args[ARG_value].u_obj);
+        gpio_cfg.output_level = mp_obj_is_true(args[ARG_value].u_obj);
     }
 
-	// configure mode
+    // configure mode
     if (args[ARG_mode].u_obj != mp_const_none) {
         mp_int_t pin_io_mode = mp_obj_get_int(args[ARG_mode].u_obj);
         gpio_cfg.mode = pin_io_mode;
@@ -209,7 +210,7 @@ STATIC mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
         if (args[ARG_pull].u_obj != mp_const_none) pull = mp_obj_get_int(args[ARG_pull].u_obj);
         gpio_cfg.pull = pull;
     }
-	luat_gpio_open(&gpio_cfg);
+    luat_gpio_open(&gpio_cfg);
 
     return mp_const_none;
 }
@@ -287,7 +288,7 @@ STATIC mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     if (n_args > 1 || kw_args->used != 0) {
-    	
+        
         // configure irq
         mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(self);
         mp_obj_t handler = args[ARG_handler].u_obj;
@@ -332,10 +333,10 @@ STATIC mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_m
             }
             uint8_t level = luat_gpio_get(index);
             if(trigger == LUAT_GPIO_HIGH_IRQ && level == 1) {
-            	mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level LOW first"));
+                mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level LOW first"));
             }
             if(trigger == LUAT_GPIO_LOW_IRQ && level == 0) {
-            	mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level HIGH first"));
+                mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level HIGH first"));
             }
 
             luat_gpio_ctrl(index, LUAT_GPIO_CMD_SET_IRQ_MODE, LUAT_GPIO_NO_IRQ);
@@ -430,11 +431,11 @@ STATIC mp_obj_t mp_machine_pin_irq_trigger(size_t n_args, const mp_obj_t *args) 
         uint8_t level = luat_gpio_get(index);
         int trigger = mp_obj_get_int(args[1]);
         if(trigger == LUAT_GPIO_HIGH_IRQ && level == 1) {
-        	mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level LOW first!"));
+            mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level LOW first!"));
         }
         if(trigger == LUAT_GPIO_LOW_IRQ && level == 0) {
-        	mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level HIGH first!"));
-		}
+            mp_raise_ValueError(MP_ERROR_TEXT("You should set pin level HIGH first!"));
+        }
         luat_gpio_ctrl(index, LUAT_GPIO_CMD_SET_IRQ_MODE, LUAT_GPIO_NO_IRQ);
         luat_gpio_ctrl(index, LUAT_GPIO_CMD_SET_IRQ_MODE, trigger);
         machine_pin_obj_table[index].irq.trigger = trigger;
