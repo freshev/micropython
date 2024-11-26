@@ -1,7 +1,9 @@
 # Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
-Original module documentation at [Air780e](https://docs.openluat.com/air780e/)
-Translated module documentation includeing `Windows Help` at [Docs](docs/)
+Original module documentation at [Air780e](https://docs.openluat.com/air780e/)  
+Translated module documentation including `Windows Help` at [Docs](docs/)
+
+![Air780e test board](https://wiki.luatos.org/_images/pinout2.png)
 
 
 ## Build
@@ -24,7 +26,7 @@ Translated module documentation includeing `Windows Help` at [Docs](docs/)
    make.bat
    ```
 
-4. Firmware `.binpkg` file is in `micropython/ports/air780/out/` folder.
+4. Firmware `micropython.binpkg` file is in `micropython/ports/air780/out/` folder.
 
 5. Notes:  
   Version number configured runing `configure.bat`  
@@ -42,7 +44,7 @@ Translated module documentation includeing `Windows Help` at [Docs](docs/)
    configure.bat
    make.bat
    ```
-3. Firmware `.binpkg` file is in `micropython/ports/air780/out/` folder.
+3. Firmware `micropython.binpkg` file is in `micropython/ports/air780/out/` folder.
 
 4. Notes:  
   Version number configured runing `configure.bat`  
@@ -52,18 +54,24 @@ Translated module documentation includeing `Windows Help` at [Docs](docs/)
 
 1. Get `Luatools` at [LuatOS](https://wiki.luatos.org/pages/tools.html)
 
-2. Run Luatools_v3.exe at new prepared folder
+2. Run Luatools_v3.exe in newly created folder.
 
-3. Press `Download Firmware` button at upper right corner
+3. Press `Download Firmware` button at upper right corner.
 
 4. Press `Select the file` button and select `.binpkg` file from `micropython/ports/air780/out/` folder.
 
-5. Press `download` button at `Luatools`
+5. Press `download` button at `Luatools`.
 
-6. Set module to `download state` by pressing module 'BOOT' button.  
+6. Set module to `download state` by pressing module `BOOT` button.  
    Press and release module `RESET` button or `power OFF` and `power ON` the module.  
    Release module `BOOT` button.  
    The firmware download at `Luatools` should start.
+
+or use ectool.py
+
+1. Get `ectool` by `pip3 install -U ectool`.
+
+2. Run `ectool burn -f out/micropython.binpkg`.
 
 
 ## Connect
