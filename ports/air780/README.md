@@ -1,6 +1,8 @@
 # Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
-Module documentation at [Air780e](https://docs.openluat.com/air780e/)
+Original module documentation at [Air780e](https://docs.openluat.com/air780e/)
+Translated module documentation includeing `Windows Help` at [Docs](docs/)
+
 
 ## Build
 
