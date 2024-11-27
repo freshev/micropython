@@ -61,12 +61,9 @@
 #define TIMEOUT_SMS_SEND 10000
 #define TIMEOUT_SMS_READ 10000
 #define TIMEOUT_SMS_DELETE 10000
-//#define TIMEOUT_GPRS_ATTACHMENT 15000
-//#define TIMEOUT_GPRS_ACTIVATION 10000
+#define TIMEOUT_NETWORK_ACTIVATION 10000
 #define TIMEOUT_FLIGHT_MODE 10000
 #define TIMEOUT_LIST_OPERATORS 70000
-//#define TIMEOUT_REG 10000
-//#define TIMEOUT_USSD_RESPONSE 5000
 
 #define NTW_REG_BIT 0x01
 #define NTW_ROAM_BIT 0x02
@@ -85,16 +82,7 @@
 #define NTW_EXC_USSD_SEND 0x6E08
 #define NTW_EXC_PLMN_LIST 0x6E09
 
-//#define SMS_SENT 1
-#define LIST_MIN_ALLOC 4
-
-//#define MAX_NUMBER_LEN 16
-//#define MAX_CELLS 8
-
 #define BANDS_ALL (999)
-
-//#define MCC(x) ((x)[0] * 100 + (x)[1] * 10 + (x)[2])
-//#define MNC(x) ((x)[0] * 100 + (x)[1] * 10 + (x)[2])
 
 extern uint8_t network_status;
 extern uint16_t network_exception;
@@ -120,7 +108,7 @@ typedef struct _sms_obj_t {
     uint8_t year;
     uint8_t month;
     uint8_t day;
-	uint8_t hour;
+    uint8_t hour;
     uint8_t minute;
     uint8_t second;
     uint8_t tz;         /* time zone */

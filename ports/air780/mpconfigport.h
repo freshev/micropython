@@ -65,7 +65,7 @@
 #define MICROPY_USE_INTERNAL_ERRNO          (1)
 #define MICROPY_USE_INTERNAL_PRINTF         (0)
 #define MICROPY_PY_BUILTINS_STR_UNICODE     (1)
-#define MICROPY_PY_BUILTINS_STR_UNICODE_CHECK (1)
+#define MICROPY_PY_BUILTINS_STR_UNICODE_CHECK (0)
 
 #define MICROPY_BEGIN_ATOMIC_SECTION()      luat_rtos_entry_critical ()
 #define MICROPY_END_ATOMIC_SECTION(state)   luat_rtos_exit_critical(state)
@@ -119,7 +119,7 @@
 #define MICROPY_PY_MACHINE_UART                         (1)
 #define MICROPY_PY_MACHINE_UART_INCLUDEFILE             "ports/air780/machine_uart.c"
 #define MICROPY_PY_MACHINE_UART_READCHAR_WRITECHAR      (1)
-#define MICROPY_HW_ENABLE_UART_REPL						(1)
+#define MICROPY_HW_ENABLE_UART_REPL                     (1)
 
 #define MICROPY_PY_MACHINE_WDT              (1)
 #define MICROPY_PY_MACHINE_WDT_INCLUDEFILE  "ports/air780/machine_wdt.c"

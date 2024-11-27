@@ -36,6 +36,8 @@
 #include "luat_pm.h"
 #include "cJSON.h"
 
+#define LIST_MIN_ALLOC 4
+
 // SMS send flag
 mp_obj_t ussd_response = mp_const_none;
 mp_obj_t sms_callback = mp_const_none;
@@ -63,6 +65,7 @@ void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
 }
 void modcellular_sms_send_cb(int ret) {
     LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
+    sms_send_flag = 1;
 }
 
 // --------------------------------------------
@@ -118,12 +121,13 @@ BOOL modcellular_get_sms_list(CmiSmsRecStorStatus status) {
     return false;
 }
 void modcellular_clear_sms_list() {
-#define LIST_MIN_ALLOC 4
     mp_obj_list_t *self = MP_OBJ_TO_PTR(sms_list_buffer);
-    self->len = 0;
-    self->items = m_renew(mp_obj_t, self->items, self->alloc, LIST_MIN_ALLOC);
-    self->alloc = LIST_MIN_ALLOC;
-    mp_seq_clear(self->items, 0, self->alloc, sizeof(*self->items));
+    if(self != NULL) {
+        self->len = 0;
+        self->items = m_renew(mp_obj_t, self->items, self->alloc, LIST_MIN_ALLOC);
+        self->alloc = LIST_MIN_ALLOC;
+        mp_seq_clear(self->items, 0, self->alloc, sizeof(*self->items));
+    }
 }
 
 // --------------------------------------------
@@ -510,7 +514,7 @@ mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size
     return MP_OBJ_FROM_PTR(self);
 }
 
-/*
+
 STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Sends an SMS messsage.
@@ -519,7 +523,7 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     // ========================================
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
-    mp_int_t timeout = TIMEOUT_SMS_SEND;
+    uint64_t timeout = TIMEOUT_SMS_SEND;
     if (n_args == 2)
         timeout = mp_obj_get_int(args[1]);
 
@@ -528,10 +532,10 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     if (self->type!= 0)
         mp_raise_ValueError("A message with non-zero type cannot be sent");
 
-    const char* destination_c = mp_obj_str_get_str(self->phone_number);
-    const char* message_c = mp_obj_str_get_str(self->message);
+    const char* destination = mp_obj_str_get_str(self->phone_number);
+    const char* message = mp_obj_str_get_str(self->message);
 
-    uint8_t* unicode = NULL;
+    /*uint8_t* unicode = NULL;
     uint32_t unicodeLen;
 
     if (!SMS_LocalLanguage2Unicode((uint8_t*)message_c, strlen(message_c), CHARSET_UTF_8, &unicode, &unicodeLen))
@@ -543,6 +547,10 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
         mp_raise_ValueError("Failed to submit SMS message for sending");
     }
     OS_Free(unicode);
+    */
+    sms_send_flag = 0;
+    luat_sms_send_msg((uint8_t*)message, (char*)destination, false, 0);
+    //int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_len)
 
     WAIT_UNTIL(sms_send_flag, timeout, 100, mp_warning(NULL, "Failed to send SMS immidiately. The module will continue attempts sending it"));
 
@@ -551,7 +559,7 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
 }
 
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_sms_send_obj, 1, 2, modcellular_sms_send);
-*/
+
 
 STATIC mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
@@ -562,6 +570,7 @@ STATIC mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
         modcellular_clear_sms_list();
         mp_raise_ValueError("Failed to delete SMS");
     }
+    modcellular_clear_sms_list();
     self->type = 0;
     self->index = 0;
     return mp_const_none;
@@ -602,7 +611,7 @@ STATIC void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
             dest[0] = mp_obj_new_bool(self->type & CMI_SMS_STOR_STATUS_STO_UNSENT);
         // .send
         } else if (attr == MP_QSTR_send) {
-            //mp_convert_member_lookup(self_in, mp_obj_get_type(self_in), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_send_obj), dest);
+            mp_convert_member_lookup(self_in, mp_obj_get_type(self_in), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_send_obj), dest);
         // .delete
         } else if (attr == MP_QSTR_delete) {
             mp_convert_member_lookup(self_in, mp_obj_get_type(self_in), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_delete_obj), dest);
@@ -621,7 +630,7 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
         case CMI_SMS_STOR_STATUS_ALL:        type_string = "ALL";break; // should not print ever
         case CMI_SMS_STOR_STATUS_END:        type_string = "END";break; // should not print ever
     }
-    mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, type=%d(%s)), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d\n",
+    mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, type=%d(%s), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d)\n",
             mp_obj_str_get_str(self->phone_number),
             mp_obj_str_get_str(self->message),
             self->day, self->month, self->year, self->hour, self->minute, self->second, (self->tzSign ? "+" : "-"),
@@ -633,7 +642,7 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
 }
 
 STATIC const mp_rom_map_elem_t sms_locals_dict_table[] = {
-    //{ MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&modcellular_sms_send_obj) },
+    { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&modcellular_sms_send_obj) },
     { MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&modcellular_sms_delete_obj) },
 };
 
@@ -1031,7 +1040,7 @@ void modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint1
             }
         }
         
-        // LUAT_DEBUG_PRINT("dcs = %02x, source_port = %d, destination_port = %d", dcs.dcs, self->source_port, self->destination_port);
+        LUAT_DEBUG_PRINT("dcs = %02x, source_port = %d, destination_port = %d", dcs.dcs, self->source_port, self->destination_port);
         if ((dcs.dcs & 0x80) == 0) {
             switch (dcs.dcs & 0x0C) {
                 case 0x00:
@@ -1212,8 +1221,8 @@ STATIC mp_obj_t modcellular_sms_delete_by_index(mp_obj_t index) {
                 return mp_const_none;
             }
         }
-        modcellular_clear_sms_list();
     } 
+    modcellular_clear_sms_list();
     mp_raise_ValueError("Failed to delete SMS (index not found)");
     return mp_const_none;
 }
@@ -1235,7 +1244,10 @@ STATIC mp_obj_t modcellular_sms_delete_all_read() {
         }
         mp_hal_delay_ms(500); // wait SIM storage update
         modcellular_clear_sms_list();
-    } else mp_raise_ValueError("Failed to delete SMSs");
+    } else {
+        modcellular_clear_sms_list();
+        mp_raise_ValueError("Failed to delete SMSs");
+    }
     return mp_const_none;
 }
 
@@ -1250,8 +1262,8 @@ mp_obj_t modcellular_sms_read_all(void) {
         for(int i = 0; i < (int)sms_list_buffer->len; i++) {
             mp_obj_list_append(result, sms_list_buffer->items[i]);
         }       
-        modcellular_clear_sms_list(); 
     }
+    modcellular_clear_sms_list(); 
     return (mp_obj_t)result;    
 }
 
@@ -1263,10 +1275,10 @@ STATIC mp_obj_t modcellular_sms_list_read(void) {
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_REC_READ)) {
-        for(int i = 0; i < (int)sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
-        modcellular_clear_storage_info();
-        modcellular_clear_sms_list(); 
+        for(int i = 0; i < (int)sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);        
     }
+    modcellular_clear_storage_info();
+    modcellular_clear_sms_list(); 
     return (mp_obj_t)result;
 }
 
@@ -1279,9 +1291,9 @@ STATIC mp_obj_t modcellular_sms_list(void) {
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
         for(int i = 0; i < (int)sms_list_buffer->len; i++) mp_obj_list_append(result, sms_list_buffer->items[i]);
-        modcellular_clear_storage_info();
-        modcellular_clear_sms_list(); 
     }
+    modcellular_clear_storage_info();
+    modcellular_clear_sms_list(); 
     return (mp_obj_t)result;
 }
 
@@ -1319,6 +1331,8 @@ STATIC mp_obj_t modcellular_sms_get_storage_size(void) {
         modcellular_clear_sms_list();
         return mp_obj_new_tuple(8, tuple);
     }
+    modcellular_clear_storage_info();
+    modcellular_clear_sms_list();
     return mp_const_none;
 }
 

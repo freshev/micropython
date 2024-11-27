@@ -68,7 +68,7 @@ Translated module documentation at [Docs](docs/)
    Release module `BOOT` button.  
    The firmware download at `Luatools` should start.
 
-or use ectool.py
+or use `ectool.py`
 
 1. Get `ectool` by `pip3 install -U ectool`.
 
@@ -121,7 +121,7 @@ blink.blink(1)
 - [x] File system (littlefs)
 - [x] DNS: `cellular`, `socket`, `ssl`
 - [x] Power: `machine`, `watchdog`
-- [ ] CC1101: `DHT`
+- [ ] CC1101: `CC1101`
 - [ ] DHT: `DHT`
 
 Missed software modules actively developed now (At least at 2024).  
@@ -136,7 +136,7 @@ See [examples](examples) folder.
 
 Featured:
 
-1. [`cellular`](#cellular), `network`: SMS, calls, connectivity
+1. [`cellular`](#cellular): SMS, calls, connectivity
 2. [`socket`](#socket): sockets over 4G
 3. [`ssl`](#ssl): SSL over sockets
 4. [`gps`](#gps): everything related to GPS and assisted positioning
@@ -147,7 +147,6 @@ Featured:
 9. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
 10. [`umqtt`](#umqtt): umqtt support via frozen module
 11. [`urequests`](#urequests): urequests support via frozen module
-12. [Notes](#Notes)
 
 ### `cellular`
 
@@ -580,6 +579,7 @@ To use other methods, uncomment needed methods in `modules/umqtt.py` and rebuild
 ### urequests ###
 In order to reduce module size `urequests` has only `get` methods.  
 To use other methods, uncomment needed methods in `modules/urequests.py` and rebuild port.
+
 
 ## Notes ##
 
