@@ -27,6 +27,7 @@
  * THE SOFTWARE.
  */
 
+#include "luat_network_adapter.h"
 #include "ps_lib_api.h"
 #include "modcellular.h"
 #include "modcellsms.c"
@@ -168,8 +169,12 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
 
         case LUAT_MOBILE_EVENT_NETIF:
             switch (status) {
-                case LUAT_MOBILE_NETIF_LINK_ON:
-                    //LUAT_DEBUG_PRINT("Can access the Internet");
+                case LUAT_MOBILE_NETIF_LINK_ON: {
+                    // LUAT_DEBUG_PRINT("Can access the Internet (index=%d)", index);
+                    // moved to modsocket.c, important for network socket 
+                    // here index is NW_ADAPTER_INDEX_LWIP_GPRS
+                    // uint8_t is_ipv6;
+                    // luat_socket_check_ready(index, &is_ipv6);
                     luat_mobile_get_local_ip(0, 1, &ipv4, &ipv6);
                     if (ipv4.type != 0xff) { LUAT_DEBUG_PRINT("IPV4 %s", ip4addr_ntoa(&ipv4.u_addr.ip4)); }
                     if (ipv6.type != 0xff) { LUAT_DEBUG_PRINT("IPV6 %s", ip6addr_ntoa(&ipv4.u_addr.ip6)); }
@@ -179,6 +184,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
                     //LUAT_DEBUG_PRINT("Can't access the Internet");
                     modcellular_network_status_update(network_status & ~NTW_ACT_BIT, NTW_EXC_ACT_FAILED);
                     break;
+            }
             }
             break;
         case LUAT_MOBILE_EVENT_TIME_SYNC:
@@ -228,14 +234,18 @@ void modcellular_init0(void) {
     // Reset statuses
     network_exception = NTW_NO_EXC;
     // set RRC release time to 1 sec and "idle timeout" to 55 secs
-    luat_mobile_set_auto_rrc_default();
+    luat_mobile_set_auto_rrc_default();    
 
     luat_sms_init();
     luat_sms_recv_msg_register_handler(modcellular_sms_recv_cb); 
     luat_sms_send_msg_register_handler(modcellular_sms_send_cb); 
     luat_mobile_sms_event_register_handler(sms_event_cb); // redefine SMS callback, inited in "luat_sms_init"
     luat_mobile_event_register_handler(mobile_event_cb); 
-    modcellular_init_sms();
+    modcellular_init_sms(); // set SMS storage to SM
+
+    net_lwip_init();
+    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
 
     luat_mobile_set_period_work(90000, 5000, 4);
     luat_mobile_set_check_network_period(120000);

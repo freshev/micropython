@@ -92,7 +92,7 @@ enum
 	EV_NW_RESULT_EVENT = EV_NW_RESULT_BASE + NW_WAIT_EVENT,
 
 	NW_ADAPTER_INDEX_LWIP_NONE = 0,
-	NW_ADAPTER_INDEX_LWIP_GPRS,	//Cellular network Modules
+	NW_ADAPTER_INDEX_LWIP_GPRS,	//Cellular network module
 	NW_ADAPTER_INDEX_LWIP_WIFI_STA,	//WIFI SOC
 	NW_ADAPTER_INDEX_LWIP_WIFI_AP,	//WIFI SOC
 	NW_ADAPTER_INDEX_LWIP_ETH,		//SOC with built-in Ethernet controller
@@ -263,7 +263,7 @@ typedef struct
 	//Forcibly release control of the socket, which must take effect immediately
 	//Return 0 on success, <0 on failure
 	int (*socket_force_close)(int socket_id, void *user_data);
-	//In tcp, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
+	//When tcp is used, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
 	//When udp is used, only 1 block of data is returned, and it needs to be read multiple times until there is no data.
 	//Return the actual read value on success, <0 on failure
 	int (*socket_receive)(int socket_id, uint64_t tag, uint8_t *buf, uint32_t len, int flags, luat_ip_addr_t *remote_ip, uint16_t *remote_port, void *user_data);
@@ -287,7 +287,7 @@ typedef struct
 	int (*get_full_ip_info)(luat_ip_addr_t *ip, luat_ip_addr_t *submask, luat_ip_addr_t *gateway, luat_ip_addr_t *ipv6, void *user_data);
 	int (*get_local_ip_info)(luat_ip_addr_t *ip, luat_ip_addr_t *submask, luat_ip_addr_t *gateway, void *user_data);
 	//All network messages are passed through cb_fun callback
-	//The first parameter in the cb_fun callback is OS_EVENT, which contains the necessary information about the socket. The second parameter is luat_network_cb_param_t, where the param is the param passed in here (that is, the adapter serial number)
+	//The first parameter in the cb_fun callback is OS_EVENT, which contains the necessary information of the socket. The second parameter is luat_network_cb_param_t, where the param is the param passed in here (that is, the adapter serial number)
 	//OS_EVENT ID is EV_NW_XXX, param1 is the socket id, param2 is the respective parameter, param3 is the socket_param passed in by create_soceket (that is, network_ctrl *)
 	//The dns result is special, the ID is EV_NW_SOCKET_DNS_RESULT, param1 is the amount of IP data obtained, 0 means failure, param2 is the ip group, dynamically allocated, param3 is the param passed in by dns (that is, network_ctrl *)
 	void (*socket_set_callback)(CBFuncEx_t cb_fun, void *param, void *user_data);
@@ -297,7 +297,7 @@ typedef struct
 	uint8_t no_accept;
 	uint8_t is_posix;
 }network_adapter_info;
-/** The API may involve task safety requirements and cannot be run in interrupts, but can only be run in tasks.*/
+/** The api may involve task safety requirements and cannot be run in interrupts, but can only be run in tasks.*/
 
 //Get the last registered adapter serial number
 int network_get_last_register_adapter(void);
@@ -314,8 +314,8 @@ network_ctrl_t *network_alloc_ctrl(uint8_t adapter_index);
 /** Return a network_ctrl*/
 void network_release_ctrl(network_ctrl_t *ctrl);
 /** Before using network_ctrl, it must be initialized first
- * When lua calls c, it must use a non-blocking interface. Task_handle, callback, and param are not required.
- * When calling in pure C, if it is not needed, plug the application and must have callback and param.
+ * When lua calls c, it must use a non-blocking interface, and task_handle, callback, and param are not required.
+ * When calling in pure C, if it is not needed, plug the application. There must be callback and param.
  * When calling in pure C, if you need to block the application, you must have a task_handle. It is recommended to have callback and param. When you can wait for the message, you can process other types of messages in the callback at the same time.*/
 void network_init_ctrl(network_ctrl_t *ctrl, HANDLE task_handle, CBFuncEx_t callback, void *param);
 
@@ -332,7 +332,7 @@ void network_connect_ipv6_domain(network_ctrl_t *ctrl, uint8_t onoff);
  * Returning non-0 means it is connected and socket operation can be started.*/
 uint8_t network_check_ready(network_ctrl_t *ctrl, uint8_t adapter_index);
 
-/** Set the local port, be careful not to use 60000 or above. If local_port is 0, the system will randomly select one starting from 60000.
+/** Set the local port, be careful not to use 60000 or above. If local_port is 0, the system will randomly select one starting from 60000
  * If local_port is not 0 and is repeated, -1 is returned, otherwise 0 is returned.*/
 int network_set_local_port(network_ctrl_t *ctrl, uint16_t local_port);
 //Create a socket
@@ -359,7 +359,7 @@ int network_socket_close(network_ctrl_t *ctrl);
 //Forcibly release control of the socket
 //Return 0 on success, <0 on failure
 int network_socket_force_close(network_ctrl_t *ctrl);
-//In tcp, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
+//When tcp is used, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
 //When udp is used, only 1 block of data is returned, and it needs to be read multiple times until there is no data.
 //Return the actual read value on success, <0 on failure
 int network_socket_receive(network_ctrl_t *ctrl,uint8_t *buf, uint32_t len, int flags, luat_ip_addr_t *remote_ip, uint16_t *remote_port);
@@ -408,13 +408,13 @@ int network_cert_verify_result(network_ctrl_t *ctrl);
 int network_init_tls(network_ctrl_t *ctrl, int verify_mode);
 /** End the encrypted transmission mode and return to normal mode*/
 void network_deinit_tls(network_ctrl_t *ctrl);
-/** Encrypted transmission is shared by other non-blocking APIs and general APIs. Blocking APIs and RTO environment-related blocking APIs are common, and are processed internally by the API.*/
-/****************************TLS related api end********************** *****************************************/
+/** Encrypted transmission is shared by other non-blocking APIs and general APIs. Blocking APIs and blocking APIs related to rtos environment are common, and are processed internally by the API.*/
+/****************************TLS related api end************************ *******************************************/
 
 
 /****************************Advanced API, used to implement a complete function****************** ***********/
 //Once the following api is used, the network will automatically determine the status and proceed to the next step. In addition to actively forcibly closing the socket during the intermediate processing process, other users cannot intervene until the target state is reached. Even non-blocking callbacks will only call back the final result.
-//All blocking state interfaces will return an error once they receive link down, socket close, error and other messages. If it is a timeout, only the wait event will return success, and the others will return failure.
+//All blocking state interfaces will return an error once they receive link down, socket close, error and other messages. If it is timeout, only the wait event will return success, and the others will return failure.
 //The following api can be blocking or non-blocking. When task_handle is set in network_ctrl and timeout_ms > 0, it is a blocking interface.
 //Return value uniformly returns 0 if successful, <0 if failed, non-blocking needs to wait and returns 1
 

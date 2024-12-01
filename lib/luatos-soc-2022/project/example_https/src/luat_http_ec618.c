@@ -91,7 +91,7 @@ static void luatos_http_task(void *param)
 	while (luat_mobile_get_register_status()!=1)
 	{
 		luat_rtos_task_sleep(500);
-		LUAT_DEBUG_PRINT("Waiting for network registration");
+		LUAT_DEBUG_PRINT("Waiting for online registration");
 	}
 	LUAT_DEBUG_PRINT("Online registration successful");
 	luat_http_ctrl_t *http = luat_http_client_create(luatos_http_cb, luat_rtos_get_current_handle(), -1);

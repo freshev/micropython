@@ -48,19 +48,11 @@
 #include "py/stream.h"
 #include "py/mperrno.h"
 #include "shared/netutils/netutils.h"
-// #include "modnetwork.h"
 
-#include "lwip/sockets.h"
 #include "lwip/netdb.h"
-#include "lwip/ip4.h"
-#include "lwip/igmp.h"
 #include "luat_debug.h"
-
-//#include "common_api.h"
-//#include "luat_mobile.h"
-//#include "luat_network_adapter.h"
-//#include "networkmgr.h"
-// #include "net_lwip.h"
+#include "luat_network_adapter.h"
+#include "luat_mem.h"
 
 #define SOCKET_POLL_US (100000)
 /*
@@ -80,12 +72,19 @@ enum {
 
 typedef struct _socket_obj_t {
     mp_obj_base_t base;
-    int fd;
+    /*int fd;
     uint8_t domain;
     uint8_t type;
     uint8_t proto;
     uint8_t state;
     unsigned int retries;
+    */
+    network_ctrl_t *ctrl;
+    uint8_t state;
+    unsigned int retries;
+    ringbuf_t *recv_buffer;  // A buffer for received packets
+    size_t recv_buffer_size; // The size of the recv_buffer
+
     #if MICROPY_PY_SOCKET_EVENTS
     mp_obj_t events_callback;
     struct _socket_obj_t *events_next;
@@ -102,6 +101,7 @@ void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms);
 
 STATIC uint8_t socket_events_divisor;
 STATIC socket_obj_t *socket_events_head;
+extern luat_rtos_task_handle microPyTaskHandle;
 
 void socket_events_deinit(void) {
     socket_events_head = NULL;
@@ -122,6 +122,13 @@ STATIC void socket_events_remove(socket_obj_t *sock) {
         }
     }
 }
+// TODO: merge luat_test_socket_callback & socket_events_handler
+static int32_t luat_test_socket_callback(void *pdata, void *param)
+{
+    OS_EVENT *event = (OS_EVENT *)pdata;
+    LUAT_DEBUG_PRINT("%x", event->ID);
+    return 0;
+}
 
 // Polls all registered sockets for readability and calls their callback if they are readable
 void socket_events_handler(void) {
@@ -138,8 +145,8 @@ void socket_events_handler(void) {
     int max_fd = 0;
 
     for (socket_obj_t *s = socket_events_head; s != NULL; s = s->events_next) {
-        FD_SET(s->fd, &rfds);
-        max_fd = MAX(max_fd, s->fd);
+        FD_SET(s->ctrl->socket_id, &rfds);
+        max_fd = MAX(max_fd, s->ctrl->socket_id);
     }
 
     // Poll the sockets
@@ -151,7 +158,7 @@ void socket_events_handler(void) {
 
     // Call the callbacks
     for (socket_obj_t *s = socket_events_head; s != NULL; s = s->events_next) {
-        if (FD_ISSET(s->fd, &rfds)) {
+        if (FD_ISSET(s->ctrl->socket_id, &rfds)) {
             mp_call_function_1_protected(s->events_callback, s);
         }
     }
@@ -240,7 +247,7 @@ static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struc
 
     MP_THREAD_GIL_EXIT();
     //int res = _socket_getaddrinfo3(host_str, port_str, &hints, resp);
-    int res = getaddrinfo( host_str, port_str , &hints, resp);
+    int res = getaddrinfo(host_str, port_str , &hints, resp);
     MP_THREAD_GIL_ENTER();
 
     // Per docs: instead of raising gaierror getaddrinfo raises negative error number
@@ -268,7 +275,7 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
 
     socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
     sock->base.type = type_in;
-    sock->domain = AF_INET;
+    /*sock->domain = AF_INET;
     sock->type = SOCK_STREAM;
     sock->proto = 0;
     if (n_args > 0) {
@@ -280,21 +287,32 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
             }
         }
     }
-
     sock->state = sock->type == SOCK_STREAM ? SOCKET_STATE_NEW : SOCKET_STATE_CONNECTED;
-
     sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
-    if (sock->fd < 0 && errno == ENFILE) {
+    */
+    sock->ctrl = network_alloc_ctrl(NW_ADAPTER_INDEX_LWIP_GPRS);
+    sock->state = SOCKET_STATE_NEW;
+
+    //if (sock->fd < 0 && errno == ENFILE) {
+    if(sock->ctrl == NULL) {
         // ESP32 LWIP has a hard socket limit, ENFILE is returned when this is
         // reached. Similar to the logic elsewhere for MemoryError, try running
         // GC before failing outright.
         gc_collect();
-        sock->fd = lwip_socket(sock->domain, sock->type, sock->proto);
+        sock->ctrl = network_alloc_ctrl(NW_ADAPTER_INDEX_LWIP_GPRS);
     }
-    if (sock->fd < 0) {
+    //if (sock->fd < 0) {
+    if(sock->ctrl == NULL) {
         mp_raise_OSError(errno);
     }
     _socket_settimeout(sock, UINT64_MAX);
+
+    network_init_ctrl(sock->ctrl, microPyTaskHandle, luat_test_socket_callback, NULL);
+    network_set_base_mode(sock->ctrl, /*is_tcp*/ 1, /*tcp timeout ms*/15000, /*keep alive*/1, /*keep idle ms*/300, /*keep interval*/5, /*keep count*/9);
+
+    sock->recv_buffer_size = PS_NETIF_DEFAULT_MTU;
+    sock->recv_buffer = NULL; // allocate in modsocket_recv
+    sock->ctrl->is_debug = 1; //Turn off debug when testing downlink speed. If it is just a normal test, turn on debug.
 
     return MP_OBJ_FROM_PTR(sock);
 }
@@ -304,16 +322,21 @@ STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
     self->state = SOCKET_STATE_CONNECTED;
-    int r = lwip_bind(self->fd, res->ai_addr, res->ai_addrlen);
+    //int r = lwip_bind(self->ctrl->socket_id, res->ai_addr, res->ai_addrlen);
+    uint16_t port = lwip_htons(((struct sockaddr_in *)res->ai_addr)->sin_port); 
+    LUAT_DEBUG_PRINT("socket_bind (%d) port: %d", self->ctrl->socket_id, port);
+    int r = network_set_local_port(self->ctrl, port);
+
     lwip_freeaddrinfo(res);
     if (r < 0) {
         mp_raise_OSError(errno);
     }
+    // real connection made in listen() or accept() or connect()
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
 
-// method socket.listen([backlog])
+
 STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
     socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 
@@ -322,9 +345,9 @@ STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
         backlog = mp_obj_get_int(args[1]);
         backlog = (backlog < 0) ? 0 : backlog;
     }
-
     self->state = SOCKET_STATE_CONNECTED;
-    int r = lwip_listen(self->fd, backlog);
+    //int r = lwip_listen(self->fd, backlog);    
+    int r = network_listen(self->ctrl, UINT32_MAX); // perhaps UINT32_MAX
     if (r < 0) {
         mp_raise_OSError(errno);
     }
@@ -332,142 +355,94 @@ STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_listen_obj, 1, 2, socket_listen);
 
+
 STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
 
     struct sockaddr addr;
     socklen_t addr_len = sizeof(addr);
 
-    int new_fd = -1;
-    for (int i = 0; i <= (int)self->retries; i++) {
-        MP_THREAD_GIL_EXIT();
-        new_fd = lwip_accept(self->fd, &addr, &addr_len);
-        MP_THREAD_GIL_ENTER();
-        if (new_fd >= 0) {
-            break;
+    int res = -1;
+    network_ctrl_t * accept_ctrl = (network_ctrl_t *)LUAT_MEM_MALLOC(sizeof(network_ctrl_t));
+    if(accept_ctrl != NULL) {
+        for (uint i = 0; i <= self->retries; i++) {
+            MP_THREAD_GIL_EXIT();
+            //new_fd = lwip_accept(self->fd, &addr, &addr_len);
+            
+            res = network_socket_accept(self->ctrl, accept_ctrl); 
+            // LUAT_DEBUG_PRINT("client %s, %u", ipaddr_ntoa(&(self->ctrl)->remote_ip), self->ctrl->remote_port);
+        
+            MP_THREAD_GIL_ENTER();
+            if (res >= 0) {
+                break;
+            }
+            if (errno != EAGAIN) {
+                mp_raise_OSError(errno);
+            }
+            check_for_exceptions();
         }
-        if (errno != EAGAIN) {
-            mp_raise_OSError(errno);
+        if (res < 0) {
+            if (self->retries == 0) {
+                mp_raise_OSError(MP_EAGAIN);
+            } else {
+                mp_raise_OSError(MP_ETIMEDOUT);
+            }
         }
-        check_for_exceptions();
-    }
-    if (new_fd < 0) {
-        if (self->retries == 0) {
-            mp_raise_OSError(MP_EAGAIN);
-        } else {
-            mp_raise_OSError(MP_ETIMEDOUT);
-        }
-    }
-
-    // create new socket object
-    socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
-    sock->base.type = self->base.type;
-    sock->fd = new_fd;
-    sock->domain = self->domain;
-    sock->type = self->type;
-    sock->proto = self->proto;
-    sock->state = SOCKET_STATE_CONNECTED;
-    _socket_settimeout(sock, UINT64_MAX);
-
-    // make the return value
-    uint8_t *ip = (uint8_t *)&((struct sockaddr_in *)&addr)->sin_addr;
-    mp_uint_t port = lwip_ntohs(((struct sockaddr_in *)&addr)->sin_port);
-    mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
-    client->items[0] = sock;
-    client->items[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
-
-    return client;
+        
+        // create new socket object
+        socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+        sock->base.type = self->base.type;
+        //sock->fd = new_fd;
+        //sock->domain = self->domain;
+        //sock->type = self->type;
+        //sock->proto = self->proto;
+        sock->ctrl = accept_ctrl;
+        sock->state = SOCKET_STATE_CONNECTED;
+        _socket_settimeout(sock, UINT64_MAX);
+        
+        // make the return value
+        uint8_t *ip = (uint8_t *)&((struct sockaddr_in *)&addr)->sin_addr;
+        uint16_t port = lwip_ntohs(((struct sockaddr_in *)&addr)->sin_port);
+        mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
+        client->items[0] = sock;
+        client->items[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
+        
+        return client;
+    } else {
+        LUAT_DEBUG_PRINT("client socket allocation failed");
+        return mp_const_none;
+    } 
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
 STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
-    bool blocking = false;
-    int flags;
     int raise_err = 0;
 
     _socket_getaddrinfo(arg1, &res);
+
     MP_THREAD_GIL_EXIT();
-    self->state = SOCKET_STATE_CONNECTED;
-
-    flags = fcntl(self->fd, F_GETFL, 0);
-
-    blocking = (flags & O_NONBLOCK) == 0;
-
-    if (blocking) {
-        // For blocking sockets, make the socket temporarily non-blocking and emulate
-        // blocking using select.
-        //
-        // This has two benefits:
-        //
-        // - Allows handling external exceptions while waiting for connect.
-        //
-        // - Allows emulating a connect timeout, which is not supported by LWIP or
-        //   required by POSIX but is normal behaviour for CPython.
-        if (fcntl(self->fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-            LUAT_DEBUG_PRINT("fcntl set failed %d", errno); // Unexpected internal failure
-            raise_err = errno;
-        }
-    }
-
-    if (raise_err == 0) {
+    int result = network_wait_link_up(self->ctrl, 15000);
+    if (result == 0) {
         // Try performing the actual connect. Expected to always return immediately.
-        int r = lwip_connect(self->fd, res->ai_addr, res->ai_addrlen);
+        char addrstring[16];
+        ip4_addr_t ip4_addr = { .addr = ((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr };
+        ip4addr_ntoa_r(&ip4_addr, addrstring, sizeof(addrstring));
+        uint16_t remote_port = lwip_htons(((struct sockaddr_in *)res->ai_addr)->sin_port);
+        //luat_ip_addr_t remote_ip = {0};
+        //remote_ip.u_addr.ip4.addr = ((struct sockaddr_in *)res->ai_addr)->sin_addr.s_addr;
+
+        // LUAT_DEBUG_PRINT("socket_connect (%d) try remote ip=%s:%d, socket=%d", self->ctrl->socket_id, addrstring, remote_port, self->ctrl->socket_id);
+        int r = network_connect(self->ctrl, addrstring, strlen(addrstring), NULL, remote_port, 15000);
+
         if (r != 0) {
             raise_err = errno;
         }
+        // LUAT_DEBUG_PRINT("socket_connect (%d) result=%d, error=%d ", self->ctrl->socket_id, r, errno);
+        self->state = SOCKET_STATE_CONNECTED;
     }
-
-    if (blocking) {
-        // Set the socket back to blocking. We can still pass it to select() in this state.
-        int r = fcntl(self->fd, F_SETFL, flags);
-        if (r != 0 && (raise_err == 0 || raise_err == EINPROGRESS)) {
-            LUAT_DEBUG_PRINT("fcntl restore failed %d", errno); // Unexpected internal failure
-            raise_err = errno;
-        }
-    }
-
     lwip_freeaddrinfo(res);
-
-    if (blocking && raise_err == EINPROGRESS) {
-        // Keep calling select() until the socket is marked writable (i.e. connected),
-        // or an error or a timeout occurs
-
-        // Note: _socket_settimeout() always sets self->retries != 0 on blocking sockets.
-
-        for (unsigned int i = 0; i <= self->retries; i++) {
-            struct timeval timeout = {
-                .tv_sec = 0,
-                .tv_usec = SOCKET_POLL_US,
-            };
-            fd_set wfds;
-            FD_ZERO(&wfds);
-            FD_SET(self->fd, &wfds);
-
-            int r = select(self->fd + 1, NULL, &wfds, NULL, &timeout);
-            if (r < 0) {
-                // Error condition
-                raise_err = errno;
-                break;
-            } else if (r > 0) {
-                // Select indicated the socket is writable. Check for any error.
-                socklen_t socklen = sizeof(raise_err);
-                r = getsockopt(self->fd, SOL_SOCKET, SO_ERROR, &raise_err, &socklen);
-                if (r < 0) {
-                    raise_err = errno;
-                }
-                break;
-            } else {
-                // Select timed out
-                raise_err = ETIMEDOUT;
-
-                MP_THREAD_GIL_ENTER();
-                check_for_exceptions();
-                MP_THREAD_GIL_EXIT();
-            }
-        }
-    }
 
     MP_THREAD_GIL_ENTER();
     if (raise_err) {
@@ -488,14 +463,16 @@ STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
         case SO_REUSEADDR:
         case SO_BROADCAST: {
             int val = mp_obj_get_int(args[3]);
-            int ret = lwip_setsockopt(self->fd, SOL_SOCKET, opt, &val, sizeof(int));
+            //int ret = lwip_setsockopt(self->fd, SOL_SOCKET, opt, &val, sizeof(int));
+            int ret = network_setsockopt(self->ctrl, SOL_SOCKET, opt, &val, sizeof(int));
+
             if (ret != 0) {
                 mp_raise_OSError(errno);
             }
             break;
         }
 
-            #if MICROPY_PY_SOCKET_EVENTS
+        #if MICROPY_PY_SOCKET_EVENTS
         // level: SOL_SOCKET
         // special "register callback" option
         case 20: {
@@ -512,7 +489,7 @@ STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
             }
             break;
         }
-            #endif
+        #endif
 
         default:
             mp_printf(&mp_plat_print, "Warning: lwip.setsockopt() option not implemented\n");
@@ -533,9 +510,11 @@ void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms) {
         .tv_sec = 0,
         .tv_usec = timeout_ms ? SOCKET_POLL_US : 0
     };
-    lwip_setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
-    lwip_fcntl(sock->fd, F_SETFL, timeout_ms ? 0 : O_NONBLOCK);
+    //lwip_setsockopt(sock->fd, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
+    //lwip_setsockopt(sock->fd, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
+    network_setsockopt(sock->ctrl, SOL_SOCKET, SO_SNDTIMEO, (const void *)&timeout, sizeof(timeout));
+    network_setsockopt(sock->ctrl, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
+    lwip_fcntl(sock->ctrl->socket_id, F_SETFL, timeout_ms ? 0 : O_NONBLOCK);
 }
 
 STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
@@ -570,13 +549,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
 STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     struct sockaddr *from, socklen_t *from_len, int *errcode) {
     socket_obj_t *sock = MP_OBJ_TO_PTR(self_in);
+    // LUAT_DEBUG_PRINT("socket_read_data (%d) buf=%p, size=%d", sock->ctrl->socket_id, buf, size);
 
     // A new socket cannot be read from.
     if (sock->state == SOCKET_STATE_NEW) {
         *errcode = MP_ENOTCONN;
         return MP_STREAM_ERROR;
     }
-
     // If the peer closed the connection then the lwIP socket API will only return "0" once
     // from lwip_recvfrom and then block on subsequent calls.  To emulate POSIX behaviour,
     // which continues to return "0" for each call on a closed socket, we set a flag when
@@ -586,30 +565,71 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     }
 
     // XXX Would be nicer to use RTC to handle timeouts
-    for (int i = 0; i <= (int)sock->retries; ++i) {
-        // Poll the socket to see if it has waiting data and only release the GIL if it doesn't.
-        // This ensures higher performance in the case of many small reads, eg for readline.
-        bool release_gil;
-        {
-            fd_set rfds;
-            FD_ZERO(&rfds);
-            FD_SET(sock->fd, &rfds);
-            struct timeval timeout = { .tv_sec = 0, .tv_usec = 0 };
-            int r = select(sock->fd + 1, &rfds, NULL, NULL, &timeout);
-            release_gil = r != 1;
+    uint32_t total_len = 0;
+    for (uint i = 0; i <= sock->retries; ++i) {
+        MP_THREAD_GIL_EXIT();
+        // int r = lwip_recvfrom(sock->fd, buf, size, 0, from, from_len);
+        if(sock->recv_buffer == NULL) {        
+            sock->recv_buffer = m_new_obj(ringbuf_t);
+            ringbuf_alloc(sock->recv_buffer, sock->recv_buffer_size);
+            if(sock->recv_buffer->buf == NULL) {
+                mp_raise_OSError(MP_ENOMEM);
+            }
         }
-        if (release_gil) {
-            MP_THREAD_GIL_EXIT();
+
+        uint8_t is_break = 0, is_timeout = 0;
+
+        int r;
+        uint32_t rx_len;
+        uint8_t* recv_buf = (uint8_t*)LUAT_MEM_MALLOC(sock->recv_buffer_size);
+        if(recv_buf != NULL) {
+            r = network_rx(sock->ctrl, recv_buf, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
+            if(r == 0 && rx_len > 0) {
+               // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes", sock->ctrl->socket_id, rx_len);
+               ringbuf_put_bytes(sock->recv_buffer, recv_buf, rx_len);
+            }
+                               
+            // if socket ring buffer empty - try to fill it waiting for data
+            if(!ringbuf_avail(sock->recv_buffer)) {
+                int result = network_wait_rx(sock->ctrl, 1000, &is_break, &is_timeout);
+                if (result == 0) {
+                    if (!is_timeout && !is_break) {
+                        // fill socket ring buffer
+                        r = network_rx(sock->ctrl, recv_buf, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
+                        if(r == 0 && rx_len > 0) {
+                           // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes (after wait)", sock->ctrl->socket_id, rx_len);
+                           ringbuf_put_bytes(sock->recv_buffer, recv_buf, rx_len);
+                        }                     
+                    } else if (is_timeout) { LUAT_DEBUG_PRINT("socket_read_data (%d) timeout", sock->ctrl->socket_id); }
+                    else { LUAT_DEBUG_PRINT("socket_read_data (%d) break", sock->ctrl->socket_id); }
+                } else { LUAT_DEBUG_PRINT("network_wait_rx (%d) failed", sock->ctrl->socket_id); }        
+            }
+            LUAT_MEM_FREE(recv_buf);
+        } 
+
+        // if socket ring buffer NOT empty - read from ring buffer        
+        if(ringbuf_avail(sock->recv_buffer) > 0) {
+            int res = -1;
+            if(size == 1) {
+                res = ringbuf_get(sock->recv_buffer);
+                if(res > 0) {
+                    *(uint8_t*)buf = (uint8_t)(res & 0xFF);
+                    total_len++;
+                }
+            } else {
+                res = ringbuf_get_bytes(sock->recv_buffer, buf, size);
+                if(res == 0) {
+                    total_len += size;
+                }
+            }
         }
-        int r = lwip_recvfrom(sock->fd, buf, size, 0, from, from_len);
-        if (release_gil) {
-            MP_THREAD_GIL_ENTER();
-        }
-        if (r == 0) {
+        
+        MP_THREAD_GIL_ENTER();
+        if (is_break) {
             sock->state = SOCKET_STATE_PEER_CLOSED;
         }
-        if (r >= 0) {
-            return r;
+        if (total_len == size) {
+            return total_len;
         }
         if (errno != EWOULDBLOCK) {
             *errcode = errno;
@@ -617,7 +637,6 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
         }
         check_for_exceptions();
     }
-
     *errcode = sock->retries == 0 ? MP_EWOULDBLOCK : MP_ETIMEDOUT;
     return MP_STREAM_ERROR;
 }
@@ -660,15 +679,17 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 
 int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
     int sentlen = 0;
-    for (int i = 0; i <= (int)sock->retries && sentlen < (int)datalen; i++) {
+    for (uint i = 0; i <= sock->retries && sentlen < (int)datalen; i++) {
         MP_THREAD_GIL_EXIT();
-        int r = lwip_write(sock->fd, data + sentlen, datalen - sentlen);
+        uint32_t tx_len;
+        int r = network_tx(sock->ctrl, (uint8_t *)(data + sentlen), datalen - sentlen, 0, NULL, 0, &tx_len, 15000);
+
         MP_THREAD_GIL_ENTER();
         // lwip returns EINPROGRESS when trying to send right after a non-blocking connect
         if (r < 0 && errno != EWOULDBLOCK && errno != EINPROGRESS) {
             mp_raise_OSError(errno);
         }
-        if (r > 0) {
+        if (r >= 0) {
             sentlen += r;
         }
         check_for_exceptions();
@@ -714,16 +735,22 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
     to.sin_len = sizeof(to);
     to.sin_family = AF_INET;
     to.sin_port = lwip_htons(netutils_parse_inet_addr(addr_in, (uint8_t *)&to.sin_addr, NETUTILS_BIG));
+    
+    //uint16_t remote_port = lwip_ntohs(((struct sockaddr_in *)&to)->sin_port);
+    //luat_ip_addr_t remote_ip = {0};        
+    //remote_ip.u_addr.ip4.addr = ((struct sockaddr_in *)&to)->sin_addr.s_addr;
 
     // send the data
-    for (int i = 0; i <= (int)self->retries; i++) {
+    for (uint i = 0; i <= self->retries; i++) {
         MP_THREAD_GIL_EXIT();
-        int ret = lwip_sendto(self->fd, bufinfo.buf, bufinfo.len, 0, (struct sockaddr *)&to, sizeof(to));
+        uint32_t tx_len;
+        int r = network_tx(self->ctrl, bufinfo.buf, bufinfo.len, 0, NULL, 0, &tx_len, 15000);
+
         MP_THREAD_GIL_ENTER();
-        if (ret > 0) {
-            return mp_obj_new_int_from_uint(ret);
+        if (r >= 0) {
+            return mp_obj_new_int_from_uint(tx_len);
         }
-        if (ret == -1 && errno != EWOULDBLOCK) {
+        if (r == -1 && errno != EWOULDBLOCK) {
             mp_raise_OSError(errno);
         }
         check_for_exceptions();
@@ -734,7 +761,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(socket_sendto_obj, socket_sendto);
 
 STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
-    return mp_obj_new_int(self->fd);
+    return mp_obj_new_int(self->ctrl->socket_id);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
 
@@ -750,15 +777,19 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *sock = self_in;
-    for (int i = 0; i <= (int)sock->retries; i++) {
+    // LUAT_DEBUG_PRINT("socket_stream_write (%d) %d bytes", sock->ctrl->socket_id, size);
+    for (uint i = 0; i <= sock->retries; i++) {
         MP_THREAD_GIL_EXIT();
-        int r = lwip_write(sock->fd, buf, size);
+        uint32_t tx_len;        
+        int r = network_tx(sock->ctrl, buf, size, 0, NULL, 0, &tx_len, 15000);
+        // LUAT_DEBUG_PRINT("socket_stream_write (%d) r=%d, tx_len=%d", sock->ctrl->socket_id, r, tx_len);
         MP_THREAD_GIL_ENTER();
-        if (r > 0) {
-            return r;
+        if (r >= 0) {
+            return tx_len;
         }
         // lwip returns MP_EINPROGRESS when trying to write right after a non-blocking connect
         if (r < 0 && errno != EWOULDBLOCK && errno != EINPROGRESS) {
+            LUAT_DEBUG_PRINT("socket_stream_write (%d) error: %d", sock->ctrl->socket_id, errno);
             *errcode = errno;
             return MP_STREAM_ERROR;
         }
@@ -771,7 +802,7 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
 STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     socket_obj_t *socket = self_in;
     if (request == MP_STREAM_POLL) {
-        if (socket->fd == -1) {
+        if (socket->ctrl->socket_id == -1) {
             return MP_STREAM_POLL_NVAL;
         }
 
@@ -783,29 +814,29 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
         FD_ZERO(&efds);
         struct timeval timeout = { .tv_sec = 0, .tv_usec = 0 };
         if (arg & MP_STREAM_POLL_RD) {
-            FD_SET(socket->fd, &rfds);
+            FD_SET(socket->ctrl->socket_id, &rfds);
         }
         if (arg & MP_STREAM_POLL_WR) {
-            FD_SET(socket->fd, &wfds);
+            FD_SET(socket->ctrl->socket_id, &wfds);
         }
         if (arg & MP_STREAM_POLL_HUP) {
-            FD_SET(socket->fd, &efds);
+            FD_SET(socket->ctrl->socket_id, &efds);
         }
 
-        int r = select((socket->fd) + 1, &rfds, &wfds, &efds, &timeout);
+        int r = select((socket->ctrl->socket_id) + 1, &rfds, &wfds, &efds, &timeout);
         if (r < 0) {
             *errcode = MP_EIO;
             return MP_STREAM_ERROR;
         }
 
         mp_uint_t ret = 0;
-        if (FD_ISSET(socket->fd, &rfds)) {
+        if (FD_ISSET(socket->ctrl->socket_id, &rfds)) {
             ret |= MP_STREAM_POLL_RD;
         }
-        if (FD_ISSET(socket->fd, &wfds)) {
+        if (FD_ISSET(socket->ctrl->socket_id, &wfds)) {
             ret |= MP_STREAM_POLL_WR;
         }
-        if (FD_ISSET(socket->fd, &efds)) {
+        if (FD_ISSET(socket->ctrl->socket_id, &efds)) {
             ret |= MP_STREAM_POLL_HUP;
         }
 
@@ -816,19 +847,25 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
 
         return ret;
     } else if (request == MP_STREAM_CLOSE) {
-        if (socket->fd >= 0) {
+        if (socket->ctrl->socket_id >= 0) {
             #if MICROPY_PY_SOCKET_EVENTS
             if (socket->events_callback != MP_OBJ_NULL) {
                 socket_events_remove(socket);
                 socket->events_callback = MP_OBJ_NULL;
             }
             #endif
-            int ret = lwip_close(socket->fd);
+            // int ret = lwip_close(socket->fd);
+            int ret = network_close(socket->ctrl, 15000);
             if (ret != 0) {
                 *errcode = errno;
                 return MP_STREAM_ERROR;
             }
-            socket->fd = -1;
+            if(socket->recv_buffer != NULL && socket->recv_buffer->buf != NULL) {
+                m_free(socket->recv_buffer->buf);
+            }
+            socket->recv_buffer->buf = NULL;
+            socket->recv_buffer = NULL;
+            // socket->fd = -1;
         }
         return 0;
     }
@@ -877,7 +914,7 @@ STATIC MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &socket_locals_dict
     );
 
-STATIC mp_obj_t esp_socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
+STATIC mp_obj_t socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
     // TODO support additional args beyond the first two
 
     struct addrinfo *res = NULL;
@@ -913,12 +950,16 @@ STATIC mp_obj_t esp_socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
     }
     return ret_list;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_socket_getaddrinfo_obj, 2, 6, esp_socket_getaddrinfo);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_getaddrinfo_obj, 2, 6, socket_getaddrinfo);
 
 STATIC mp_obj_t air_socket_initialize() {
     static int initialized = 0;
+    uint8_t is_ipv6;
     if (!initialized) {
         net_lwip_init();
+        net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+        network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
+        luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket 
         initialized = 1;
     }
     return mp_const_none;
@@ -929,7 +970,7 @@ STATIC const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_socket) },
     { MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&air_socket_initialize_obj) },
     { MP_ROM_QSTR(MP_QSTR_socket), MP_ROM_PTR(&socket_type) },
-    { MP_ROM_QSTR(MP_QSTR_getaddrinfo), MP_ROM_PTR(&esp_socket_getaddrinfo_obj) },
+    { MP_ROM_QSTR(MP_QSTR_getaddrinfo), MP_ROM_PTR(&socket_getaddrinfo_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_AF_INET), MP_ROM_INT(AF_INET) },
     { MP_ROM_QSTR(MP_QSTR_AF_INET6), MP_ROM_INT(AF_INET6) },

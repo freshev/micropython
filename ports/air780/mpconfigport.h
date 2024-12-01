@@ -126,6 +126,7 @@
 #define MICROPY_PY_MACHINE_WDT_TIMEOUT_MS   (1)
 
 
+#define MICROPY_PY_SOCKET_EVENTS            (1)
 #define MICROPY_PY_SSL                      (1)
 #define MICROPY_SSL_MBEDTLS                 (1) 
 #define MICROPY_STREAMS_POSIX_API           (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
@@ -159,11 +160,19 @@ typedef long mp_off_t;
 
 #define MP_STATE_PORT MP_STATE_VM
 
+
+#if MICROPY_PY_SOCKET_EVENTS
+#define MICROPY_PY_SOCKET_EVENTS_HANDLER extern void socket_events_handler(void); socket_events_handler();
+#else
+#define MICROPY_PY_SOCKET_EVENTS_HANDLER
+#endif
+
 #if MICROPY_PY_THREAD
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
         extern void mp_handle_pending(bool); \
         mp_handle_pending(true); \
+        MICROPY_PY_SOCKET_EVENTS_HANDLER; \
         MP_THREAD_GIL_EXIT(); \
         MP_THREAD_GIL_ENTER(); \
     } while (0);
@@ -171,6 +180,7 @@ typedef long mp_off_t;
 #define MICROPY_EVENT_POLL_HOOK \
     do { \
         extern void mp_handle_pending(bool); \
+        MICROPY_PY_SOCKET_EVENTS_HANDLER; \
         mp_handle_pending(true); \
     } while (0);
 #endif

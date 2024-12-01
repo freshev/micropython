@@ -75,7 +75,7 @@ static const char *prv_network_ctrl_wait_state_string[] =
 {
 		"No waiting",
 		"Waiting for hardware to come online",
-		"Wait for the connection to complete",
+		"Wait for connection to complete",
 		"Wait for sending to complete",
 		"Waiting for offline completion",
 		"Wait for any network changes",
@@ -1351,7 +1351,7 @@ int network_socket_force_close(network_ctrl_t *ctrl)
 	ctrl->socket_id = -1;
 	return 0;
 }
-//In tcp, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
+//When tcp is used, remote_ip and remote_port are not needed. If buf is NULL, the amount of data in the current buffer is returned. When the return value is less than len, it means that the reading has been completed.
 //When udp is used, only 1 block of data is returned, and it needs to be read multiple times until there is no data.
 //Return the actual read value on success, <0 on failure
 int network_socket_receive(network_ctrl_t *ctrl,uint8_t *buf, uint32_t len, int flags, luat_ip_addr_t *remote_ip, uint16_t *remote_port)

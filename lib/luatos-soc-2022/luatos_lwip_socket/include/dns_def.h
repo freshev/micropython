@@ -1,4 +1,4 @@
-/**dns_def.h
+/** dns_def.h
  *
  * Created on: April 13, 2022
  * Author: Administrator*/

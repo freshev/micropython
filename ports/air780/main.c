@@ -50,6 +50,7 @@
 #include "luat_mem.h"
 #include "luat_pm.h"
 #include "luat_uart.h"
+#include "luat_network_adapter.h"
 
 
 #include "luat_sms.h"
@@ -68,7 +69,7 @@
 #define MP_FATAL_REASON_HEAP_INIT       (2)
 
 
-static luat_rtos_task_handle microPyTaskHandle = NULL;
+luat_rtos_task_handle microPyTaskHandle = NULL;
 
 void NORETURN mp_fatal_error(uint8_t reason, void* ptr1);
 void NORETURN nlr_jump_fail(void *val) {
@@ -104,7 +105,6 @@ soft_reset:
 
     mp_init();
     // modgps_init0();
-
     modmachine_init0();
     readline_init0();
     modcellular_init0();
@@ -219,7 +219,6 @@ void NORETURN mp_fatal_error(uint8_t reason, void* ptr1) {
     luat_pm_reboot();
     while(1);
 }
-
 
 void task_init(void) {  
     luat_rtos_task_create(&microPyTaskHandle, MICROPY_TASK_STACK_SIZE, MICROPYTHON_TASK_PRIORITY, "mp_task", mp_task, NULL, NULL);
