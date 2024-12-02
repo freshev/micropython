@@ -114,4 +114,20 @@ int mp_hal_pin_read(mp_hal_pin_obj_t pin) {
 void mp_hal_wake_main_task_from_isr(void) {
 }
 
+//#if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
+int luat_crypto_trng(char* buff, size_t len);
+int mbedtls_hardware_poll( void *data,
+                           unsigned char *output, size_t len, size_t *olen ){
 
+    if (data != NULL)
+        data = NULL;
+    *olen = 0;
+    int rnd = luat_crypto_trng((char *)output, len);
+    if (rnd != 0)
+    {
+        return -1;
+    }
+    *olen = len;   
+    return( 0 );
+}
+//#endif

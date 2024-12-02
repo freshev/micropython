@@ -1,11 +1,12 @@
-# Micropython a9g example
+# Micropython Air780e example
 # Source: https://github.com/freshev/micropython
 # Author: pulkin
+# Modified: freshev
 # Demonstrates how to use TCP sockets
 import cellular
 import socket
+
 cellular.gprs("internet", "", "")
-print("IP", socket.get_local_ip())
 host = "httpstat.us"
 port = 80
 s = socket.socket()

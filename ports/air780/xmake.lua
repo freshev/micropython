@@ -142,12 +142,13 @@ DEFINES={   "__EC618",
             "FEATURE_CCIO_ENABLE",
             "DHCPD_ENABLE_DEFINE=1",
             "LWIP_CONFIG_FILE=\"lwip_config_ec6180h00.h\"",
-            "FEATURE_MBEDTLS_ENABLE",
             "LFS_NAME_MAX=63",
             "LFS_DEBUG_TRACE",
             "WDT_FEATURE_ENABLE=1",
             "FEATURE_UART_HELP_DUMP_ENABLE",
-            "DEBUG_LOG_HEADER_FILE=\"debug_log_ap.h\"",
+            "FEATURE_MBEDTLS_ENABLE",
+            "MBEDTLS_CONFIG_FILE=\"ssl_config.h\"",
+            "DEBUG_LOG_HEADER_FILE=\"debug_log_ap.h\"",            
             "TRACE_LEVEL=5",
             -- "SOFTPACK_VERSION=\"\"",
             "HAVE_STRUCT_TIMESPEC",
@@ -163,7 +164,7 @@ DEFINES={   "__EC618",
             "__USER_CODE__",
             "__PRINT_ALIGNED_32BIT__",
             "_REENT_SMALL",
-            "_REENT_GLOBAL_ATEXIT"
+            "_REENT_GLOBAL_ATEXIT",
 }
 add_defines(DEFINES)
 
@@ -184,11 +185,8 @@ add_cxflags("-g3",
             "-fdata-sections",
             "-fno-isolate-erroneous-paths-dereference",
             "-freorder-blocks-algorithm=stc",
-            "-Wall",
-            --"-Wno-incompatible-pointer-types",
-            --"-Wno-unused-but-set-variable",
-            --"-Wno-implicit-int",
-            --"-Wno-implicit-fallthrough",
+            "-Wall",            
+            "-Wno-unused-but-set-variable",
             "-Wno-ignored-qualifiers",
             "-Wno-unused-parameter",
             "-Wno-unused-variable",
@@ -196,16 +194,19 @@ add_cxflags("-g3",
             "-Wno-unused-label",
             "-Wno-enum-conversion",
             "-Wno-implicit-function-declaration",
-            --"-Wno-discarded-qualifiers",
-            --"-Wno-sign-compare",
-            --"-Wno-old-style-declaration",
-            --"-Wno-return-type",
-            --"-Wno-int-conversion",
+            "-Wno-sign-compare",
+            "-Wno-old-style-declaration",
+            "-Wno-return-type",
             "-Wno-missing-field-initializers",
+            --"-Wno-int-conversion",
             --"-Wno-switch",
+            --"-Wno-incompatible-pointer-types",
             --"-Wno-type-limits",
             --"-Wno-pointer-sign",            
             --"-Wno-format",
+            --"-Wno-implicit-int",
+            --"-Wno-implicit-fallthrough",
+            --"-Wno-discarded-qualifiers",
             "-gdwarf-2",
             "-fno-inline",
             "-mslow-flash-data",
@@ -299,9 +300,9 @@ INCLUDES={
                 SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/lwip", 
                 SDK_TOP .. "/thirdparty/littlefs",
                 SDK_TOP .. "/thirdparty/littlefs/port",
-                SDK_TOP .. "/thirdparty/mbedtls/include",                       -- link MPY version
-                SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",               -- link MPY version
-                SDK_TOP .. "/thirdparty/mbedtls/configs",                       -- link MPY version
+                SDK_TOP .. "/thirdparty/mbedtls/include",
+                SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",
+                SDK_TOP .. "/thirdparty/mbedtls/configs",
                 SDK_TOP .. "/thirdparty/fal/inc",
                 SDK_TOP .. "/thirdparty/flashdb/inc",
                 SDK_TOP .. "/thirdparty/linksdk",
@@ -314,7 +315,7 @@ add_includedirs(INCLUDES, {public = true})
 --linkflags
 local LD_BASE_FLAGS = "-Wl,--cref -Wl,--check-sections -Wl,--gc-sections -lm -Wl,--print-memory-usage"
 LD_BASE_FLAGS = LD_BASE_FLAGS .. " -L" .. SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc/"
---LD_BASE_FLAGS = LD_BASE_FLAGS .. " -T" .. SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc/ec618_0h00_flash.ld -Wl,-Map,$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME.."_$(mode).map "
+-- LD_BASE_FLAGS = LD_BASE_FLAGS .. " -T" .. SDK_TOP .. "/PLAT/device/target/board/ec618_0h00/ap/gcc/ec618_0h00_flash.ld -Wl,-Map,$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME.."_$(mode).map "
 LD_BASE_FLAGS = LD_BASE_FLAGS .. " -T" .. SDK_TOP .. "/PLAT/core/ld/ec618_0h00_flash.ld -Wl,-Map,$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME.."_$(mode).map "
 LD_BASE_FLAGS = LD_BASE_FLAGS .. " -Wl,--wrap=_malloc_r -Wl,--wrap=_free_r -Wl,--wrap=_realloc_r  -mcpu=cortex-m3 -mthumb -DTRACE_LEVEL=5 -DSOFTPACK_VERSION=\"\" -DHAVE_STRUCT_TIMESPEC"
 local LIB_BASE = SDK_TOP .. "/PLAT/libs/libstartup.a "
@@ -397,6 +398,7 @@ table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
 table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
 table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
 table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
+
 --------------------------------------------------------
 --------------- MICROPYTHON PART START -----------------
 --------------------------------------------------------
@@ -433,15 +435,6 @@ QSTR_DEFS = "qstrdefsport.h" -- BUILD .. "/pins_qstr.h"
 QSTR_GLOBAL_DEPENDENCIES = BOARD_DIR .. "/mpconfigboard.h"
 FROZEN_MANIFEST = ""
 if os.isfile("boards/manifest.py") then FROZEN_MANIFEST="boards/manifest.py" end
-
--- # MicroPython feature configurations
--- MICROPY_ROM_TEXT_COMPRESSION ?= 1
--- MICROPY_PY_SSL = 1
--- MICROPY_SSL_AXTLS = 1
--- AXTLS_DEFS_EXTRA = -Dabort=abort_ -DRT_MAX_PLAIN_LENGTH=1024 -DRT_EXTRA=4096
--- BTREE_DEFS_EXTRA = -DDEFPSIZE=1024 -DMINCACHE=3
-
-
 
 -- # include py core make definitions
 -- include $(TOP)/py/py.mk
@@ -517,16 +510,16 @@ SRC_EXTMOD_C = { "extmod/machine_adc.c", "extmod/machine_adc_block.c", "extmod/m
                 "extmod/machine_pwm.c", "extmod/machine_signal.c", "extmod/machine_spi.c", "extmod/machine_timer.c", 
                 "extmod/machine_uart.c", "extmod/machine_wdt.c", "extmod/modasyncio.c", "extmod/modbinascii.c", 
                 "extmod/modbluetooth.c", "extmod/modbtree.c", "extmod/modcryptolib.c", "extmod/moddeflate.c", 
-                "extmod/modframebuf.c", "extmod/modhashlib.c", "extmod/modheapq.c", "extmod/modjson.c", -- "extmod/modlwip.c", 
-                "extmod/modmachine.c", "extmod/modnetwork.c", "extmod/modonewire.c", "extmod/modos.c", "extmod/modplatform.c", 
-                "extmod/modrandom.c", "extmod/modre.c", "extmod/modselect.c", "extmod/modsocket.c", -- "extmod/modssl_axtls.c", 
-                "extmod/modssl_mbedtls.c", "extmod/modtime.c", "extmod/moductypes.c", "extmod/modwebrepl.c", "extmod/modwebsocket.c", 
-                "extmod/network_cyw43.c", "extmod/network_esp_hosted.c", -- "extmod/network_lwip.c", 
-                "extmod/network_ninaw10.c", "extmod/network_wiznet5k.c", "extmod/os_dupterm.c", "extmod/vfs.c", "extmod/vfs_blockdev.c", "extmod/vfs_fat.c", 
-                "extmod/vfs_fat_diskio.c", "extmod/vfs_fat_file.c", "extmod/vfs_lfs.c", "extmod/vfs_posix.c", "extmod/vfs_posix_file.c", 
-                "extmod/vfs_reader.c", "extmod/virtpin.c", "shared/libc/abort_.c", "shared/libc/printf.c" }
+                "extmod/modframebuf.c", "extmod/modhashlib.c", "extmod/modheapq.c", "extmod/modjson.c", 
+                "extmod/modmachine.c", "extmod/modnetwork.c", "extmod/modonewire.c", "extmod/modos.c", 
+                "extmod/modplatform.c", "extmod/modrandom.c", "extmod/modre.c", "extmod/modselect.c", 
+                "extmod/modsocket.c", "extmod/modssl_mbedtls.c", "extmod/modtime.c", "extmod/moductypes.c", 
+                "extmod/modwebrepl.c", "extmod/modwebsocket.c", "extmod/network_cyw43.c", "extmod/network_esp_hosted.c", 
+                "extmod/network_ninaw10.c", "extmod/network_wiznet5k.c", "extmod/os_dupterm.c", "extmod/vfs.c", 
+                "extmod/vfs_blockdev.c", "extmod/vfs_fat.c", "extmod/vfs_fat_diskio.c", "extmod/vfs_fat_file.c", 
+                "extmod/vfs_lfs.c", "extmod/vfs_posix.c", "extmod/vfs_posix_file.c", "extmod/vfs_reader.c", 
+                "extmod/virtpin.c", "shared/libc/abort_.c", "shared/libc/printf.c" }
 
--- SRC_THIRDPARTY_C = { "/interface/src/luat_sms_ec618.c" }
 SRC_THIRDPARTY_C = {  }
 
 -- PY_O += $(addprefix $(BUILD)/, $(SRC_EXTMOD_C:.c=.o))
@@ -538,7 +531,6 @@ SRC_QSTR = SRC_QSTR .. " " .. table.concat(SRC_EXTMOD_C, " ")
 -- # libm/libm_dbl math library
 
 -- # Single-precision math library.
--- SRC_LIB_LIBM_C += $(addprefix lib/libm/,\
 SRC_LIB_LIBM_C = {  "acoshf.c", "asinfacosf.c", "asinhf.c", "atan2f.c", "atanf.c", "atanhf.c", "ef_rem_pio2.c", "erf_lgamma.c", 
                     "fmodf.c", "kf_cos.c", "kf_rem_pio2.c", "kf_sin.c", "kf_tan.c", "log1pf.c", "math.c", "nearbyintf.c", 
                     "roundf.c", "sf_cos.c", "sf_erf.c", "sf_frexp.c", "sf_ldexp.c", "sf_modf.c", "sf_sin.c", "sf_tan.c", 
@@ -549,7 +541,6 @@ SRC_LIB_LIBM_SQRT_SW_C = "lib/libm/ef_sqrt.c"
 SRC_LIB_LIBM_SQRT_HW_C = "lib/libm/thumb_vfp_sqrtf.c"
 
 -- # Double-precision math library.
--- SRC_LIB_LIBM_DBL_C += $(addprefix lib/libm_dbl/,\
 SRC_LIB_LIBM_DBL_C = {  "__cos.c", "__expo2.c", "__fpclassify.c", "__rem_pio2.c", "__rem_pio2_large.c", "__signbit.c", "__sin.c", 
                         "__tan.c", "acos.c", "acosh.c", "asin.c", "asinh.c", "atan.c", "atan2.c", "atanh.c", "ceil.c", "cos.c", 
                         "cosh.c", "copysign.c", "erf.c", "exp.c", "expm1.c", "floor.c", "fmod.c", "frexp.c", "ldexp.c", "lgamma.c", 
@@ -572,46 +563,15 @@ CFLAGS_THIRDPARTY = ""
 -- ################################################################################
 -- # ussl
 
-if MICROPY_PY_SSL == 1 then 
-    CFLAGS_EXTMOD = CFLAGS_EXTMOD .. "-DMICROPY_PY_SSL=1"
-end
+-- if MICROPY_PY_SSL == 1 then 
+--    CFLAGS_EXTMOD = CFLAGS_EXTMOD .. "-DMICROPY_PY_SSL=1"
+-- end
 
---[[
-################################################################################
-# btree
-
-ifeq ($(MICROPY_PY_BTREE),1)
-BTREE_DIR = lib/berkeley-db-1.xx
-BTREE_DEFS = -D__DBINTERFACE_PRIVATE=1 -Dmpool_error=printf -Dabort=abort_ "-Dvirt_fd_t=void*" $(BTREE_DEFS_EXTRA)
-INC += -I$(TOP)/$(BTREE_DIR)/PORT/include
-SRC_THIRDPARTY_C += $(addprefix $(BTREE_DIR)/,\
-    btree/bt_close.c \
-    btree/bt_conv.c \
-    btree/bt_debug.c \
-    btree/bt_delete.c \
-    btree/bt_get.c \
-    btree/bt_open.c \
-    btree/bt_overflow.c \
-    btree/bt_page.c \
-    btree/bt_put.c \
-    btree/bt_search.c \
-    btree/bt_seq.c \
-    btree/bt_split.c \
-    btree/bt_utils.c \
-    mpool/mpool.c \
-    )
-CFLAGS_EXTMOD += -DMICROPY_PY_BTREE=1
-# we need to suppress certain warnings to get berkeley-db to compile cleanly
-# and we have separate BTREE_DEFS so the definitions don't interfere with other source code
-$(BUILD)/$(BTREE_DIR)/%.o: CFLAGS += -Wno-old-style-definition -Wno-sign-compare -Wno-unused-parameter -Wno-deprecated-non-prototype -Wno-unknown-warning-option $(BTREE_DEFS)
-$(BUILD)/extmod/modbtree.o: CFLAGS += $(BTREE_DEFS)
-endif
-]]--
+-- ################################################################################
+-- # btree (Luat implementation has its own KV database, TODO:
 
 -- PY_O += $(addprefix $(BUILD)/, $(SRC_THIRDPARTY_C:.c=.o))
 for _, name in ipairs(SRC_THIRDPARTY_C) do SRC_THIRDPARTY_C[_] = SDK_TOP .. "/" .. name end
-
-
 
 
 ----------------------------------------
@@ -639,10 +599,7 @@ for _, name in ipairs(SHARED_SRC_C) do SHARED_SRC_C[_] = TOP .. "/shared/" .. na
 SHARED_SRC_S =  { "runtime/gchelper_thumb2.s" }
 for _, name in ipairs(SHARED_SRC_S) do SHARED_SRC_S[_] = TOP .. "/shared/" .. name end
 
-LIB_SRC_C = {       -- "lib/oofatfs/ff.c", 
-                    -- "lib/oofatfs/ffunicode.c",
-                    "shared/readline/readline.c" 
-            }
+LIB_SRC_C = { "shared/readline/readline.c" }
 for _, name in ipairs(LIB_SRC_C) do LIB_SRC_C[_] = TOP .. "/" .. name end
 
 SRC_S = { }
@@ -814,8 +771,6 @@ target(USER_PROJECT_NAME)
 
     ----------------------- thirdparty -----------------------
     add_includedirs("./",{public = true})
-    add_defines("MBEDTLS_CONFIG_FILE=\"config_user_ssl.h\"")
-    add_defines("MBEDTLS_ERROR_C")
     add_files(SDK_TOP .. "/interface/private_src/*.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/mbedtls/library/*.c",{public = true})     
     add_files(SDK_TOP .. "/thirdparty/printf/*.c",{public = true})
@@ -1450,7 +1405,8 @@ target(USER_PROJECT_NAME..".elf")
     end)    
 target_end()
 
-
--- to extract 
+------------------------------------------------
+-- to extract from *.binpkg
 -- fcelf.exe -E -input micropython.binpkg 
 --
+------------------------------------------------

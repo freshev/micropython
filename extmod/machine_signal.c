@@ -86,7 +86,7 @@ STATIC mp_obj_t signal_make_new(const mp_obj_type_t *type, size_t n_args, size_t
         // Here we pass NULL as a type, hoping that mp_pin_make_new()
         // will just ignore it as set a concrete type. If not, we'd need
         // to expose port's "default" pin type too.
-        pin = MICROPY_PY_MACHINE_PIN_MAKE_NEW(NULL, n_args, n_kw, pin_args);
+        pin = (mp_obj_t*)MICROPY_PY_MACHINE_PIN_MAKE_NEW(NULL, n_args, n_kw, pin_args);
 
         mp_local_free(pin_args);
     } else

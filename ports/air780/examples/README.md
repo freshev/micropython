@@ -1,5 +1,5 @@
-Examples for micropython on a9g
-===============================
+Examples for micropython on Air780e
+===================================
 
 [example_01_blink.py](example_01_blink.py)
 
@@ -16,14 +16,6 @@ Arms the hardware watchdog and sleeps until hard reset.
 Keywords: **watchdog, hardware, reset**
 
 Modules: `machine`, `time`
-
-[example_20_gps.py](example_20_gps.py)
-
-Displays current GPS location and visible satellites.
-
-Keywords: **GPS**
-
-Modules: `gps`
 
 [example_21_dht.py](example_20_gps.py)
 
@@ -96,12 +88,3 @@ Reports location to a test MQTT server via cellular connection using `umqtt` fro
 Keywords: **MQTT, GPS, track**
 
 Modules: `cellular`, `umqtt` (external), `gps`, `upip`
-
-[example_51_traccar.py](example_51_traccar.py)
-
-Reports location to [traccar](https://www.traccar.org/) online service using a simple POST request without external libraries.
-
-Keywords: **GPS, track, traccar**
-
-Modules: `cellular`, `gps`, `socket`
-

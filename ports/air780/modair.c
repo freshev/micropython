@@ -309,7 +309,7 @@ STATIC mp_obj_t modair_meminfo() {
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(modair_meminfo_obj, modair_meminfo);
 
 STATIC mp_obj_t modair_malloc(mp_obj_t size_in) {
-    return MP_OBJ_NEW_SMALL_INT((mp_uint_t)luat_heap_malloc(mp_obj_get_int(size_in)));
+    return MP_OBJ_NEW_SMALL_INT((mp_uint_t)luat_heap_malloc(mp_obj_get_int(size_in))); // ???
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modair_malloc_obj, modair_malloc);
 

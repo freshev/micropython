@@ -59,8 +59,8 @@
 // priority in %
 #define MICROPYTHON_TASK_PRIORITY   (20) 
 
-#define MICROPY_HEAP_MAX_SIZE       (1024 * 2048)
-#define MICROPY_HEAP_MIN_SIZE       (2048)
+#define MICROPY_HEAP_MAX_SIZE       (1024 * 300)
+#define MICROPY_HEAP_MIN_SIZE       (1024 * 10)
 
 #define MP_TASK_STACK_LIMIT_MARGIN  (2048)
 #define MICROPY_TASK_STACK_SIZE     (16 * 1024)
@@ -80,12 +80,19 @@ void NORETURN nlr_jump_fail(void *val) {
 void* mp_allocate_heap(uint32_t* size) {
     uint32_t h_size = MICROPY_HEAP_MAX_SIZE;
     void* ptr = NULL;
+    int counter = 0;
     while (!ptr) {
+        // LUAT_DEBUG_PRINT("try %d heap size", h_size);
         if (h_size < MICROPY_HEAP_MIN_SIZE) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
         ptr = luat_heap_malloc(h_size);
-        if (!ptr) h_size = h_size >> 1;
+        if (!ptr) {
+             h_size = h_size - MICROPY_HEAP_MIN_SIZE;
+             counter++;
+        }
     }
     size[0] = h_size;
+    if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
+    LUAT_DEBUG_PRINT("finally: %d heap size", h_size);
     return ptr;
 }
 
@@ -104,7 +111,6 @@ soft_reset:
     
 
     mp_init();
-    // modgps_init0();
     modmachine_init0();
     readline_init0();
     modcellular_init0();

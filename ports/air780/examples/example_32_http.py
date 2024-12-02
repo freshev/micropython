@@ -1,6 +1,7 @@
-# Micropython a9g example
+# Micropython Air780e example
 # Source: https://github.com/freshev/micropython
 # Author: pulkin
+# Modified: freshev
 # Demonstrates how to communicate via http using requests library
 
 # Get online
@@ -8,13 +9,7 @@ import cellular
 cellular.gprs("internet", "", "")
 
 # Import requests (download if necessary)
-try:
-    import urequests
-except ImportError:
-    import upip
-    upip.install("micropython-urequests")
-    import urequests
-
-r = urequests.get("http://httpstat.us/200")
+import urequests
+r = urequests.get("https://httpstat.us/200")
 print(r.status_code, r.text)
 

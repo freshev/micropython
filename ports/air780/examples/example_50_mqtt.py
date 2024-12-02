@@ -1,4 +1,4 @@
-# Micropython a9g example
+# Micropython Air780e example
 # Source: https://github.com/freshev/micropython
 # Author: pulkin
 # Modified: freshev
@@ -9,9 +9,9 @@ import cellular
 cellular.gprs("internet", "", "")
 
 import umqtt
-name = "a9g-micropython-board"
+name = "air780e-micropython-board"
 server = "test.mosquitto.org"
-topic = "a9g-micropython-board-topic"
+topic = "air780e-micropython-board-topic"
 client = umqtt.MQTTClient(name, server)
 try:
     client.connect()

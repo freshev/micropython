@@ -1,6 +1,7 @@
-# Micropython a9g example
+# Micropython Air780e example
 # Source: https://github.com/freshev/micropython
 # Author: pulkin
+# Modified: freshev
 # Demonstrates how to blink the built-in LED on the pudding board
 import machine
 import time

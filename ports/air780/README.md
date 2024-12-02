@@ -116,7 +116,6 @@ blink.blink(1)
 - [ ] I2C: `machine.I2C` (NOT TESTED - have no test module)
 - [x] RTC: `machine.RTC` (NOT TESTED - have no test module)
 - [x] 4G networking (IMEI, ICCID, SMS, ...): `cellular`
-- [ ] GPS: `gps`
 - [x] time: `time`
 - [x] File system (littlefs)
 - [x] DNS: `cellular`, `socket`, `ssl`
@@ -139,14 +138,13 @@ Featured:
 1. [`cellular`](#cellular): SMS, calls, connectivity
 2. [`socket`](#socket): sockets over 4G
 3. [`ssl`](#ssl): SSL over sockets
-4. [`gps`](#gps): everything related to GPS and assisted positioning
-5. [`machine`](#machine): hardware and power control
-6. [`I2C`](#I2C): I2C hardware implementation
-7. [`SPI`](#SPI): SPI hardware implementation
-8. [`CC1101`](#CC1101): CC1101 module support over SPI
-9. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
-10. [`umqtt`](#umqtt): umqtt support via frozen module
-11. [`urequests`](#urequests): urequests support via frozen module
+4. [`machine`](#machine): hardware and power control
+5. [`I2C`](#I2C): I2C hardware implementation
+6. [`SPI`](#SPI): SPI hardware implementation
+7. [`CC1101`](#CC1101): CC1101 module support over SPI
+8. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
+9. [`umqtt`](#umqtt): umqtt support via frozen module
+10. [`urequests`](#urequests): urequests support via frozen module
 
 ### `cellular`
 
@@ -204,44 +202,15 @@ The purpose of this module is to have an access to high-level networking (SMS, n
 *Alias: `usocket`*
 
 TCP/IP stack over 4G based on lwIP.
-See [micropython docs](https://docs.micropython.org/en/latest/library/usocket.html) for details.
+See [micropython docs](https://docs.micropython.org/en/latest/library/socket.html) for details.
 
 ### `ssl` ###
 
 *Alias: `ussl`*
 
 TCP/IP stack over 4G based on Mbedtls.
-See [micropython docs](https://docs.micropython.org/en/latest/library/ussl.html) for details.
+See [micropython docs](https://docs.micropython.org/en/latest/library/ssl.html) for details.
 
-
-<del>
-### `gps` ###
-
-Provides the GPS functionality.
-This is only available in the A9G module where GPS is a separate chip connected via UART2.
-
-* `on()`: turns the GPS on;
-* `off()`: turns the GPS off;
-* `get_firmware_version()` (str): retrieves the firmware version;
-* `get_location()` (longitude: float, latitude: float): retrieves the current GPS location;
-* `get_last_location()` (longitude: float, latitude: float): retrieves the last known GPS location without polling the GPS module;
-* `get_satellites()` (tracked: int, visible: int): the numbers of satellites in operation;
-* `time()` (int): the number of seconds since the epoch (2000). Use `time.localtime` for converting it into date/time values (this conversion may result in `OverflowError` until the GPS module starts reading meaningful satellite data);
-* `nmea_data()` (tuple): all NMEA data parsed: `(rmc, (gsa[0], ...), gga, gll, gst, (gsv[0], ...), vtg, zda)`:
-  - RMC: `(time: int, valid: bool, latitude, longitude, speed, course, variation: float)`;
-  - GSA: `(mode: int, fix_type: int, satellite_prn: bytearray, pdop, hdop, vdop: float)`;
-  - GGA: `(time_of_day: int, latitude, longitude: float, fix_quality, satellites_tracked: int, hdop, altitude: float, altitude_units: int, height: float, height_units: int, dgps_age: float)`;
-  - GLL: `(latitude, longitude: float, time_of_day, status, mode: int)`;
-  - GST: `(time_of_day: int, rms_deviation, ...: float)`;
-  - GSV: `(total_messages, message_nr, total_satellites: int, satellite_info[4]: (nr, elevation, azimuth, snr: int))`;
-  - VTG: `(true_track_degrees, magnetic_track_degrees, speed_knots, speed_kph: float, faa_mode: int)`;
-  - ZDAL `(time, hour_offset, minute_offset: int)`.
-
-  Latitudes and longitudes are in degrees `x100`.
-  Time is given in seconds since the epoch or since `00:00` today.
-  Status flags `mode`, `status` are ASCII indexes.
-  For more info (units, etc) please consult the [minmea](https://github.com/kosma/minmea) project.
-</del>
 
 ### `machine`
 
@@ -577,13 +546,11 @@ In order to reduce module size `umqtt` has only `connect`, `close` and `publish`
 To use other methods, uncomment needed methods in `modules/umqtt.py` and rebuild port.
 
 ### urequests ###
-In order to reduce module size `urequests` has only `get` methods.  
-To use other methods, uncomment needed methods in `modules/urequests.py` and rebuild port.
-
+Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 ## Notes ##
 
-* The size of micropython heap is roughly 512 Kb. 200k can be realistically allocated right after hard reset.
+* The size of micropython heap is roughly 512 Kb. 250k can be realistically allocated right after hard reset.
 * Firmware removes *.txt files in SOC file system by SMS 'rmconfig'
 * Firmware removes *.py files in SOC file system by SMS 'rmcode'
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall'

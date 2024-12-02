@@ -1,5 +1,5 @@
 import sys
-import usocket
+import socket
 import time
 
 class MQTTClient:
@@ -152,20 +152,20 @@ class MQTTClient:
 
     def connect(self, clean_session=1):
         self.disconnect()
-        ai = usocket.getaddrinfo(self.server, self.port)[0]
-        self.sock_raw = usocket.socket(ai[0], ai[1], ai[2])
+        ai = socket.getaddrinfo(self.server, self.port)[0]
+        self.sock_raw = socket.socket(ai[0], ai[1], ai[2])
         try:
             self.sock_raw.connect(ai[-1])
         except OSError:
             type, e, traceback = sys.exc_info()
             raise RuntimeError(e)
         if self.ssl:
-            import ussl
+            import ssl
             # do not uncomment !!!!!
-            #self.sock = ussl.wrap_socket(self.sock_raw, key=self.ssl_params['key'], cert=self.ssl_params['cert'],
+            #self.sock = ssl.wrap_socket(self.sock_raw, key=self.ssl_params['key'], cert=self.ssl_params['cert'],
             #            server_side=self.ssl_params['server_side'], server_hostname=self.ssl_params['server_hostname'],
             #            do_handshake=self.ssl_params['do_handshake'])
-            self.sock = ussl.wrap_socket(self.sock_raw, server_hostname=self.server)
+            self.sock = ssl.wrap_socket(self.sock_raw, server_hostname=self.server)
             self.sock_raw.setblocking(1)
         else: self.sock = self.sock_raw
 

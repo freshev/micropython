@@ -555,17 +555,6 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_gprs_obj, 0, 4, modcellular_gprs);
 
 
-
-void modcellular_clear_scan_list() {
-    mp_obj_list_t *self = MP_OBJ_TO_PTR(plmn_list_buffer);
-    if(self != NULL) {
-        self->len = 0;
-        self->items = m_renew(mp_obj_t, self->items, self->alloc, LIST_MIN_ALLOC);
-        self->alloc = LIST_MIN_ALLOC;
-        mp_seq_clear(self->items, 0, self->alloc, sizeof(*self->items));
-    }
-}
-
 static void modcellular_get_operator_name(uint8_t plmn[PLMN_STR_MAX_LENGTH], char *pOperatorName);
 STATIC mp_obj_t modcellular_scan(void) {
     // ========================================
@@ -573,56 +562,49 @@ STATIC mp_obj_t modcellular_scan(void) {
     // ========================================
 
     mp_obj_t plmn_list = mp_obj_new_list(0, NULL);
-    if(plmn_list_buffer == NULL) plmn_list_buffer = mp_obj_new_list(0, NULL);
-    else modcellular_clear_scan_list();
-
-    if(plmn_list_buffer != NULL) {
-
-        ManualPlmnSearchInfo * pManualPlmnSearchInfo = LUAT_MEM_MALLOC(sizeof(ManualPlmnSearchInfo));
-        if(pManualPlmnSearchInfo != NULL) {
-            memset(pManualPlmnSearchInfo, 0, sizeof(ManualPlmnSearchInfo));
-            pManualPlmnSearchInfo->plmnNum = CMI_MM_PLMN_SEARCH_NUM;
-            CmsRetId ret = appManualPlmnSearch(TIMEOUT_LIST_OPERATORS / 1000, pManualPlmnSearchInfo);
-        
-            if (ret == CMS_RET_SUCC) {            
-                for (int i = 0; i < pManualPlmnSearchInfo->plmnNum; i++) {
-                    /*
-                    UINT8  plmn[PLMN_STR_MAX_LENGTH];
-                    UINT8  plmnState;   //CmiMmPlmnStateEnum, cops <stat>
-                    UINT8  longPlmn[CMI_MM_STR_PLMN_MAX_LENGTH]; // end with '\0' // 32 chars
-                    UINT8  shortPlmn[CMI_MM_SHORT_STR_PLMN_MAX_LENGTH]; // end with '\0'
-                    UINT8  act; //CmiCregActEnum, cops <act>
-                    typedef enum CmiCregActEnum_Tag {
-                        CMI_MM_GSM = 0,
-                        CMI_MM_GSM_COMPACT = 1,
-                        CMI_MM_UMTS = 2,
-                        CMI_MM_GSM_EGPRS = 3,
-                        CMI_MM_HSDPA = 4,
-                        CMI_MM_HSUPA = 5,
-                        CMI_MM_HSDPA_HSUPA = 6,
-                        CMI_MM_LTE = 7,
-                        CMI_MM_EC_GSM = 8,
-                        CMI_NB_IOT = 9 //NB only
-                    }CmiCregActEnum; 
-                    */
-                    PlmnSearchInfo plmn = pManualPlmnSearchInfo->plmnList[i];
-                    //LUAT_DEBUG_PRINT("PLMN: plmn=%s, plmnState=%d, longPlmn=%s, shortPlmn=%s, act=%d", plmn.plmn, plmn.plmnState, plmn.longPlmn, plmn.shortPlmn, plmn.act);
-        
-                    modcellular_get_operator_name(plmn.plmn, (char*)plmn.longPlmn);
-                    if(strlen((char*)plmn.longPlmn) != 0) {
-                        //LUAT_DEBUG_PRINT("Operator=%s", (char*)plmn.longPlmn);
-                        mp_obj_t tuple[3] = {
-                            mp_obj_new_str((char*)plmn.plmn, strlen((char*)plmn.plmn)),
-                            mp_obj_new_str((char*)plmn.longPlmn, strlen((char*)plmn.longPlmn)),
-                            mp_obj_new_int(plmn.plmnState),
-                        };
-                        mp_obj_list_append(plmn_list, mp_obj_new_tuple(3, tuple));                                    
-                    }
+    ManualPlmnSearchInfo * pManualPlmnSearchInfo = (ManualPlmnSearchInfo*)m_new(uint8_t, sizeof(ManualPlmnSearchInfo));
+    if(pManualPlmnSearchInfo != NULL) {
+        memset(pManualPlmnSearchInfo, 0, sizeof(ManualPlmnSearchInfo));
+        pManualPlmnSearchInfo->plmnNum = CMI_MM_PLMN_SEARCH_NUM;
+        CmsRetId ret = appManualPlmnSearch(TIMEOUT_LIST_OPERATORS / 1000, pManualPlmnSearchInfo);
+    
+        if (ret == CMS_RET_SUCC) {            
+            for (int i = 0; i < pManualPlmnSearchInfo->plmnNum; i++) {
+                /*
+                UINT8  plmn[PLMN_STR_MAX_LENGTH];
+                UINT8  plmnState;   //CmiMmPlmnStateEnum, cops <stat>
+                UINT8  longPlmn[CMI_MM_STR_PLMN_MAX_LENGTH]; // end with '\0' // 32 chars
+                UINT8  shortPlmn[CMI_MM_SHORT_STR_PLMN_MAX_LENGTH]; // end with '\0'
+                UINT8  act; //CmiCregActEnum, cops <act>
+                typedef enum CmiCregActEnum_Tag {
+                    CMI_MM_GSM = 0,
+                    CMI_MM_GSM_COMPACT = 1,
+                    CMI_MM_UMTS = 2,
+                    CMI_MM_GSM_EGPRS = 3,
+                    CMI_MM_HSDPA = 4,
+                    CMI_MM_HSUPA = 5,
+                    CMI_MM_HSDPA_HSUPA = 6,
+                    CMI_MM_LTE = 7,
+                    CMI_MM_EC_GSM = 8,
+                    CMI_NB_IOT = 9 //NB only
+                }CmiCregActEnum; 
+                */
+                PlmnSearchInfo plmn = pManualPlmnSearchInfo->plmnList[i];
+                //LUAT_DEBUG_PRINT("PLMN: plmn=%s, plmnState=%d, longPlmn=%s, shortPlmn=%s, act=%d", plmn.plmn, plmn.plmnState, plmn.longPlmn, plmn.shortPlmn, plmn.act);
+    
+                modcellular_get_operator_name(plmn.plmn, (char*)plmn.longPlmn);
+                if(strlen((char*)plmn.longPlmn) != 0) {
+                    //LUAT_DEBUG_PRINT("Operator=%s", (char*)plmn.longPlmn);
+                    mp_obj_t tuple[3] = {
+                        mp_obj_new_str((char*)plmn.plmn, strlen((char*)plmn.plmn)),
+                        mp_obj_new_str((char*)plmn.longPlmn, strlen((char*)plmn.longPlmn)),
+                        mp_obj_new_int(plmn.plmnState),
+                    };
+                    mp_obj_list_append(plmn_list, mp_obj_new_tuple(3, tuple));                                    
                 }
             }
-            LUAT_MEM_FREE(pManualPlmnSearchInfo);
         }
-        modcellular_clear_scan_list();
+        m_del(uint8_t, pManualPlmnSearchInfo, sizeof(ManualPlmnSearchInfo));
     }
     return plmn_list;
 }

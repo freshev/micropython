@@ -1,4 +1,4 @@
-/*
+/*                                                      
  * This file is part of the MicroPython project, http://micropython.org/
  *
  * Development of the code in this file was sponsored by Microbric Pty Ltd
@@ -72,18 +72,12 @@ enum {
 
 typedef struct _socket_obj_t {
     mp_obj_base_t base;
-    /*int fd;
-    uint8_t domain;
-    uint8_t type;
-    uint8_t proto;
-    uint8_t state;
-    unsigned int retries;
-    */
     network_ctrl_t *ctrl;
     uint8_t state;
     unsigned int retries;
-    ringbuf_t *recv_buffer;  // A buffer for received packets
+    ringbuf_t *recv_buffer;  // A ring buffer for received packets
     size_t recv_buffer_size; // The size of the recv_buffer
+    uint8_t *in_recv_buffer; // Income packets buffer
 
     #if MICROPY_PY_SOCKET_EVENTS
     mp_obj_t events_callback;
@@ -93,11 +87,15 @@ typedef struct _socket_obj_t {
 
 void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms);
 
+#ifndef MBEDTLS_DEBUG_C
+void mbedtls_debug_set_threshold( int threshold ) {}; // correct ./luatos_lwip_socket/luat_lwip_ec618.c -> mbedtls_debug_set_threshold(0);
+#endif
+
 #if MICROPY_PY_SOCKET_EVENTS
 // Support for callbacks on asynchronous socket events (when socket becomes readable)
 
 // This divisor is used to reduce the load on the system, so it doesn't poll sockets too often
-#define USOCKET_EVENTS_DIVISOR (8)
+#define USOCKET_EVENTS_DIVISOR (1)
 
 STATIC uint8_t socket_events_divisor;
 STATIC socket_obj_t *socket_events_head;
@@ -121,13 +119,6 @@ STATIC void socket_events_remove(socket_obj_t *sock) {
             return;
         }
     }
-}
-// TODO: merge luat_test_socket_callback & socket_events_handler
-static int32_t luat_test_socket_callback(void *pdata, void *param)
-{
-    OS_EVENT *event = (OS_EVENT *)pdata;
-    LUAT_DEBUG_PRINT("%x", event->ID);
-    return 0;
 }
 
 // Polls all registered sockets for readability and calls their callback if they are readable
@@ -163,6 +154,16 @@ void socket_events_handler(void) {
         }
     }
 }
+
+// TODO: merge luat_test_socket_callback & socket_events_handler
+static int32_t luat_test_socket_callback(void *pdata, void *param)
+{
+    OS_EVENT *event = (OS_EVENT *)pdata;
+    // LUAT_DEBUG_PRINT("%x", event->ID);
+    // mp_sched_schedule(handler, MP_OBJ_FROM_PTR(self));
+    return 0;
+}
+
 
 #endif // MICROPY_PY_SOCKET_EVENTS
 
@@ -303,17 +304,24 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
     }
     //if (sock->fd < 0) {
     if(sock->ctrl == NULL) {
-        mp_raise_OSError(errno);
+        mp_raise_OSError(MP_ENOMEM);
     }
     _socket_settimeout(sock, UINT64_MAX);
 
     network_init_ctrl(sock->ctrl, microPyTaskHandle, luat_test_socket_callback, NULL);
     network_set_base_mode(sock->ctrl, /*is_tcp*/ 1, /*tcp timeout ms*/15000, /*keep alive*/1, /*keep idle ms*/300, /*keep interval*/5, /*keep count*/9);
+    //network_init_tls(sock->ctrl, (server_cert || client_cert)?2:0);
+    // network_init_tls(sock->ctrl, 0);
 
-    sock->recv_buffer_size = PS_NETIF_DEFAULT_MTU;
-    sock->recv_buffer = NULL; // allocate in modsocket_recv
-    sock->ctrl->is_debug = 1; //Turn off debug when testing downlink speed. If it is just a normal test, turn on debug.
+    sock->recv_buffer_size = MBEDTLS_SSL_MAX_CONTENT_LEN; // at least the size of SSL packet maximum length
+    sock->recv_buffer = m_new_obj(ringbuf_t);
+    ringbuf_alloc(sock->recv_buffer, sock->recv_buffer_size + 1);
+    sock->in_recv_buffer = m_new(uint8_t, sock->recv_buffer_size); 
+    if(sock->recv_buffer->buf == NULL || sock->in_recv_buffer == NULL) {
+       mp_raise_OSError(MP_ENOMEM);
+    }
 
+    sock->ctrl->is_debug = 0; //Turn off debug when testing downlink speed. If it is just a normal test, turn on debug.
     return MP_OBJ_FROM_PTR(sock);
 }
 
@@ -322,9 +330,9 @@ STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
     self->state = SOCKET_STATE_CONNECTED;
-    //int r = lwip_bind(self->ctrl->socket_id, res->ai_addr, res->ai_addrlen);
+    // int r = lwip_bind(self->ctrl->socket_id, res->ai_addr, res->ai_addrlen);
     uint16_t port = lwip_htons(((struct sockaddr_in *)res->ai_addr)->sin_port); 
-    LUAT_DEBUG_PRINT("socket_bind (%d) port: %d", self->ctrl->socket_id, port);
+    // LUAT_DEBUG_PRINT("socket_bind (%d) port: %d", self->ctrl->socket_id, port);
     int r = network_set_local_port(self->ctrl, port);
 
     lwip_freeaddrinfo(res);
@@ -363,7 +371,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
     socklen_t addr_len = sizeof(addr);
 
     int res = -1;
-    network_ctrl_t * accept_ctrl = (network_ctrl_t *)LUAT_MEM_MALLOC(sizeof(network_ctrl_t));
+    network_ctrl_t * accept_ctrl = (network_ctrl_t *)m_new(uint8_t, sizeof(network_ctrl_t));
     if(accept_ctrl != NULL) {
         for (uint i = 0; i <= self->retries; i++) {
             MP_THREAD_GIL_EXIT();
@@ -556,6 +564,11 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
         *errcode = MP_ENOTCONN;
         return MP_STREAM_ERROR;
     }
+    //  socket was closed
+    if (sock->recv_buffer == NULL) {
+        *errcode = MP_ENOBUFS;
+        return MP_STREAM_ERROR;
+    }
     // If the peer closed the connection then the lwIP socket API will only return "0" once
     // from lwip_recvfrom and then block on subsequent calls.  To emulate POSIX behaviour,
     // which continues to return "0" for each call on a closed socket, we set a flag when
@@ -567,47 +580,35 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     // XXX Would be nicer to use RTC to handle timeouts
     uint32_t total_len = 0;
     for (uint i = 0; i <= sock->retries; ++i) {
-        MP_THREAD_GIL_EXIT();
+        MP_THREAD_GIL_EXIT();        
+
         // int r = lwip_recvfrom(sock->fd, buf, size, 0, from, from_len);
-        if(sock->recv_buffer == NULL) {        
-            sock->recv_buffer = m_new_obj(ringbuf_t);
-            ringbuf_alloc(sock->recv_buffer, sock->recv_buffer_size);
-            if(sock->recv_buffer->buf == NULL) {
-                mp_raise_OSError(MP_ENOMEM);
+        uint8_t is_break = 0, is_timeout = 0;
+        int r;
+        uint32_t rx_len;
+
+        while(ringbuf_avail(sock->recv_buffer) < size && is_timeout == 0 && is_break == 0) {
+            // LUAT_DEBUG_PRINT("wait data from network");
+            int result = network_wait_rx(sock->ctrl, 5000, &is_break, &is_timeout);
+            if (result == 0) {
+                if (!is_timeout && !is_break) {
+                    // fill socket ring buffer
+                    r = network_rx(sock->ctrl, sock->in_recv_buffer, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
+                    if(r == 0 && rx_len > 0) {
+                       // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes (after wait)", sock->ctrl->socket_id, rx_len);
+                       ringbuf_put_bytes(sock->recv_buffer, sock->in_recv_buffer, rx_len);
+                    }                     
+                } else if (is_timeout) { 
+                    // LUAT_DEBUG_PRINT("socket_read_data (%d) timeout", sock->ctrl->socket_id); 
+                } else { 
+                    // LUAT_DEBUG_PRINT("socket_read_data (%d) break", sock->ctrl->socket_id); 
+                }
+            } else { 
+                // LUAT_DEBUG_PRINT("network_wait_rx (%d) failed", sock->ctrl->socket_id); 
             }
         }
 
-        uint8_t is_break = 0, is_timeout = 0;
-
-        int r;
-        uint32_t rx_len;
-        uint8_t* recv_buf = (uint8_t*)LUAT_MEM_MALLOC(sock->recv_buffer_size);
-        if(recv_buf != NULL) {
-            r = network_rx(sock->ctrl, recv_buf, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
-            if(r == 0 && rx_len > 0) {
-               // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes", sock->ctrl->socket_id, rx_len);
-               ringbuf_put_bytes(sock->recv_buffer, recv_buf, rx_len);
-            }
-                               
-            // if socket ring buffer empty - try to fill it waiting for data
-            if(!ringbuf_avail(sock->recv_buffer)) {
-                int result = network_wait_rx(sock->ctrl, 1000, &is_break, &is_timeout);
-                if (result == 0) {
-                    if (!is_timeout && !is_break) {
-                        // fill socket ring buffer
-                        r = network_rx(sock->ctrl, recv_buf, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
-                        if(r == 0 && rx_len > 0) {
-                           // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes (after wait)", sock->ctrl->socket_id, rx_len);
-                           ringbuf_put_bytes(sock->recv_buffer, recv_buf, rx_len);
-                        }                     
-                    } else if (is_timeout) { LUAT_DEBUG_PRINT("socket_read_data (%d) timeout", sock->ctrl->socket_id); }
-                    else { LUAT_DEBUG_PRINT("socket_read_data (%d) break", sock->ctrl->socket_id); }
-                } else { LUAT_DEBUG_PRINT("network_wait_rx (%d) failed", sock->ctrl->socket_id); }        
-            }
-            LUAT_MEM_FREE(recv_buf);
-        } 
-
-        // if socket ring buffer NOT empty - read from ring buffer        
+        // read from ring buffer        
         if(ringbuf_avail(sock->recv_buffer) > 0) {
             int res = -1;
             if(size == 1) {
@@ -629,15 +630,18 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
             sock->state = SOCKET_STATE_PEER_CLOSED;
         }
         if (total_len == size) {
+            // LUAT_DEBUG_PRINT("socket_read_data (%d) return %d bytes", sock->ctrl->socket_id, total_len);
             return total_len;
         }
         if (errno != EWOULDBLOCK) {
             *errcode = errno;
+            // LUAT_DEBUG_PRINT("socket_read_data (%d) errno = %d -> STREAM_ERROR", sock->ctrl->socket_id, errno);
             return MP_STREAM_ERROR;
         }
         check_for_exceptions();
     }
     *errcode = sock->retries == 0 ? MP_EWOULDBLOCK : MP_ETIMEDOUT;
+    // LUAT_DEBUG_PRINT("socket_read_data (%d) errcode = %d -> STREAM_ERROR", sock->ctrl->socket_id, errcode);
     return MP_STREAM_ERROR;
 }
 
@@ -690,6 +694,7 @@ int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
             mp_raise_OSError(errno);
         }
         if (r >= 0) {
+            // LUAT_DEBUG_PRINT("_socket_send (%d) %d bytes", sock->ctrl->socket_id, tx_len);
             sentlen += r;
         }
         check_for_exceptions();
@@ -748,6 +753,7 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
 
         MP_THREAD_GIL_ENTER();
         if (r >= 0) {
+            // LUAT_DEBUG_PRINT("socket_sendto (%d) %d bytes", self->ctrl->socket_id, tx_len);
             return mp_obj_new_int_from_uint(tx_len);
         }
         if (r == -1 && errno != EWOULDBLOCK) {
@@ -782,14 +788,14 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
         MP_THREAD_GIL_EXIT();
         uint32_t tx_len;        
         int r = network_tx(sock->ctrl, buf, size, 0, NULL, 0, &tx_len, 15000);
-        // LUAT_DEBUG_PRINT("socket_stream_write (%d) r=%d, tx_len=%d", sock->ctrl->socket_id, r, tx_len);
         MP_THREAD_GIL_ENTER();
         if (r >= 0) {
+            // LUAT_DEBUG_PRINT("socket_stream_write (%d) %d bytes", sock->ctrl->socket_id, tx_len);
             return tx_len;
         }
         // lwip returns MP_EINPROGRESS when trying to write right after a non-blocking connect
         if (r < 0 && errno != EWOULDBLOCK && errno != EINPROGRESS) {
-            LUAT_DEBUG_PRINT("socket_stream_write (%d) error: %d", sock->ctrl->socket_id, errno);
+            // LUAT_DEBUG_PRINT("socket_stream_write (%d) error: %d", sock->ctrl->socket_id, errno);
             *errcode = errno;
             return MP_STREAM_ERROR;
         }
@@ -861,10 +867,12 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
                 return MP_STREAM_ERROR;
             }
             if(socket->recv_buffer != NULL && socket->recv_buffer->buf != NULL) {
-                m_free(socket->recv_buffer->buf);
+                m_del(uint8_t, socket->recv_buffer->buf, socket->recv_buffer_size + 1);
+                m_del(uint8_t, socket->in_recv_buffer, socket->recv_buffer_size);
             }
             socket->recv_buffer->buf = NULL;
             socket->recv_buffer = NULL;
+            socket->in_recv_buffer = NULL;
             // socket->fd = -1;
         }
         return 0;

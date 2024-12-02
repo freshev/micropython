@@ -40,7 +40,7 @@
 #include "luat_debug.h"
 
 #define UART_NPORTS (3)
-#define UART_STATIC_RXBUF_LEN (1024)
+#define UART_STATIC_RXBUF_LEN (1024 * 4)
 
 typedef struct _machine_uart_obj_t {
     mp_obj_base_t base;

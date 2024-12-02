@@ -76,7 +76,7 @@ void modcellular_get_storage_info_cb(uint16_t param_size, void* p_param) {
 }
 BOOL modcellular_get_storage_info() {
     storage_flag = 0;
-    storage = (CmiSmsGetStorageStatusCnf*)LUAT_MEM_MALLOC(sizeof(CmiSmsGetStorageStatusCnf));
+    storage = (CmiSmsGetStorageStatusCnf*)m_new(uint8_t, sizeof(CmiSmsGetStorageStatusCnf));
     if(storage != NULL) {
         memset(storage, 0, sizeof(CmiSmsGetStorageStatusCnf));
         cmsNonBlockApiCall(modcellular_get_storage_info_cb, 0, NULL);
@@ -90,7 +90,7 @@ BOOL modcellular_get_storage_info() {
     return false;
 }
 void modcellular_clear_storage_info() {
-    if(storage != NULL) LUAT_MEM_FREE(storage);
+    if(storage != NULL) m_del(uint8_t, storage, sizeof(CmiSmsGetStorageStatusCnf));
     storage = NULL;
 }
 // --------------------------------------------
@@ -353,7 +353,7 @@ int modcellular_endswith(const char *str, const char *suffix) {
 }
 
 void modcellular_remove_files(char *suffix) {
-    luat_fs_dirent_t *fs_dirent = LUAT_MEM_MALLOC(sizeof(luat_fs_dirent_t)*100);
+    luat_fs_dirent_t *fs_dirent = (luat_fs_dirent_t*)m_new(uint8_t, sizeof(luat_fs_dirent_t) * 100);
     memset(fs_dirent, 0, sizeof(luat_fs_dirent_t)*100);
     int lsdir_cnt = luat_fs_lsdir("/", fs_dirent, 0, 100);
     if (lsdir_cnt > 0) {
@@ -372,7 +372,7 @@ void modcellular_remove_files(char *suffix) {
             }
         }        
     }
-    LUAT_MEM_FREE(fs_dirent);
+    m_del(uint8_t, fs_dirent, sizeof(luat_fs_dirent_t) * 100);
     fs_dirent = NULL;
 }
 
@@ -384,7 +384,7 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
         if(fd != NULL) {
             mp_printf(&mp_plat_print, "success\n");
             uint16_t buff_len = 255;
-            char * buff = LUAT_MEM_MALLOC(buff_len);
+            char * buff = m_new(char, buff_len);
             memset(buff, 0, buff_len);
             int res = luat_fs_fread((uint8_t*)buff, buff_len, 1, fd);
             luat_fs_fclose(fd);
@@ -417,7 +417,7 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
                     cJSON_Delete(json);
                 }
             }
-            LUAT_MEM_FREE(buff);
+            m_del(char, buff, buff_len);
         } else mp_printf(&mp_plat_print, "failed\n");
     }
     return result;
@@ -666,14 +666,14 @@ uint8_t u_decodeMask [] = { 128, 192, 224, 240, 248, 252, 254 };
 #define UTF8ENCODING 0x8
 
 void sms_debug_print(char *type, uint8_t *data, uint16_t data_len) {
-    char *mess = LUAT_MEM_MALLOC(data_len * 3 + 1);
+    char *mess = m_new(char, data_len * 3 + 1);
     if(mess != NULL) {
         memset(mess, 0, data_len * 3 + 1);
         for(int i = 0; i < data_len; i++) {
             sprintf(mess + i * 3 , "%02X ", *(uint8_t *)(data + i));
         }
         LUAT_DEBUG_PRINT("decode %s: %s (%d)", type, mess, data_len);
-        LUAT_MEM_FREE(mess);
+        m_del(char, mess, data_len * 3 + 1);
     }
 }
 
@@ -704,7 +704,7 @@ uint8_t * util_unpack_bytes(uint8_t* packed_bytes, uint16_t packed_bytes_len, ui
     int move_offset = 0;
     int move_index = 0;
     int unpack_index = 1;
-    uint8_t *unpacked_bytes = LUAT_MEM_MALLOC(shifted_bytes_len);
+    uint8_t *unpacked_bytes = m_new(uint8_t, shifted_bytes_len);
     memset(unpacked_bytes, 0, shifted_bytes_len);
 
     if (shifted_bytes_len > 0) {
@@ -734,10 +734,10 @@ uint8_t * util_unpack_bytes(uint8_t* packed_bytes, uint16_t packed_bytes_len, ui
     if(*result_bytes_len >= shifted_bytes_len) {
        *result_bytes_len = (unpacked_bytes[shifted_bytes_len - 1] == 0) ? shifted_bytes_len - 1 : shifted_bytes_len;
        memcpy(result_bytes, unpacked_bytes, *result_bytes_len);
-       LUAT_MEM_FREE(unpacked_bytes);
+       m_del(uint8_t, unpacked_bytes, shifted_bytes_len);
        return result_bytes;
     } else {
-       LUAT_MEM_FREE(unpacked_bytes);
+       m_del(uint8_t, unpacked_bytes, shifted_bytes_len);
        return packed_bytes;
     }
 }
@@ -774,7 +774,7 @@ void util_decode_mms(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSms
 void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength, uint8_t encoding) {
     sms_debug_print("util_decode_vcard", b, len);
 
-    uint8_t *mess = LUAT_MEM_MALLOC(LUAT_SMS_MAX_TXT_SIZE + 1);
+    uint8_t *mess = m_new(uint8_t, LUAT_SMS_MAX_TXT_SIZE + 1);
     uint16_t mess_len = LUAT_SMS_MAX_TXT_SIZE + 1;
     if(mess != NULL) {
         uint8_t decoded = 0;
@@ -812,10 +812,10 @@ void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pS
                 }
             }
             *pSmsLength = strlen((char*)pOutData);
-            LUAT_MEM_FREE(mess);
+            m_del(uint8_t, mess, LUAT_SMS_MAX_TXT_SIZE + 1);
             return;
         }
-        LUAT_MEM_FREE(mess);
+        m_del(uint8_t, mess, LUAT_SMS_MAX_TXT_SIZE + 1);
     }
     strcpy((char*)pOutData, "decode VCARD failed");
     *pSmsLength = strlen((char*)pOutData);
@@ -823,14 +823,14 @@ void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pS
 
 void util_decode_stk(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     sms_debug_print("util_decode_stk", b, len);
-    char *mess = LUAT_MEM_MALLOC(len * 3 + 1);
+    char *mess = m_new(char, len * 3 + 1);
     if(mess != NULL) {
         memset(b, 0, len * 3 + 1);
         for(int i = 0; i < len; i++) sprintf((char*)(b + i * 3) , "%02X ", *(uint8_t *)(b + i));
         uint8_t *dst = pOutData;
         sprintf((char*)pOutData, "%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
         *pSmsLength = strlen((char*)pOutData);
-        LUAT_MEM_FREE(mess);
+        m_del(char, mess, len * 3 + 1);
     }
 }
 
@@ -1144,10 +1144,10 @@ mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
     self->type = (uint8_t)record->smsStatus;
 
     uint8_t phoneNumberType = 0;
-    char *phone = LUAT_MEM_MALLOC(LUAT_MSG_MAX_ADDR_LEN + 1);
+    char *phone = m_new(char, LUAT_MSG_MAX_ADDR_LEN + 1);
     uint8_t dcs = 0;
     PsilSmsTimeStampInfo tem_time = {0};
-    uint8_t *message = LUAT_MEM_MALLOC(LUAT_SMS_MAX_TXT_SIZE + 1);
+    uint8_t *message = m_new(u_int8_t, LUAT_SMS_MAX_TXT_SIZE + 1);
     uint16_t message_len = LUAT_SMS_MAX_TXT_SIZE + 1;
     memset(message, 0, LUAT_SMS_MAX_TXT_SIZE + 1);
 
@@ -1171,15 +1171,15 @@ mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
     self->tz = tem_time.tz;
     self->tzSign = tem_time.tzSign;
 
-    LUAT_MEM_FREE(phone);
-    LUAT_MEM_FREE(message);
+    m_del(char, phone, LUAT_MSG_MAX_ADDR_LEN + 1);
+    m_del(uint8_t, message, LUAT_SMS_MAX_TXT_SIZE + 1);
 
     return MP_OBJ_FROM_PTR(self);
 }
 
 STATIC mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
-    mp_printf(&mp_plat_print, "USSD over IMS not supported and module does not support 2G fallback");
+    mp_printf(&mp_plat_print, "USSD over IMS not supported and module does not support 2G fallback\n");
     mp_obj_t tuple[2];
     uint8_t dummy[0];
     tuple[0] = mp_obj_new_int(0);

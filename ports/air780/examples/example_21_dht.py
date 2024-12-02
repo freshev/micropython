@@ -1,4 +1,4 @@
-# Micropython a9g example
+# Micropython Air780e example
 # Source: https://github.com/freshev/micropython
 # Author: freshev
 # Demonstrates how to retrieve temperature from different DHT sensors
