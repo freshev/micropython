@@ -544,58 +544,81 @@ STATIC mp_obj_t modair_file_open_internal(mp_obj_t path_in, mp_obj_t mode_in) {
 
 STATIC mp_uint_t modair_file_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     air_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    int res = luat_fs_fread(buf, size, 1, self->f);
-    if (res < 0) {
-        *errcode = -MP_EIO;
+    if(self->f != NULL) {
+        int res = luat_fs_fread(buf, size, 1, self->f);
+        if (res < 0) {
+            *errcode = -MP_EIO;
+            return MP_STREAM_ERROR;
+        }
+        return (mp_uint_t)res;
+    } else {
+        *errcode = MP_EBADF;
         return MP_STREAM_ERROR;
     }
-    return (mp_uint_t)res;
 }
 
 STATIC mp_uint_t modair_file_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     air_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    int res = luat_fs_fwrite(buf, size, 1, self->f);
-    if (res < 0) {
-        *errcode = -MP_EIO;
+    if(self->f != NULL) {
+        int res = luat_fs_fwrite(buf, size, 1, self->f);
+        if (res < 0) {
+            *errcode = -MP_EIO;
+            return MP_STREAM_ERROR;
+        }
+        if (res != (int)size) {
+            *errcode = MP_ENOSPC;
+            return MP_STREAM_ERROR;
+        }
+        return (mp_uint_t)res;
+    } else {
+        *errcode = MP_EBADF;
         return MP_STREAM_ERROR;
     }
-    if (res != (int)size) {
-        *errcode = MP_ENOSPC;
-        return MP_STREAM_ERROR;
-    }
-    return (mp_uint_t)res;
 }
 
 STATIC mp_uint_t modair_file_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     air_file_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     if (request == MP_STREAM_SEEK) {
-        struct mp_stream_seek_t *s = (struct mp_stream_seek_t *)(uintptr_t)arg;
-        int res = luat_fs_fseek(self->f, s->offset, s->whence);
-        if (res < 0) {
-            *errcode = -MP_EIO;
+        if(self->f != NULL) {
+            struct mp_stream_seek_t *s = (struct mp_stream_seek_t *)(uintptr_t)arg;
+            int res = luat_fs_fseek(self->f, s->offset, s->whence);
+            if (res < 0) {
+                *errcode = -MP_EIO;
+                return MP_STREAM_ERROR;
+            }
+            res = luat_fs_ftell(self->f);
+            if (res < 0) {
+                *errcode = -MP_EIO;
+                return MP_STREAM_ERROR;
+            }
+            s->offset = res;
+            return 0;
+        } else {
+            *errcode = MP_EBADF;
             return MP_STREAM_ERROR;
         }
-        res = luat_fs_ftell(self->f);
-        if (res < 0) {
-            *errcode = -MP_EIO;
-            return MP_STREAM_ERROR;
-        }
-        s->offset = res;
-        return 0;
     } else if (request == MP_STREAM_FLUSH) {
-        int res = luat_fs_fflush(self->f);
-        if (res < 0) {
-            *errcode = -MP_EIO;
+        if(self->f != NULL) {
+            int res = luat_fs_fflush(self->f);
+            if (res < 0) {
+                *errcode = -MP_EIO;
+                return MP_STREAM_ERROR;
+            }
+            return 0;
+        } else {
+            *errcode = MP_EBADF;
             return MP_STREAM_ERROR;
         }
-        return 0;
     } else if (request == MP_STREAM_CLOSE) {
-        int res = luat_fs_fclose(self->f);
-        if (res < 0) {
-            *errcode = -MP_EIO;
-            return MP_STREAM_ERROR;
+        if(self->f != NULL) {
+            int res = luat_fs_fclose(self->f);
+            if (res < 0) {
+                *errcode = -MP_EIO;
+                return MP_STREAM_ERROR;
+            }
         }
+        self->f = NULL;
         return 0;
     } else {
         *errcode = MP_EINVAL;

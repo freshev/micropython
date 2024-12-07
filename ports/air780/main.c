@@ -98,17 +98,18 @@ void* mp_allocate_heap(uint32_t* size) {
 
 void mp_task(void *param) {
 
-    gc_helper_regs_t regs;
-    volatile uint32_t sp = gc_helper_get_regs_and_sp(regs);
+    gc_helper_regs_t regs;    
     uint32_t mp_task_heap_size;
-    void *mp_task_heap = mp_allocate_heap(&mp_task_heap_size); // allocate maximum
-    
+    volatile uint32_t sp;
+    sp = gc_helper_get_regs_and_sp(regs);
+
 soft_reset:
-    
+    mp_stack_ctrl_init();
     mp_stack_set_top((void *)sp);
     mp_stack_set_limit(MICROPY_TASK_STACK_SIZE - MP_TASK_STACK_LIMIT_MARGIN);
+
+    void *mp_task_heap = mp_allocate_heap(&mp_task_heap_size); // allocate maximum
     gc_init(mp_task_heap, mp_task_heap + mp_task_heap_size);
-    
 
     mp_init();
     modmachine_init0();
@@ -144,8 +145,7 @@ soft_reset:
     mp_deinit();
     luat_heap_free(mp_task_heap);
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
-    //mp_hal_delay_us(10000); // allow UART to flush output
-    mp_hal_delay_ms(10);
+    mp_hal_delay_ms(10);// allow UART to flush output
     
     goto soft_reset;
 }
