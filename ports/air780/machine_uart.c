@@ -359,7 +359,7 @@ STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
     
     // get uart id
     mp_int_t uart_num = mp_obj_get_int(args[0]);
-    if (!luat_uart_exist(uart_num) || uart_num == 3 || uart_num <= 0) { // Currently only supports UART1, UART2, LUAT_VUART_ID_0 (from "luat_uart_ec618.c")
+    if (!luat_uart_exist(uart_num) || uart_num <= 0) { // Currently only supports UART1, UART2, LUAT_VUART_ID_0 (from "luat_uart_ec618.c" = 0x20)
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("UART(%d) does not exist"), uart_num);
     }
     

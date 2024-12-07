@@ -235,6 +235,7 @@ void modcellular_init0(void) {
     network_exception = NTW_NO_EXC;
     // set RRC release time to 1 sec and "idle timeout" to 55 secs
     luat_mobile_set_auto_rrc_default();    
+    // luat_mobile_set_sync_time(1);
 
     luat_sms_init();
     luat_sms_recv_msg_register_handler(modcellular_sms_recv_cb); 

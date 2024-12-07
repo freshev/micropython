@@ -112,6 +112,15 @@ typedef struct _sms_obj_t {
     uint8_t pn_type;
     uint8_t index;
     uint8_t purpose;
+
+    uint8_t year;
+    uint8_t month;
+    uint8_t day;
+    uint8_t hour;
+    uint8_t minute;
+    uint8_t second;
+    uint8_t tz;         /* time zone */
+    uint8_t tzSign;     /* '+'/'-' */
 } sms_obj_t;
 
 // -------------------
@@ -726,6 +735,17 @@ STATIC void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         // .pn_type
         } else if (attr == MP_QSTR_pn_type) {
             dest[0] = mp_obj_new_int(self->pn_type);
+        // .ts
+        } else if (attr == MP_QSTR_ts) {
+            mp_obj_t tuple[7];
+            tuple[0] = mp_obj_new_int(self->year);
+            tuple[1] = mp_obj_new_int(self->month);
+            tuple[2] = mp_obj_new_int(self->day);
+            tuple[3] = mp_obj_new_int(self->hour);
+            tuple[4] = mp_obj_new_int(self->minute);
+            tuple[5] = mp_obj_new_int(self->second);
+            tuple[6] = mp_obj_new_int(self->tz * ((self->tzSign) ? 1 : -1));
+            dest[0] = mp_obj_new_tuple(7, tuple);
         // .index
         } else if (attr == MP_QSTR_index) {
             dest[0] = mp_obj_new_int(self->index);
@@ -759,9 +779,10 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
     // SMS.__str__()
     // ========================================
     sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SMS(\"%s\", \"%s\", pn_type=%d, index=%d, purpose=%d)\n",
+    mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, purpose=%d)\n",
             mp_obj_str_get_str(self->phone_number),
             mp_obj_str_get_str(self->message),
+            self->day, self->month, self->year, self->hour, self->minute, self->second, (self->tzSign ? "+" : "-"), (int8_t)(self->tz / 4),
             self->pn_type,
             self->index,
             self->purpose

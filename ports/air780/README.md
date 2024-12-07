@@ -32,6 +32,7 @@ Translated module documentation at [Docs](docs/)
 5. Notes:  
   Version number configured runing `configure.bat`  
   Use simple `xmake` to build current version.  
+  If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
 
 
 ### Windows
@@ -50,6 +51,7 @@ Translated module documentation at [Docs](docs/)
 4. Notes:  
   Version number configured runing `configure.bat`  
   Use simple `make` to build current version.  
+  If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
 
 ## Burn (Windows only)
 

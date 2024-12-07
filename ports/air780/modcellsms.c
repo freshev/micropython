@@ -65,7 +65,7 @@ void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
 }
 void modcellular_sms_send_cb(int ret) {
     LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
-    sms_send_flag = 1;
+    if(ret == 0) sms_send_flag = 1;
 }
 
 // --------------------------------------------
@@ -549,13 +549,16 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     OS_Free(unicode);
     */
     sms_send_flag = 0;
-    luat_sms_send_msg((uint8_t*)message, (char*)destination, false, 0);
     //int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_len)
+    int res = luat_sms_send_msg((uint8_t*)message, (char*)destination, false, 0);
 
-    WAIT_UNTIL(sms_send_flag, timeout, 100, mp_warning(NULL, "Failed to send SMS immidiately. The module will continue attempts sending it"));
-
-    sms_send_flag = 0;
-    return mp_const_none;
+    if(res == 0) {
+        WAIT_UNTIL(sms_send_flag, timeout, 100, mp_warning(NULL, "Failed to send SMS immidiately. The module will continue attempts sending it"));
+        if(sms_send_flag == 1) {
+            return MP_OBJ_NEW_SMALL_INT(1);
+        }
+    }
+    return MP_OBJ_NEW_SMALL_INT(0);
 }
 
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_sms_send_obj, 1, 2, modcellular_sms_send);
@@ -591,6 +594,17 @@ STATIC void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         // .pn_type
         } else if (attr == MP_QSTR_pn_type) {
             dest[0] = mp_obj_new_int(self->pn_type);
+        // .ts
+        } else if (attr == MP_QSTR_ts) {
+            mp_obj_t tuple[7];
+            tuple[0] = mp_obj_new_int(self->year);
+            tuple[1] = mp_obj_new_int(self->month);
+            tuple[2] = mp_obj_new_int(self->day);
+            tuple[3] = mp_obj_new_int(self->hour);
+            tuple[4] = mp_obj_new_int(self->minute);
+            tuple[5] = mp_obj_new_int(self->second);
+            tuple[6] = mp_obj_new_int(self->tz * ((self->tzSign) ? 1 : -1));
+            dest[0] = mp_obj_new_tuple(7, tuple);
         // .index
         } else if (attr == MP_QSTR_index) {
             dest[0] = mp_obj_new_int(self->index);
@@ -633,8 +647,7 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
     mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, type=%d(%s), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d)\n",
             mp_obj_str_get_str(self->phone_number),
             mp_obj_str_get_str(self->message),
-            self->day, self->month, self->year, self->hour, self->minute, self->second, (self->tzSign ? "+" : "-"),
-            (int8_t)(self->tz / 4),
+            self->day, self->month, self->year, self->hour, self->minute, self->second, (self->tzSign ? "+" : "-"), (int8_t)(self->tz / 4),
             self->pn_type, self->index, self->type, type_string, self->dcs,
             self->combined_sms, self->combined_sms_part_number, self->combined_sms_parts, self->combined_sms_reference,
             self->source_port, self->destination_port
@@ -768,7 +781,7 @@ void util_decode_UTF8(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSm
 void util_decode_mms(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
     //sms_debug_print("util_decode_mms", b, len);
     strcpy((char*)pOutData, "decode MMS not implemented");
-    *pSmsLength = *pSmsLength;
+    *pSmsLength = strlen((char*)pOutData);
 }
 
 void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength, uint8_t encoding) {

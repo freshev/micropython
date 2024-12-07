@@ -30,29 +30,34 @@
 
 #include "py/obj.h"
 #include "shared/timeutils/timeutils.h"
+#include "luat_debug.h"
 
 // Return the localtime as an 8-tuple.
 STATIC mp_obj_t mp_time_localtime_get(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_epoch_to_struct_time(tv.tv_sec, &tm);
+    struct tm tb1 = {0};
+    struct tm *tb2 = NULL;
+    luat_rtc_get(&tb1);
+    time_t nowtime;
+    time(&nowtime);
+    tb2 = localtime(&nowtime);
+    // LUAT_DEBUG_PRINT("time ISO %d-%d-%dT%d:%d:%d", tb1.tm_year, tb1.tm_mon, tb1.tm_mday, tb1.tm_hour, tb1.tm_min, tb1.tm_sec);
     mp_obj_t tuple[8] = {
-        tuple[0] = mp_obj_new_int(tm.tm_year),
-        tuple[1] = mp_obj_new_int(tm.tm_mon),
-        tuple[2] = mp_obj_new_int(tm.tm_mday),
-        tuple[3] = mp_obj_new_int(tm.tm_hour),
-        tuple[4] = mp_obj_new_int(tm.tm_min),
-        tuple[5] = mp_obj_new_int(tm.tm_sec),
-        tuple[6] = mp_obj_new_int(tm.tm_wday),
-        tuple[7] = mp_obj_new_int(tm.tm_yday),
+        tuple[0] = mp_obj_new_int(1900 + tb2->tm_year),
+        tuple[1] = mp_obj_new_int(tb2->tm_mon),
+        tuple[2] = mp_obj_new_int(tb2->tm_mday),
+        tuple[3] = mp_obj_new_int(tb2->tm_hour),
+        tuple[4] = mp_obj_new_int(tb2->tm_min),
+        tuple[5] = mp_obj_new_int(tb2->tm_sec),
+        tuple[6] = mp_obj_new_int(tb2->tm_wday),
+        tuple[7] = mp_obj_new_int(tb2->tm_yday),
     };
     return mp_obj_new_tuple(8, tuple);
 }
 
 // Return the number of seconds since the Epoch.
 STATIC mp_obj_t mp_time_time_get(void) {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return mp_obj_new_int(tv.tv_sec);
+    struct tm tb1 = {0};
+    luat_rtc_get(&tb1);
+    time_t utctime = mktime(&tb1);
+    return mp_obj_new_int(utctime);
 }
