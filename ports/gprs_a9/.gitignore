@@ -3,6 +3,7 @@ build
 hex
 
 version/
+fota/
 modules/settings.py
 modules/filesys.py
 modules/uota.py
