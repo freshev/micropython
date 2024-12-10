@@ -1,6 +1,6 @@
 import sys
-import usocket
-import ussl
+import socket
+import ssl
 
 def a2s(array):
         if('encode' in dir('')): return array.decode('utf-8') #python >= 2.7
@@ -51,16 +51,16 @@ def request(method, url, data=None, timeout=None):
         host, port = host.split(':', 1)
         port = int(port)
 
-    ai = usocket.getaddrinfo(host, port, 0, 1) # usocket.SOCK_STREAM = 1
+    ai = socket.getaddrinfo(host, port, 0, 1) # socket.SOCK_STREAM = 1
     ai = ai[0]
 
     resp_d = {}
-    s = usocket.socket(ai[0], 1, ai[2]) # usocket.SOCK_STREAM
+    s = socket.socket(ai[0], 1, ai[2]) # socket.SOCK_STREAM
     if timeout is not None: s.settimeout(timeout)
 
     try:
         s.connect(ai[-1])
-        if proto == 'https:': s = ussl.wrap_socket(s, server_hostname=host)
+        if proto == 'https:': s = ssl.wrap_socket(s, server_hostname=host)
         s.write('%s /%s HTTP/1.0\r\n' % (method, path))
         s.write('Host: %s\r\n' % host)        
         if data:

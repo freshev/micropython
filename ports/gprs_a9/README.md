@@ -566,8 +566,7 @@ In order to reduce module size `umqtt` has only `connect`, `close` and `publish`
 To use other methods, uncomment needed methods in `modules/umqtt.py` and rebuild port.
 
 ### urequests ###
-In order to reduce module size `urequests` has only `get` methods.  
-To use other methods, uncomment needed methods in `modules/urequests.py` and rebuild port.
+Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 
 ## Notes ##

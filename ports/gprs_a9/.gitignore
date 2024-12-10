@@ -2,6 +2,7 @@ build
 .vscode
 hex
 
+version/
 modules/settings.py
 modules/filesys.py
 modules/uota.py
