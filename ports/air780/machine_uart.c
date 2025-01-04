@@ -76,12 +76,12 @@ typedef struct _machine_uart_obj_t {
 // UART Luat specific
 
 // rx data buffers
-uint8_t uart1_ringbuf_array[UART_STATIC_RXBUF_LEN];
-uint8_t uart2_ringbuf_array[UART_STATIC_RXBUF_LEN];
-uint8_t uartv_ringbuf_array[UART_STATIC_RXBUF_LEN];
-uint8_t *uart_ringbuf_array[] = {uart1_ringbuf_array, uart2_ringbuf_array, uartv_ringbuf_array};
+STATIC uint8_t uart1_ringbuf_array[UART_STATIC_RXBUF_LEN];
+STATIC uint8_t uart2_ringbuf_array[UART_STATIC_RXBUF_LEN];
+STATIC uint8_t uartv_ringbuf_array[UART_STATIC_RXBUF_LEN];
+STATIC uint8_t *uart_ringbuf_array[] = {uart1_ringbuf_array, uart2_ringbuf_array, uartv_ringbuf_array};
 // rx ring buffers
-ringbuf_t uart_ringbuf[] = {
+STATIC ringbuf_t uart_ringbuf[] = {
     {uart1_ringbuf_array, sizeof(uart1_ringbuf_array), 0, 0},
     {uart2_ringbuf_array, sizeof(uart2_ringbuf_array), 0, 0},
     {uartv_ringbuf_array, sizeof(uartv_ringbuf_array), 0, 0},
@@ -91,7 +91,15 @@ STATIC uint8_t uart_attached_to_dupterm[3];
 
 
 STATIC uint8_t uart_tx_one_char(uint8_t uart_num, char c) {
-    return luat_uart_write(uart_num, (uint8_t*) &c, 1);
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;    
+    uart_tx_done[uart] = 0;
+
+    //LUAT_DEBUG_PRINT("luat_uart_before_write");
+    int ret = luat_uart_write(uart_num, (uint8_t*) &c, 1);
+    if(ret != 1) LUAT_DEBUG_PRINT("luat_uart_after_write %d", ret);
+    return ret;
+    
+    //return luat_uart_write(uart_num, (uint8_t*) &c, 1);
 }
 STATIC uint8_t uart_rx_one_char(uint8_t uart_num) {
     int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
@@ -402,8 +410,8 @@ STATIC mp_int_t mp_machine_uart_readchar(machine_uart_obj_t *self) {
 }
 
 STATIC void mp_machine_uart_writechar(machine_uart_obj_t *self, uint16_t data) {
-    int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
-    uart_tx_done[uart] = 0;
+    LUAT_DEBUG_PRINT("mp_machine_uart_writechar");
+    //int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;    
     uart_tx_one_char(self->uart_num, (byte)data);
 }
 
@@ -433,15 +441,30 @@ STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t 
     }
 }
 
-STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
+/*STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const byte *buf = buf_in;
+    //LUAT_DEBUG_PRINT("mp_machine_uart_write");
 
     for (size_t i = 0; i < size; ++i) {
+        //LUAT_DEBUG_PRINT("mp_machine_uart_write_char_by_char %d", *buf);
         uart_tx_one_char(self->uart_num, *buf++);
     }
     // return number of bytes written
     return size;
+}*/
+STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
+    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    const byte *buf = buf_in;
+    //LUAT_DEBUG_PRINT("mp_machine_uart_write");
+
+    int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;    
+    uart_tx_done[uart] = 0;
+
+    //LUAT_DEBUG_PRINT("luat_uart_before_write");
+    int ret = luat_uart_write(self->uart_num, (uint8_t*) buf_in, size);
+    //LUAT_DEBUG_PRINT("luat_uart_write %d", ret);
+    return ret;
 }
 
 STATIC mp_uint_t mp_machine_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
@@ -474,4 +497,4 @@ STATIC mp_uint_t mp_machine_uart_ioctl(mp_obj_t self_in, mp_uint_t request, uint
     return ret;
 }
 
-MP_REGISTER_ROOT_POINTER(byte * uart_rxbuf[3]);
+MP_REGISTER_ROOT_POINTER(byte * uart_rxbuf[UART_NPORTS]);

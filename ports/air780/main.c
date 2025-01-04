@@ -90,6 +90,17 @@ void* mp_allocate_heap(uint32_t* size) {
              counter++;
         }
     }
+    /*
+    // reduce heap size for 
+    luat_heap_free(ptr);
+    h_size = h_size - 5 * MICROPY_HEAP_MIN_SIZE; // at least MICROPY_HEAP_MIN_SIZE available to system heap
+    ptr = luat_heap_malloc(h_size);
+    if (ptr == 0) {
+        LUAT_DEBUG_PRINT("Unrecoverable error: %d heap size", h_size);
+        luat_pm_reboot();
+        while(1);
+    }*/
+
     size[0] = h_size;
     if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
     LUAT_DEBUG_PRINT("finally: %d heap size", h_size);

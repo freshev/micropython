@@ -84,9 +84,8 @@
 
 #define BANDS_ALL (999)
 
-extern uint8_t network_status;
-extern uint16_t network_exception;
-#define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
+//extern uint8_t network_status;
+//extern uint16_t network_exception;
 
 typedef struct _sms_obj_t {
     mp_obj_base_t base;

@@ -9,4 +9,6 @@ build/
 .xmake/
 *.o
 __py_cache__/
+a.bat
+b.bat
 log*.*

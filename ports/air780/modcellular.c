@@ -27,19 +27,23 @@
  * THE SOFTWARE.
  */
 
+
 #include "luat_network_adapter.h"
 #include "ps_lib_api.h"
 #include "modcellular.h"
+
+STATIC uint8_t network_status = 0;
+STATIC uint16_t network_exception = NTW_NO_EXC;
+STATIC uint8_t network_signal_quality = 0;
+STATIC int16_t network_signal_rx_level = 0;
+STATIC int8_t network_signal_snr = 0;
+STATIC mp_obj_t network_status_callback = mp_const_none;
+
+#define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
+
 #include "modcellsms.c"
 
 // Tracks the status on the network
-uint8_t network_status = 0;
-uint16_t network_exception = NTW_NO_EXC;
-uint8_t network_signal_quality = 0;
-int16_t network_signal_rx_level = 0;
-int8_t network_signal_snr = 0;
-mp_obj_t network_status_callback = mp_const_none;
-mp_obj_list_t *plmn_list_buffer = NULL;
 
 void modcellular_network_status_update(uint8_t new_status, uint16_t new_exception) {
     if (new_exception) network_exception = new_exception;
