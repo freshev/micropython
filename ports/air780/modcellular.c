@@ -241,10 +241,6 @@ void modcellular_init0(void) {
     luat_mobile_set_auto_rrc_default();    
     // luat_mobile_set_sync_time(1);
 
-    luat_sms_init();
-    luat_sms_recv_msg_register_handler(modcellular_sms_recv_cb); 
-    luat_sms_send_msg_register_handler(modcellular_sms_send_cb); 
-    luat_mobile_sms_event_register_handler(sms_event_cb); // redefine SMS callback, inited in "luat_sms_init"
     luat_mobile_event_register_handler(mobile_event_cb); 
     modcellular_init_sms(); // set SMS storage to SM
 

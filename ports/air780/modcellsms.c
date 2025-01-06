@@ -28,6 +28,7 @@
  */
 #include "luat_iconv.h"
 #include "modcellular.h"
+#include "mw_aon_info.h"
 
 #include "luat_rtos.h"
 #include "luat_fs.h"
@@ -48,19 +49,22 @@ STATIC uint8_t ussd_send_flag = 0;
 STATIC CmiSmsGetStorageStatusCnf storage;
 STATIC uint8_t storage_flag = 0;
 
+LUAT_SMS_MAIN_CFG_T luat_sms_cfg;
+
+
 static void modcellular_sms_recv_cb(uint8_t event,void *param) {
 }
 
 void modcellular_sms_process(sms_obj_t *sms);
 void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
-    LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
+    // LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
     modcellular_sms_process(sms); // process internal commands
     if (sms_callback && sms_callback != mp_const_none) {
         mp_sched_schedule(sms_callback, sms);
     }
 }
 void modcellular_sms_send_cb(int ret) {
-    LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
+    // LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
     if(ret == 0) sms_send_flag = 1;
 }
 
@@ -121,23 +125,20 @@ BOOL modcellular_sms_delete_internal(uint8_t index) {
     return true;
 }
 
-
 // --------------------------------------------
 //               SMS event handler
 // --------------------------------------------
-extern void luat_sms_proc(uint32_t event, void *param);             // from "luat_sms_ec618.c"
-// extern void luat_sms_nw_report_urc(CmiSmsNewMsgInd *p_cmi_msg_ind); // from "luat_sms_ec618.c"
 mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record);
 
 void sms_event_cb(uint32_t event, void *param) {
 
-    void (*default_sms_proc)(uint32_t event, void *param) = luat_sms_proc;
     CmiSmsGetStorageStatusCnf * storage_info = (CmiSmsGetStorageStatusCnf *)param;
 
     switch(event) {
-        // call default handler from "luat_sms_ec618.c" only for sending
         case CMI_SMS_SEND_MSG_CNF: // 2
-            default_sms_proc(event, param);
+            // LUAT_DEBUG_PRINT("CMI_SMS_SEND_MSG_CNF is in");
+            CmiSmsSendMsgCnf *send_sms_ret = (CmiSmsSendMsgCnf *)param;
+            luat_sms_cfg.send_cb((int)send_sms_ret->errorCode);
             break;
 
         // rewrite logic from "luat_sms_ec618.c" to store new message to U(SIM) storage
@@ -250,30 +251,29 @@ void sms_event_cb(uint32_t event, void *param) {
 
         case CMI_SMS_LIST_SMS_MSG_RECORD_CNF: { // 35
             CmiSmsListSmsMsgRecCnf * sms_rec = (CmiSmsListSmsMsgRecCnf *)param;
-            //LUAT_DEBUG_PRINT("SMS record (LIST_SMS_MSG) %d: status=%d, end=%d, error=%d", sms_rec->index, sms_rec->smsStatus, sms_rec->endStatus, sms_rec->errorCode);
-            //if (sms_list_buffer && sms_rec->errorCode == 0) {
+            // LUAT_DEBUG_PRINT("SMS record (LIST_SMS_MSG) %d: status=%d, end=%d, error=%d", sms_rec->index, sms_rec->smsStatus, sms_rec->endStatus, sms_rec->errorCode);
             if (sms_rec->errorCode == 0) {
                 if(sms_rec->smsStatus < CMI_SMS_STOR_STATUS_ALL) {
-                    //mp_obj_list_append(sms_list_buffer, modcellular_sms_from_list_record(sms_rec));
                     sms_list_buffer[sms_list_buffer_len] = (sms_obj_t*)modcellular_sms_from_list_record(sms_rec);
                     sms_list_buffer_len++;
-                }
+                } 
             } else network_exception = NTW_EXC_SMS_DROP;    
             if(sms_rec->endStatus == 1) sms_list_flag = 1;
             }
             break;
 
         case CMI_SMS_GET_SMS_STORAGE_STATUS_CNF: // 37
+            // LUAT_DEBUG_PRINT("SMS get storage info");
             memcpy(&storage, storage_info, sizeof(CmiSmsGetStorageStatusCnf)); 
             storage_flag = 1;
             break;
         
         case CMI_SMS_MEM_CAP_IND: // 40, Report SMS Memory Capacity Exceeded flag
-            LUAT_DEBUG_PRINT("SMS storage overflow");
+            // LUAT_DEBUG_PRINT("SMS storage overflow");
             break;
 
         case CMI_SMS_IDLE_STATUS_IND: // 43, Report SMS Task IDLE state
-            LUAT_DEBUG_PRINT("SMS task IDLE");              
+            // LUAT_DEBUG_PRINT("SMS task IDLE");              
             break;        
         
         default:
@@ -286,7 +286,13 @@ void sms_event_cb(uint32_t event, void *param) {
 // --------------------------------------------
 //                     SMS init
 // --------------------------------------------
+// extern void soc_mobile_sms_event_register_handler(void *handle);
 void modcellular_init_sms() {
+    luat_sms_cfg.cb = modcellular_sms_recv_cb;
+    luat_sms_cfg.send_cb = modcellular_sms_send_cb;
+    // soc_mobile_sms_event_register_handler(sms_event_cb);
+    luat_mobile_sms_event_register_handler(sms_event_cb);
+
     // AT+CPMS="SM","SM","SM"
     // AT+CPMS?
     // AT+CNMI=2,1 (not 1,2 !)
@@ -496,6 +502,544 @@ mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size
     return MP_OBJ_FROM_PTR(self);
 }
 
+//--------------------------------------------------------------------------------------
+//
+//                            SMS send (got from luat_sms_ec618.c)
+//                            Added UCS2 SMS, remove extra "DEBUG_PRINT" statements
+//
+//--------------------------------------------------------------------------------------
+static PsilSmsSendInfo *luat_p_sms_send_info = NULL;
+
+static uint8_t luat_sms_encode_concatenated_sms_8_bit(UdhIe *p_udhle, uint8_t *p_ied) {
+    if(p_udhle == NULL || p_ied == PNULL) return FALSE;
+
+    if (p_udhle->ieData.concatenatedSms8Bit.maxNum == 0 ||
+        p_udhle->ieData.concatenatedSms8Bit.maxNum == 1 ||
+        p_udhle->ieData.concatenatedSms8Bit.seqNum == 0 ||
+        p_udhle->ieData.concatenatedSms8Bit.seqNum > p_udhle->ieData.concatenatedSms8Bit.maxNum) {
+        LUAT_DEBUG_PRINT("AT CMD, UDH is illegal: maxNum:%d, seqNum:%d", p_udhle->ieData.concatenatedSms8Bit.maxNum, p_udhle->ieData.concatenatedSms8Bit.seqNum);
+        return 0;
+    }
+    p_ied[0] = p_udhle->ieId;
+    p_ied[1] = 3; //IEDL
+    p_ied[2] = p_udhle->ieData.concatenatedSms8Bit.refNum;
+    p_ied[3] = p_udhle->ieData.concatenatedSms8Bit.maxNum;
+    p_ied[4] = p_udhle->ieData.concatenatedSms8Bit.seqNum;
+    return 5;
+}
+
+static uint8_t luat_sms_pdu_encode_udh(UdhIe *p_udhle, uint8_t *p_udh) {
+    if(p_udhle == PNULL || p_udh == PNULL) return FALSE;
+    p_udh[0] = 0;
+    switch (p_udhle->ieId) {
+        case UDH_IEI_CONCATENATED_SMS_8_BIT:
+            p_udh[0] = luat_sms_encode_concatenated_sms_8_bit(p_udhle, p_udh + 1);
+            break;
+        default:
+            LUAT_DEBUG_PRINT("UDH_IEI: %d is not support", p_udhle->ieId);
+            break;
+    }
+    return  p_udh[0];
+}
+
+static uint16_t luat_sms_encode_gsm_7_bit_data(uint8_t *p_input, uint16_t input_length, uint8_t *p_output, uint16_t output_length, uint16_t shift_bits) {
+    uint16_t inIdx = 0, outIdx = 0;
+    uint8_t bits = 0;
+    if(p_input == PNULL || p_output == PNULL) return 0;
+    shift_bits %= 7;
+    if (shift_bits != 0) {
+        p_output[outIdx] |= p_input[inIdx] << shift_bits;
+        bits = 8 - shift_bits;
+        if (bits == 7) { bits = 0; inIdx++; }
+        outIdx++;
+    }
+    while ((inIdx < input_length) && (outIdx < output_length)) {
+        p_output[outIdx] = p_input[inIdx] >> bits;
+        if (inIdx + 1 < input_length) {
+            p_output[outIdx] |= p_input[inIdx + 1] << (7 - bits);
+            if (++bits == 7) { bits = 0; inIdx++; }
+        }
+        inIdx++;
+        outIdx++;
+    }
+    return outIdx;
+}
+
+static const uint8_t luat_sms_ascii2_gsm_def_alpha_bet_table[] = {
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x0A, 0x3F, 0x3F, 0x0D, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x20, 0x21, 0x22, 0x23, 0x02, 0x25, 0x26, 0x27, 0x28, 0x29, 0x2A, 0x2B, 0x2C, 0x2D, 0x2E, 0x2F,
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+    0x00, 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49, 0x4A, 0x4B, 0x4C, 0x4D, 0x4E, 0x4F,
+    0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5A, 0x28, 0x2F, 0x29, 0x3F, 0x11,
+    0x27, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E, 0x6F,
+    0x70, 0x71, 0x72, 0x73, 0x74, 0x75, 0x76, 0x77, 0x78, 0x79, 0x7A, 0x28, 0x2F, 0x29, 0x2D, 0x3F
+};
+
+static const uint8_t luat_sms_ascii2_gsm_def_alpha_bet_ext_table[] = {
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3C, 0x2F, 0x3E, 0x14, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
+    0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x28, 0x40, 0x29, 0x3D, 0x3F,
+    0x65
+};
+
+static CmsRetId luat_sms_ascii_gsm_def_alpha_bet(uint8_t *p_ascii, uint8_t ascii_len, uint8_t *p_gsm, uint8_t *gsm_len) {
+    uint8_t idxAscii = 0;
+    uint8_t idxGsm   = 0;
+    const char *extGsmAlpha = "^{}\\[~]|\x80";
+
+    for (idxAscii = 0; idxAscii < ascii_len; idxAscii++) {
+        if (p_ascii[idxAscii] <= 0x80) {
+            if (strchr(extGsmAlpha, p_ascii[idxAscii]) == NULL) {
+                if (idxGsm >= PSIL_SMS_MAX_7BIT_TXT_SIZE) {
+                    *gsm_len = PSIL_SMS_MAX_7BIT_TXT_SIZE;
+                    LUAT_DEBUG_PRINT("PSIL SMS, output length (%d) should not exceed %d", idxGsm, PSIL_SMS_MAX_7BIT_TXT_SIZE);
+                    return CMS_FAIL;
+                }
+                p_gsm[idxGsm++] = luat_sms_ascii2_gsm_def_alpha_bet_table[p_ascii[idxAscii]];
+            } else {
+                if (idxGsm >= PSIL_SMS_MAX_7BIT_TXT_SIZE - 1) {
+                    *gsm_len = PSIL_SMS_MAX_7BIT_TXT_SIZE - 1;
+                    LUAT_DEBUG_PRINT("PSIL SMS, input length (%d) should not exceed %d", idxGsm, PSIL_SMS_MAX_7BIT_TXT_SIZE - 1);
+                    return CMS_FAIL;
+                }
+                p_gsm[idxGsm++] = PSIL_SMS_ESCAPE_EXTERN_TBL_CODE;
+                p_gsm[idxGsm++] = luat_sms_ascii2_gsm_def_alpha_bet_ext_table[p_ascii[idxAscii]];
+            }
+        } else {
+            LUAT_DEBUG_PRINT("PSIL SMS, invalid input pInGsm[%d]: 0x%x", idxAscii, p_ascii[idxAscii]);
+            return CMS_FAIL;
+        }
+    }
+    *gsm_len = idxGsm;
+    return CMS_RET_SUCC;
+}
+
+void util_encode_UCS(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength);
+static CmsRetId luat_sms_msg_encode_user_data(PsilMsgCodingType  coding_scheme, uint8_t *p_tpdu, 
+                                              PsilSmsSendInfo    *p_send_info, uint8_t offset, uint8_t *p_pdu_length) {
+    uint8_t  udhl = 0;           // user data header length 
+    uint8_t  hdrTotalLen = 0;    // User data header length + 1 octet 'Length of User Data Header' 
+    uint8_t  fillBits = 0;       // fill bits 
+    uint16_t length = 0;
+    uint8_t  *pSrc = p_send_info->input;
+    uint16_t msgLen = p_send_info->inputOffset;
+    UdhIe    udhIe;              /* user data header */
+    uint8_t  gsm7bitBuf[PSIL_SMS_MAX_TXT_SIZE];
+    uint8_t  gsm7bitLen = 0;
+    PsilSmsCharSet      charSet = PSIL_SMS_CHAR_SET_IRA;
+    MWNvmCfgCSCSParam   cscsParam;
+    
+    p_tpdu[offset] = 0; // TP-User-Data-Length
+    if (msgLen) {
+        switch (coding_scheme) {
+            case PSIL_MSG_CODING_DEFAULT_7BIT:
+                // LUAT_DEBUG_PRINT("the coding is PSIL_MSG_CODING_DEFAULT_7BIT");
+                mwNvmCfgGetCscsParam(&cscsParam);
+                if ((strncmp((const CHAR*)cscsParam.characterSet, "UCS2", strlen(cscsParam.characterSet)) == 0)) charSet = PSIL_SMS_CHAR_SET_UCS2;
+                if (charSet == PSIL_SMS_CHAR_SET_UCS2) {
+                    if (p_send_info->inputOffset % 4 != 0) {
+                        LUAT_DEBUG_PRINT("PSIL SMS, invalid UCS2 length: %d", p_send_info->inputOffset);
+                        return CMS_FAIL;
+                    }
+                    pSrc = (uint8_t *)m_new(uint8_t, p_send_info->inputOffset/4);
+                    // replace data in the same buffer ?
+                    msgLen = smsUcs2ToAscii(p_send_info->input, p_send_info->inputOffset, pSrc, p_send_info->inputOffset/4);
+                }
+                if (p_send_info->udhPresent) {
+                    udhIe.ieId = UDH_IEI_CONCATENATED_SMS_8_BIT;
+                    udhIe.ieData.concatenatedSms8Bit.refNum = p_send_info->refNum;
+                    udhIe.ieData.concatenatedSms8Bit.maxNum = p_send_info->maxNum;
+                    udhIe.ieData.concatenatedSms8Bit.seqNum = p_send_info->seqNum;
+
+                    udhl = luat_sms_pdu_encode_udh(&udhIe, &p_tpdu[offset + 1]);
+                    hdrTotalLen = udhl + 1; // + 1 octet 'Length of User Data Header'
+
+                    if ((hdrTotalLen * 8) % 7 != 0) fillBits = 7 - (hdrTotalLen * 8) % 7;
+                    luat_sms_ascii_gsm_def_alpha_bet(pSrc, (uint8_t)msgLen, gsm7bitBuf, &gsm7bitLen); // encode SM
+                    length = (uint8_t)luat_sms_encode_gsm_7_bit_data(gsm7bitBuf, gsm7bitLen, &p_tpdu[offset + 1 + hdrTotalLen],
+                                                         PSIL_SMS_MAX_PDU_SIZE - (offset + 1 + hdrTotalLen), fillBits);
+                    
+                    p_tpdu[offset] = gsm7bitLen + (hdrTotalLen*8 + fillBits)/7; // TP-User-Data-Length
+                    length += hdrTotalLen;
+                } else {
+                    luat_sms_ascii_gsm_def_alpha_bet(pSrc, (uint8_t)msgLen, gsm7bitBuf, &gsm7bitLen);
+                    // LUAT_DEBUG_PRINT("gsm7bitLen is %u", gsm7bitLen);
+
+                    length = (uint8_t)luat_sms_encode_gsm_7_bit_data(gsm7bitBuf, gsm7bitLen, &p_tpdu[offset + 1], PSIL_SMS_MAX_PDU_SIZE - offset, 0);
+                    p_tpdu[offset] = gsm7bitLen;
+                    // LUAT_DEBUG_PRINT("length: %hu, gsm7bitLen is %u", length, gsm7bitLen);
+                }
+                if (charSet == PSIL_SMS_CHAR_SET_UCS2) {
+                    m_del(uint8_t, pSrc, p_send_info->inputOffset/4);
+                }
+                break;
+            case PSIL_MSG_CODING_8BIT:
+                if (p_send_info->udhPresent) {
+                    LUAT_DEBUG_PRINT("PSIL SMS, UDH is not supported in DCS 8BIT");
+
+                    udhIe.ieId = UDH_IEI_CONCATENATED_SMS_8_BIT;
+                    udhIe.ieData.concatenatedSms8Bit.refNum = p_send_info->refNum;
+                    udhIe.ieData.concatenatedSms8Bit.maxNum = p_send_info->maxNum;
+                    udhIe.ieData.concatenatedSms8Bit.seqNum = p_send_info->seqNum;
+
+                    udhl = luat_sms_pdu_encode_udh(&udhIe, &p_tpdu[offset + 1]);
+                    hdrTotalLen = udhl + 1; /* + 1 octet 'Length of User Data Header' */
+                }
+
+                length = msgLen + hdrTotalLen;
+                p_tpdu[offset] = (uint8_t)msgLen;
+                if ((length <= PSIL_SMS_MAX_UD_SIZE) && (length <= PSIL_SMS_MAX_PDU_SIZE - (offset + 1 + hdrTotalLen))) {
+                    memcpy(&p_tpdu[offset + hdrTotalLen + 1], pSrc, msgLen);
+                    p_tpdu[offset] = (uint8_t)length;
+                } else {
+                    LUAT_DEBUG_PRINT("PSIL SMS, length = %d, user data size should be from 0 to %d", msgLen, PSIL_SMS_MAX_UD_SIZE);
+                    return CMS_FAIL;
+                }
+                break;
+            case PSIL_MSG_CODING_UCS2:
+                // Bug 7012\sunzhipeng\2022.11.14\Chinese text messages cannot be sent in text mode
+                // if (msgLen % 2 != 0) return CMS_FAIL;
+                if (p_send_info->udhPresent) {
+                    // LUAT_DEBUG_PRINT("PSIL SMS, UDH is not supported in DCS UCS2");
+                    udhIe.ieId = UDH_IEI_CONCATENATED_SMS_8_BIT;
+                    udhIe.ieData.concatenatedSms8Bit.refNum = p_send_info->refNum;
+                    udhIe.ieData.concatenatedSms8Bit.maxNum = p_send_info->maxNum;
+                    udhIe.ieData.concatenatedSms8Bit.seqNum = p_send_info->seqNum;
+
+                    udhl = luat_sms_pdu_encode_udh(&udhIe, &p_tpdu[offset + 1]);
+                    hdrTotalLen = udhl + 1; /* + 1 octet 'Length of User Data Header' */
+                }
+
+                uint8_t *out_buffer = (uint8_t *)m_new(uint8_t, LUAT_SMS_MAX_TXT_SIZE + 1);
+                uint16_t out_len = LUAT_SMS_MAX_TXT_SIZE + 1;
+                util_encode_UCS(pSrc, msgLen, out_buffer, &out_len);
+                msgLen = out_len;
+                length = msgLen + hdrTotalLen;
+
+                if ((length <= PSIL_SMS_MAX_UD_SIZE) && (length <= PSIL_SMS_MAX_PDU_SIZE - (offset + 1 + hdrTotalLen))) {
+                    memcpy(&p_tpdu[offset + hdrTotalLen + 1], out_buffer, msgLen);
+                    p_tpdu[offset] = (uint8_t)length;
+                } else {
+                    LUAT_DEBUG_PRINT("PSIL SMS, length = %d, user data size should be from 0 to %d", msgLen, PSIL_SMS_MAX_UD_SIZE);
+                    m_del(uint8_t, out_buffer, LUAT_SMS_MAX_TXT_SIZE + 1);
+                    return CMS_FAIL;
+                }
+                m_del(uint8_t, out_buffer, LUAT_SMS_MAX_TXT_SIZE + 1);
+                p_tpdu[offset] = (uint8_t)length;
+                break;
+            default:
+                LUAT_DEBUG_PRINT("PSIL SMS, invalid coding_scheme = %d", coding_scheme);
+                return CMS_FAIL;
+        }
+    }
+
+    // LUAT_DEBUG_PRINT("length is %d", length);
+    if (length > PSIL_SMS_MAX_UD_SIZE) {
+        LUAT_DEBUG_PRINT("PSIL SMS, length = %d, user data size should be from 0 to %d", length, PSIL_SMS_MAX_UD_SIZE);
+        return CMS_FAIL;
+    }
+    *p_pdu_length = (uint8_t)(length + 1 + offset);  //1: UDL Octet
+    return CMS_RET_SUCC;
+}
+
+static void luat_sms_fill_number_digit(uint8_t *p_output, uint8_t index, uint8_t number_digit) {
+    uint8_t *pData = &p_output[index/2]; // two digits encode to one octet
+    if ((index & 0x01) == 0) *pData = (*pData & 0xF0) | (number_digit & 0x0F); // Put into low 4 bits
+    else *pData = (*pData & 0x0F) | ((number_digit << 4) & 0xF0); // Put into high 4 bits
+    return;
+}
+
+static CmsRetId luat_sms_submit_text_2_pdu(PsilSmsSendInfo *p_send_info, CmiSmsPdu *p_cmi_pdu, uint8_t dcs)
+{
+    uint8_t offset = 0, tmpIdx = 0;
+    uint8_t vpfType = PSIL_SMS_VPF_NOT_PRESENT; /* PsilSmsValidityPeriodFormat */
+    uint8_t pduLength = 0;
+    uint8_t *pDestAddress = PNULL;
+    uint8_t *p_tpdu = p_cmi_pdu->pduData;
+    MWNvmCfgCSMPParam           csmpParam = {0};
+    MidWareSimSmsParamsAonInfo  mwAonSimSmsp = {0};
+    PsilSmsDcsInfo              dcsInfo;
+
+    if ((p_send_info->inputOffset == 0) || (p_send_info->inputOffset > PSIL_SMS_MAX_TXT_SIZE)) {
+        LUAT_DEBUG_PRINT("PSIL SMS, send Text SMS, length: %d is 0, or > MAX: %d", p_send_info->inputOffset, PSIL_SMS_MAX_TXT_SIZE);
+        return CMS_FAIL;
+    }
+    // LUAT_DEBUG_PRINT("PSIL SMS, send Text SMS, length: %d, MAX: %d", p_send_info->inputOffset, PSIL_SMS_MAX_TXT_SIZE);
+
+    csmpParam.fo    = PSIL_MSG_FO_SUBMIT_DEFAULT;
+    csmpParam.vp[0] = PSIL_MSG_VP_DEFAULT;
+    csmpParam.pid   = PSIL_MSG_PID_DEFAULT;
+    //csmpParam.dcs   = PSIL_MSG_CODING_DEFAULT_7BIT;
+    csmpParam.dcs   = dcs;
+
+    /* get the CSMP config from SIM */
+    mwGetSimSmspAonInfo(&mwAonSimSmsp);
+    // LUAT_DEBUG_PRINT("addr: %s | %u, scAddr: %s | %u | %u | %u",
+    //      mwAonSimSmsp.destAddr.addressDigits, mwAonSimSmsp.destAddr.length,
+    //      mwAonSimSmsp.scAddr.addressDigits, mwAonSimSmsp.scAddr.length, mwAonSimSmsp.scAddr.numberPlanId, mwAonSimSmsp.scAddr.typeOfNumber);
+
+    // LUAT_DEBUG_PRINT("proto: %u, %u | %u | %u", mwAonSimSmsp.smsProtocolId,mwAonSimSmsp.bCodingSchemePresent,
+    //      mwAonSimSmsp.bValidityPeriodPresent, mwAonSimSmsp.bProtocolIdPresent);
+
+    vpfType = ((csmpParam.fo & PSIL_SMS_FO_VPF_BIT_MASK) >> 3); // TP-VPF(Validitiy-Period-Format)
+    if (PSIL_SMS_VPF_RELATIVE == vpfType && mwAonSimSmsp.bValidityPeriodPresent) csmpParam.vp[0] = mwAonSimSmsp.validityPeriod;
+    if (mwAonSimSmsp.bProtocolIdPresent) csmpParam.pid = mwAonSimSmsp.smsProtocolId;
+    if (p_send_info->udhPresent) csmpParam.fo |= 0x40; // set UDHI for concatenated SMS
+    p_tpdu[offset++] = csmpParam.fo;
+    p_tpdu[offset++] = 0; // Message reference
+    pDestAddress = p_tpdu + offset;
+    *pDestAddress++ = p_send_info->daInfo.addressLength;
+    offset++;
+    *pDestAddress++ = (uint8_t)(((p_send_info->daInfo.addressType.typeOfNumber) << 4) | p_send_info->daInfo.addressType.numberPlanId | 0x80);
+    offset++;
+    for (tmpIdx = 0; tmpIdx < p_send_info->daInfo.addressLength && tmpIdx < PSIL_MSG_MAX_ADDR_LEN; tmpIdx++) luat_sms_fill_number_digit(pDestAddress, tmpIdx, p_send_info->daInfo.addressDigits[tmpIdx]);
+    if (tmpIdx & 0x01) {
+        luat_sms_fill_number_digit(pDestAddress, tmpIdx, 0x0F);
+        tmpIdx++;
+    }
+    offset += tmpIdx/2;
+    p_tpdu[offset++] = csmpParam.pid; // Protocol Identifier(TP-PID)
+
+    // Data Coding Scheme(TP-DCS), detail TP-DCS defined see TS-24.038 chapter 4: SMS Data Coding Scheme 
+    switch(csmpParam.dcs) {
+        case PSIL_MSG_CODING_DEFAULT_7BIT:  p_tpdu[offset] = 0x00; break;
+        case PSIL_MSG_CODING_8BIT:          p_tpdu[offset] = 0x04; break;
+        case PSIL_MSG_CODING_UCS2:          p_tpdu[offset] = 0x08; break;
+        default: return CMS_FAIL;
+    }
+    smsPduDecodeDcs(p_tpdu, &offset, &dcsInfo);
+    
+    // LUAT_DEBUG_PRINT("dcsInfo: %u | %u | %u | %u | %u", dcsInfo.alphabet, dcsInfo.dcs, dcsInfo.msgClass, dcsInfo.indication, dcsInfo.type);
+
+    // TP-Validity-Period
+    if (vpfType == PSIL_SMS_VPF_RELATIVE) p_tpdu[offset++] = csmpParam.vp[0];
+    else if ((vpfType == PSIL_SMS_VPF_ENHANCE) || (vpfType == PSIL_SMS_VPF_ABSOLUTE)) {
+        for (tmpIdx = 0; tmpIdx < PSIL_SMS_VP_OCTET_MAX_LENGTH; tmpIdx++) {
+            p_tpdu[offset++] = csmpParam.vp[tmpIdx];
+        }
+    }
+    // LUAT_DEBUG_PRINT("encode = %d, offset: %d", dcsInfo.alphabet, offset);
+    // LUAT_DEBUG_PRINT("p_send_info: udh = %d, partMax = %u, partRef = %u, partNum = %u, inputOffset = %u", p_send_info->udhPresent, p_send_info->maxNum, p_send_info->refNum, p_send_info->seqNum, p_send_info->inputOffset);
+    if (luat_sms_msg_encode_user_data(dcsInfo.alphabet, p_tpdu, p_send_info, offset, &pduLength) != CMS_RET_SUCC) return CMS_FAIL;
+    // LUAT_DEBUG_PRINT("pduLength: %d | p_tpdu: %s", pduLength, (char*)p_tpdu);
+    p_cmi_pdu->pduLength = pduLength;
+    // LUAT_DEBUG_PRINT("PSIL SMS, enCode PDU length:%d, offset:%d, DSC:%d", pduLength, offset, csmpParam.dcs);
+    return CMS_RET_SUCC;
+}
+
+
+static int luat_sms_get_str_value(char* des_phone, uint8_t *p_out_str, uint16_t *p_out_str_len) {
+    int16_t length = 0;
+    *p_out_str = '\0';
+    if (p_out_str_len != NULL) *p_out_str_len = 0;
+    length = strlen(des_phone);
+    if ((length + 1) > LUAT_SMS_MAX_ADDR_STR_MAX_LEN) return 1;
+    memmove(p_out_str, des_phone, length);
+    p_out_str[length] = '\0';
+    if (p_out_str_len != NULL) *p_out_str_len = length;
+    return 0;
+}
+
+
+static BOOL luat_sms_get_input_addr_info(char* des_phone, CmiSmsAddressInfo *p_sms_addr) {
+    uint16_t strIdx = 0, addrLen = 0;
+    uint8_t addrStr[LUAT_SMS_MAX_ADDR_STR_MAX_LEN] = {0};
+    uint8_t addrAsciiStr[CMI_SMS_MAX_LENGTH_OF_ADDRESS_VALUE + 1] = {0};
+
+    memset(p_sms_addr, 0x00, sizeof(CmiSmsAddressInfo));
+    if ((luat_sms_get_str_value(des_phone, addrStr, &addrLen) == 0)) {
+        
+        // LUAT_DEBUG_PRINT("addrLen = %d | addrStr = %s", addrLen, addrStr);
+        if (addrLen > 0) {
+            p_sms_addr->addressType.numberPlanId = CMI_SMS_NUM_PLAN_ID_ISDN_TELEPHONY; /* by default */
+            if (((char)addrStr[strIdx]) == '+') {
+                p_sms_addr->addressType.typeOfNumber = CMI_SMS_TYPE_OF_NUM_INTERNATIONAL; /* don't need to read the "<toaddr>" */
+                strIdx++;
+            }
+            else p_sms_addr->addressType.typeOfNumber = CMI_SMS_TYPE_OF_NUM_UNKNOWN;
+
+            p_sms_addr->addressLength = addrLen - strIdx;
+            if (p_sms_addr->addressLength <= CMI_SMS_MAX_LENGTH_OF_ADDRESS_VALUE) {
+                memcpy(p_sms_addr->addressDigits, addrStr + strIdx, addrLen - strIdx);
+                return TRUE;
+            }
+        }
+    }
+    return FALSE;
+}
+
+static void luat_send_msg_call_cb(uint16_t param_size, void* p_param) {
+    // LUAT_DEBUG_PRINT("luat_send_msg_call_cb is in [%d]", param_size);
+    psCamCmiReq(PS_DIAL_REQ_HANDLER, CAM_SMS, CMI_SMS_SEND_MSG_REQ, param_size, (CmiSmsSendMsgReq*)p_param);
+}
+
+static CmsRetId luat_sms_send_pdu_sms(PsilSmsSendInfo *p_send_info) {
+    CmiSmsSendMsgReq    cmi_msg_req;
+    CmiSmsAddressInfo   *pScAddr = PNULL;
+
+    uint8_t *pAtHexPdu = PNULL;
+    int32_t atHexLen = 0;
+    int32_t scAddrDigitLen = 0;
+    int32_t hexOffset = 0;
+
+    pAtHexPdu = (uint8_t*)m_new(uint8_t, (p_send_info->inputOffset >> 1) + 1);
+    atHexLen = cmsHexStrToHex(pAtHexPdu, ((p_send_info->inputOffset >> 1) + 1),
+                              (const CHAR *)(p_send_info->input), p_send_info->inputOffset);
+
+    if (atHexLen != (p_send_info->inputOffset >> 1)) { m_del(uint8_t, pAtHexPdu, (p_send_info->inputOffset >> 1) + 1); return CMS_INVALID_PARAM; }    
+
+    memset(&cmi_msg_req, 0x00, sizeof(CmiSmsSendMsgReq));
+
+    if (pAtHexPdu[0] + 1 >= atHexLen || pAtHexPdu[0] > 11) { m_del(uint8_t, pAtHexPdu, (p_send_info->inputOffset >> 1) + 1); return CMS_INVALID_PARAM; } /* just means not valid PDU, 11 = 1 byte TOA + 10 bytes Address value */
+    if (pAtHexPdu[0] > 0) {  /* SC address present */
+        cmi_msg_req.optSca.present = TRUE;
+        pScAddr = &(cmi_msg_req.optSca.addressInfo);
+
+        /* pAtHexPdu[1] -> Type-of-Address */
+        pScAddr->addressType.typeOfNumber = ((pAtHexPdu[1] >> 4) & 0x7);
+        pScAddr->addressType.numberPlanId = (pAtHexPdu[1] & 0x0F);
+
+        hexOffset = 2;
+        /* pAtHexPdu[2] -> digit */
+        while (scAddrDigitLen < (CMI_SMS_MAX_LENGTH_OF_ADDRESS_VALUE - 1) && hexOffset < (pAtHexPdu[0] + 1)) {
+            /* should be 0 - 9 digit */
+            if ((pAtHexPdu[hexOffset] & 0x0F) <= 9) {
+                pScAddr->addressDigits[scAddrDigitLen++] = (pAtHexPdu[hexOffset] & 0xF) + '0'; /* string digit */
+            } else {
+                /* invalid SC address */
+                scAddrDigitLen = -1;
+                break;
+            }
+            if (((pAtHexPdu[hexOffset] >> 4) & 0x0F) <= 9) {
+                pScAddr->addressDigits[scAddrDigitLen++] = ((pAtHexPdu[hexOffset] >> 4) & 0xF) + '0'; /* string digit */
+            }
+            else if (((pAtHexPdu[hexOffset] >> 4) & 0x0F) == 0x0F) {
+                /*
+                 * From 24.011: if Address contains an odd number of digits, bits 5 to 8 of the last octet
+                 * shall be filled with an end mark coded as "1111"
+                */
+                hexOffset++;
+                break;
+            } else {
+                /* invalid SC address */
+                scAddrDigitLen = -1;
+                break;
+            }
+            hexOffset++;    /* next HEX */
+        }
+
+        if (scAddrDigitLen < 0 || hexOffset != (pAtHexPdu[0] + 1)) { m_del(uint8_t, pAtHexPdu, (p_send_info->inputOffset >> 1) + 1); return CMS_INVALID_PARAM; }
+        pScAddr->addressLength = scAddrDigitLen;
+    } else hexOffset++;
+    /* not support long SMS */
+    cmi_msg_req.pdu.pduLength = atHexLen - hexOffset;
+    memcpy(cmi_msg_req.pdu.pduData, pAtHexPdu + hexOffset, cmi_msg_req.pdu.pduLength);
+    cmsNonBlockApiCall(luat_send_msg_call_cb, sizeof(CmiSmsSendMsgReq), &cmi_msg_req);
+    m_del(uint8_t, pAtHexPdu, (p_send_info->inputOffset >> 1) + 1);
+    return CMS_RET_SUCC;
+}
+
+int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_len) {
+    int length = 0;
+    CmsRetId cmsRet = CMS_RET_SUCC;
+    CmiSmsAddressInfo destAddrInfo;
+    PsilSmsFormatMode smsFormat;
+    uint8_t dcs = PSIL_MSG_CODING_DEFAULT_7BIT;
+
+    if (luat_p_sms_send_info == NULL) {
+        luat_p_sms_send_info = (PsilSmsSendInfo*)m_new(uint8_t, sizeof(PsilSmsSendInfo));
+        memset(luat_p_sms_send_info, 0, sizeof(PsilSmsSendInfo));
+    }
+
+    if (is_pdu) {
+        smsFormat = PSIL_SMS_FORMAT_PDU_MODE;
+        luat_p_sms_send_info->reqPduLen = input_pdu_len;
+    }
+    else {
+        smsFormat = PSIL_SMS_FORMAT_TXT_MODE;
+
+        luat_sms_get_input_addr_info(p_des, &destAddrInfo);
+        // LUAT_DEBUG_PRINT("destAddrInfo: %d | typeOfNumber: %d | numberPlanId: %d", destAddrInfo.addressLength, destAddrInfo.addressType.typeOfNumber, destAddrInfo.addressType.numberPlanId);
+
+        memcpy(&(luat_p_sms_send_info->daInfo), &destAddrInfo, sizeof(CmiSmsAddressInfo));
+
+        char* judgeChinese = (char*)p_input;
+        for (int i = 0; i < strlen(judgeChinese); i++) {
+            if (*(judgeChinese+i) & 0x80) {
+                dcs = PSIL_MSG_CODING_UCS2;
+                break;
+            }
+        }
+    }
+    
+    // check double zero ?
+    while(p_input[length++] != 0);
+    length -= 1;
+    // LUAT_DEBUG_PRINT("first p_input len: %d", length);
+    
+    /*
+    // check the input length
+    if (smsFormat == PSIL_SMS_FORMAT_PDU_MODE) {         
+        if (luat_p_sms_send_info->inputOffset + length > (PSIL_SMS_HEX_PDU_STR_MAX_SIZE + 1)) { // input data: PDU string + CTRL_Z
+            // LUAT_DEBUG_PRINT("format is %d", smsFormat);
+        }
+    } else {   //TXT format        
+        if (luat_p_sms_send_info->inputOffset + length > (PSIL_SMS_MAX_TXT_SIZE + 1)) { // input data: Text string + CTRL_Z
+            // LUAT_DEBUG_PRINT("format is %d", smsFormat);
+        }
+    }*/
+    luat_p_sms_send_info->inputOffset = 0;
+
+    // copy the data into buffer
+    memcpy(luat_p_sms_send_info->input + luat_p_sms_send_info->inputOffset, p_input, length);
+    luat_p_sms_send_info->inputOffset += length;
+
+    if (smsFormat == PSIL_SMS_FORMAT_PDU_MODE) {
+        // remove the "\r\n"
+        if ((luat_p_sms_send_info->input[luat_p_sms_send_info->inputOffset-2] == '\r') && 
+            (luat_p_sms_send_info->input[luat_p_sms_send_info->inputOffset-1] == '\n')) luat_p_sms_send_info->inputOffset -= 2;
+    }
+
+    // LUAT_DEBUG_PRINT("input: %s", luat_p_sms_send_info->input);
+    // LUAT_DEBUG_PRINT("reqPduLen: %d", luat_p_sms_send_info->reqPduLen);
+
+    if (smsFormat == PSIL_SMS_FORMAT_TXT_MODE) {
+        CmiSmsSendMsgReq    cmi_msg_req;
+        CmiSmsAddressInfo   sc_address_info = {0};
+
+        memset(&cmi_msg_req, 0x00, sizeof(CmiSmsSendMsgReq));
+
+        if (TRUE == smsGetSCAddrFromNvm(&sc_address_info)) {
+            cmi_msg_req.optSca.present = TRUE;
+            cmi_msg_req.optSca.addressInfo.addressLength = sc_address_info.addressLength;
+            cmi_msg_req.optSca.addressInfo.addressType.typeOfNumber = sc_address_info.addressType.typeOfNumber;
+            cmi_msg_req.optSca.addressInfo.addressType.numberPlanId = sc_address_info.addressType.numberPlanId;
+            memcpy(&cmi_msg_req.optSca.addressInfo.addressDigits, sc_address_info.addressDigits, sc_address_info.addressLength);
+            // LUAT_DEBUG_PRINT("smsGetSCAddrFromNvm: %s", sc_address_info.addressDigits);
+        }
+
+        // LUAT_DEBUG_PRINT("second p_input len: %u", luat_p_sms_send_info->inputOffset);
+        cmsRet = luat_sms_submit_text_2_pdu(luat_p_sms_send_info, &(cmi_msg_req.pdu), dcs);
+        // LUAT_DEBUG_PRINT("third pdulen: %hu | %d", cmi_msg_req.pdu.pduLength, cmsRet);
+        cmsNonBlockApiCall(luat_send_msg_call_cb, sizeof(CmiSmsSendMsgReq), &cmi_msg_req);
+    }
+    else cmsRet = luat_sms_send_pdu_sms(luat_p_sms_send_info); // PDU mode
+
+    m_del(uint8_t, luat_p_sms_send_info, sizeof(PsilSmsSendInfo));
+    luat_p_sms_send_info = NULL;
+    return cmsRet;
+}
+//--------------------------------------------------------------------------------------
+//
+//                                            End SMS send 
+//
+//--------------------------------------------------------------------------------------
 
 STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     // ========================================
@@ -517,19 +1061,6 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     const char* destination = mp_obj_str_get_str(self->phone_number);
     const char* message = mp_obj_str_get_str(self->message);
 
-    /*uint8_t* unicode = NULL;
-    uint32_t unicodeLen;
-
-    if (!SMS_LocalLanguage2Unicode((uint8_t*)message_c, strlen(message_c), CHARSET_UTF_8, &unicode, &unicodeLen))
-        mp_raise_ValueError("Failed to convert to Unicode before sending SMS");
-
-    sms_send_flag = 0;
-    if (!SMS_SendMessage(destination_c, unicode, unicodeLen, SIM0)) {
-        OS_Free(unicode);
-        mp_raise_ValueError("Failed to submit SMS message for sending");
-    }
-    OS_Free(unicode);
-    */
     sms_send_flag = 0;
     //int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_len)
     int res = luat_sms_send_msg((uint8_t*)message, (char*)destination, false, 0);
@@ -627,7 +1158,7 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
         case CMI_SMS_STOR_STATUS_ALL:        type_string = "ALL";break; // should not print ever
         case CMI_SMS_STOR_STATUS_END:        type_string = "END";break; // should not print ever
     }
-    mp_printf(print, "SMS(\"%s\", \"%s\", ts:%d/%d/%d %d:%d:%d GMT%s%d, pn_type=%d, index=%d, type=%d(%s), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d)\n",
+    mp_printf(print, "SMS(\"%s\", \"%s\", ts:%02d/%02d/%02d %02d:%02d:%02d GMT%s%d, pn_type=%d, index=%d, type=%d(%s), dcs=0x%02x, parts=%d/%d/%d/%d, ports=%d/%d)\n",
             mp_obj_str_get_str(self->phone_number),
             mp_obj_str_get_str(self->message),
             self->day, self->month, self->year, self->hour, self->minute, self->second, (self->tzSign ? "+" : "-"), (int8_t)(self->tz / 4),
@@ -757,6 +1288,17 @@ void util_decode_UCS(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSms
     luat_iconv_close(cd);
 }
 
+void util_encode_UCS(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
+    // sms_debug_print("util_encode_UCS", b, len);
+    luat_iconv_t cd = luat_iconv_open("ucs2be", "utf8");
+    size_t in_bytes_left = len;
+    size_t out_bytes_left = *pSmsLength;
+    int res = luat_iconv_convert(cd, (char **)&b, &in_bytes_left, (char **)&pOutData, &out_bytes_left);
+    *pSmsLength = *pSmsLength - out_bytes_left;
+    // sms_debug_print("util_encode_UCS result", pOutData, *pSmsLength);
+    luat_iconv_close(cd);
+}
+
 void util_decode_UTF8(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength){
     // sms_debug_print("util_decode_UTF8", b, len);
     *pSmsLength = MIN(len, *pSmsLength);
@@ -770,7 +1312,7 @@ void util_decode_mms(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSms
 }
 
 void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength, uint8_t encoding) {
-    sms_debug_print("util_decode_vcard", b, len);
+    // sms_debug_print("util_decode_vcard", b, len);
 
     uint8_t *mess = m_new(uint8_t, LUAT_SMS_MAX_TXT_SIZE + 1);
     uint16_t mess_len = LUAT_SMS_MAX_TXT_SIZE + 1;
@@ -820,20 +1362,21 @@ void util_decode_vcard(uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pS
 }
 
 void util_decode_stk(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
-    sms_debug_print("util_decode_stk", b, len);
+    // sms_debug_print("util_decode_stk", b, len);
     char *mess = m_new(char, len * 3 + 1);
     if(mess != NULL) {
         memset(b, 0, len * 3 + 1);
         for(int i = 0; i < len; i++) sprintf((char*)(b + i * 3) , "%02X ", *(uint8_t *)(b + i));
         uint8_t *dst = pOutData;
-        sprintf((char*)pOutData, "%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
+        LUAT_DEBUG_PRINT("%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
+        //sprintf((char*)pOutData, "%s, dcs=%02x, ports=%d/%d, data=%s", (self->usim_toolkit) ? "STK" : "U", self->dcs, self->source_port, self->destination_port, mess);
         *pSmsLength = strlen((char*)pOutData);
         m_del(char, mess, len * 3 + 1);
     }
 }
 
 void util_decode_wap(sms_obj_t *self, uint8_t* b, uint16_t len, uint8_t *pOutData, uint16_t *pSmsLength) {
-    sms_debug_print("util_decode_wap", b, len);
+    // sms_debug_print("util_decode_wap", b, len);
 
     u_int16_t c = 0;
     uint8_t transaction_id = b[c++];
@@ -1029,16 +1572,17 @@ void modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint1
                 else lshift = (uint8_t)((((user_data_header_len + 2) << 3)) % 7);
                 //lshift2 = (uint8_t)((((user_data_header_len + 2) << 3)) % 7);
                 uint8_t rshift = (uint8_t)(8 - lshift);
-                memcpy(mess2, pUserData + c, MIN(message_len, pduDataLen - c));
+                memcpy(mess2, pUserData + c, MIN(message_len, pduDataLen - c + 1));
                 for (int i = 0; i < message_len; i++) {
                     mess[i] = (uint8_t)((uint8_t)(mess2[i + 1] << lshift) | (uint8_t)(mess2[i] >> rshift));
                 }
             } else {
-                memcpy(mess, pUserData + c, MIN(message_len, pduDataLen - c));
+                memcpy(mess, pUserData + c, MIN(message_len, pduDataLen - c + 1 ));
             }
         }
         
-        // LUAT_DEBUG_PRINT("dcs = %02x, source_port = %d, destination_port = %d", dcs.dcs, self->source_port, self->destination_port);
+        // LUAT_DEBUG_PRINT("dcs = %02x, ud_len = %d, mess_len = %d, som = %d, source_port = %d, destination_port = %d", dcs.dcs, user_data_len, message_len, sizeof(mess), self->source_port, self->destination_port);
+
         if ((dcs.dcs & 0x80) == 0) {
             switch (dcs.dcs & 0x0C) {
                 case 0x00:
@@ -1068,7 +1612,7 @@ void modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint1
                     break;
                 default:
                     LUAT_DEBUG_PRINT("Unknown data coding scheme 0x%02x\n", dcs.dcs);
-                    return;
+                    break;
             }
         } else {
             switch (dcs.dcs & 0x0C) {
@@ -1089,7 +1633,7 @@ void modcellular_sms_decode_user_data(sms_obj_t *self, uint8_t *pUserData, uint1
                     break;
                 default:
                     LUAT_DEBUG_PRINT("Unknown data coding scheme 0x%02x\n", dcs.dcs);
-                    return;
+                    break;
             }
         }
         c += message_len;
@@ -1103,24 +1647,47 @@ void modcellular_sms_decode_pdu(sms_obj_t *self, CmiSmsPdu *smsPduData, uint8_t 
     bool hdr_present = false;
     UdhIe hIe = {0};
     uint8_t fix_year = 0;
+    uint8_t mti = smsPduData->pduData[start_offset];
+    uint8_t msg_reference = 0;
+    PsilSmsTimeStampInfo discharge_time = {0};
 
-    if ((smsPduData->pduData[start_offset]) & (0x40)) hdr_present = true;
+    //sms_debug_print("Raw message", smsPduData->pduData, smsPduData->pduLength);
+
+    if ((mti & 0x40) > 0) hdr_present = true;
     start_offset++;
+    if((mti & 0x03) == 0x02) msg_reference = smsPduData->pduData[start_offset++]; // SMS STATUS REPORT (SC to MS)
+
     //Get the sender's mobile phone number
-    smsPduDecodeAddress(smsPduData->pduData, &start_offset, phoneNumberType, (UINT8*)phone, (LUAT_MSG_MAX_ADDR_LEN + 1));
-    // LUAT_DEBUG_PRINT("phone: %s", phone);
-    start_offset++;
-    PsilSmsDcsInfo msg_dcs_info;
-    smsPduDecodeDcs(smsPduData->pduData, &start_offset, &msg_dcs_info);
-    *dcs = msg_dcs_info.dcs;
+    smsPduDecodeAddress(smsPduData->pduData, &start_offset, phoneNumberType, (uint8_t*)phone, (LUAT_MSG_MAX_ADDR_LEN + 1));
+    // LUAT_DEBUG_PRINT("phone (0x%02x): %s", *phoneNumberType, phone);
+
+    PsilSmsDcsInfo msg_dcs_info = {0};
+    if((mti & 0x03) == 0x00) {
+        start_offset++;
+        smsPduDecodeDcs(smsPduData->pduData, &start_offset, &msg_dcs_info);
+        *dcs = msg_dcs_info.dcs;
+    } else *dcs = 0;
+
     smsPduDecodeTimeStamp(smsPduData->pduData, &start_offset, tem_time); 
-    // smsPduDecodeUserData corrupts tem_time->year. Do not know why
-    fix_year = tem_time->year;
-    modcellular_sms_decode_user_data(self, (smsPduData->pduData + start_offset),
+    // LUAT_DEBUG_PRINT("Timestamp: %02d/%02d/%02d %02d:%02d:%02d", tem_time->day, tem_time->month, tem_time->year, tem_time->hour, tem_time->minute, tem_time->second);
+    // LUAT_DEBUG_PRINT("PDU start offset: %d", start_offset);
+
+    switch(mti & 0x03) {
+        case 0x02: // SMS STATUS REPORT (SC to MS)
+            smsPduDecodeTimeStamp(smsPduData->pduData, &start_offset, &discharge_time); 
+            sprintf((char*)message, "Status report: %d", smsPduData->pduData[start_offset++]);
+            *message_len = strlen((char*)message);
+            break;
+        case 0x01: // SMS SUBMIT REPORT (SC to MS)
+            sprintf((char*)message, "Unsupported message");
+            *message_len = strlen((char*)message);
+            break;
+        case 0x00:
+            modcellular_sms_decode_user_data(self, (smsPduData->pduData + start_offset),
                         (smsPduData->pduLength - start_offset - 1),
                         msg_dcs_info, hdr_present, message, message_len);
-    // LUAT_DEBUG_PRINT("message (%d): %s", *message_len, message);
-    tem_time->year = fix_year;
+            break;
+    }
 }
 
 /* typedef struct CmiSmsListSmsMsgRecCnf_Tag {

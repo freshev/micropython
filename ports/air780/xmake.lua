@@ -777,7 +777,7 @@ target(USER_PROJECT_NAME)
     add_files(SDK_TOP .. "/thirdparty/iconv/*.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/fal/src/*.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/flashdb/src/*.c",{public = true})
-    add_files(SDK_TOP .. "/interface/src/*.c",{public = true})
+    add_files(SDK_TOP .. "/interface/src/*.c|luat_sms_ec618.c",{public = true}) -- exclude luat_sms_ec618.c
     add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/cJSON/**.c",{public = true})
     add_files(SDK_TOP .. "/luatos_lwip_socket/src/**.c",{public = true, cflags = CFLAGS .. " -Wno-override-init"})

@@ -53,7 +53,7 @@
 #include "luat_network_adapter.h"
 
 
-#include "luat_sms.h"
+// #include "luat_sms.h"
 #include "mw_nvm_sms.h"
 
 // priority in %
