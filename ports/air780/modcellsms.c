@@ -107,7 +107,7 @@ BOOL modcellular_get_sms_list(CmiSmsRecStorStatus in_status) {
     for(int i = 0; i < 10; i++) sms_list_buffer[i] = NULL;
     cmsNonBlockApiCall(modcellular_get_sms_list_cb, sizeof(uint8_t), &status);
     WAIT_UNTIL(sms_list_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SMS list");); // wait for CMI_SMS_LIST_SMS_MSG_RECORD_CNF
-    //LUAT_DEBUG_PRINT("SMS list with status %d:", status, sms_list_buffer_len);
+    // LUAT_DEBUG_PRINT("SMS list with status %d:", status, sms_list_buffer_len);
     //for(int i = 0; i < sms_list_buffer_len; i++) LUAT_DEBUG_PRINT("%d: %p", i, sms_list_buffer[i]);
     return true;
 }
@@ -135,20 +135,21 @@ void sms_event_cb(uint32_t event, void *param) {
     CmiSmsGetStorageStatusCnf * storage_info = (CmiSmsGetStorageStatusCnf *)param;
 
     switch(event) {
-        case CMI_SMS_SEND_MSG_CNF: // 2
-            // LUAT_DEBUG_PRINT("CMI_SMS_SEND_MSG_CNF is in");
-            CmiSmsSendMsgCnf *send_sms_ret = (CmiSmsSendMsgCnf *)param;
-            luat_sms_cfg.send_cb((int)send_sms_ret->errorCode);
+        case CMI_SMS_SEND_MSG_CNF: { // 2
+                // LUAT_DEBUG_PRINT("CMI_SMS_SEND_MSG_CNF is in");
+                CmiSmsSendMsgCnf *send_sms_ret = (CmiSmsSendMsgCnf *)param;
+                luat_sms_cfg.send_cb((int)send_sms_ret->errorCode);
+            }
             break;
 
-        // rewrite logic from "luat_sms_ec618.c" to store new message to U(SIM) storage
         case CMI_SMS_NEW_MSG_MEM_LOCATION_IND: { // 7
-            CmiSmsNewMsgMemLocationInd * pSms_loc = (CmiSmsNewMsgMemLocationInd *)param;
-            //LUAT_DEBUG_PRINT("New SIM loc: rc=%d, index=%d, opMode=%d", pSms_loc->rc, pSms_loc->index, pSms_loc->operatmode);
+                CmiSmsNewMsgMemLocationInd * pSms_loc = (CmiSmsNewMsgMemLocationInd *)param;
+                // LUAT_DEBUG_PRINT("New SIM loc: rc=%d, index=%d, opMode=%d", pSms_loc->rc, pSms_loc->index, pSms_loc->operatmode);
             }
             break;
 
         case CMI_SMS_NEW_MSG_IND: // 8
+            // rewrite logic from "luat_sms_ec618.c" to store new message to U(SIM) storage
             switch (((CmiSmsNewMsgInd*)param)->smsType) {
                 case CMI_SMS_TYPE_DELIVER:
                 case CMI_SMS_TYPE_STATUS_REPORT:
@@ -194,7 +195,7 @@ void sms_event_cb(uint32_t event, void *param) {
                     }
                     break;
                 default:
-                    //LUAT_DEBUG_PRINT("unkown new_msg_ind->smsType %d", new_msg_ind->smsType);
+                    // LUAT_DEBUG_PRINT("unkown new_msg_ind->smsType %d", new_msg_ind->smsType);
                     break;
             }            
             //Confirm SMS
@@ -228,23 +229,23 @@ void sms_event_cb(uint32_t event, void *param) {
         } CmiSmsGetSmsMsgRecCnf; */
         case CMI_SMS_GET_SMS_MSG_RECORD_CNF: { // 29
             CmiSmsGetSmsMsgRecCnf * sms_rec = (CmiSmsGetSmsMsgRecCnf *)param;
-            //LUAT_DEBUG_PRINT("SMS record (GET_SMS_MSG): ");
-            //LUAT_DEBUG_PRINT("smsStatus %d", sms_rec->smsStatus); // read|unread|unsent|sent
-            //LUAT_DEBUG_PRINT("errorCode %d", sms_rec->errorCode);
-            //LUAT_DEBUG_PRINT("pdu len %d", sms_rec->smsPduData.pduLength);
+            // LUAT_DEBUG_PRINT("SMS record (GET_SMS_MSG): ");
+            // LUAT_DEBUG_PRINT("smsStatus %d", sms_rec->smsStatus); // read|unread|unsent|sent
+            // LUAT_DEBUG_PRINT("errorCode %d", sms_rec->errorCode);
+            // LUAT_DEBUG_PRINT("pdu len %d", sms_rec->smsPduData.pduLength);
             }
             break;
         
         case CMI_SMS_SET_SMS_MSG_RECORD_CNF: { // 31
             CmiSmsSetSmsMsgRecCnf * pSms_res = (CmiSmsSetSmsMsgRecCnf *)param;
-            //LUAT_DEBUG_PRINT("Set SIM mess: error=%d, index=%d, opMode=%d", pSms_res->errorCode, pSms_res->index, pSms_res->operatmode);
+            // LUAT_DEBUG_PRINT("Set SIM mess: error=%d, index=%d, opMode=%d", pSms_res->errorCode, pSms_res->index, pSms_res->operatmode);
             if(pSms_res->errorCode != 0) LUAT_DEBUG_PRINT("Failed to store SMS into U(SIM)");
             }
             break;
 
         case CMI_SMS_DEL_SMS_MSG_RECORD_CNF: { // 33
             CmiSmsDelSmsMsgRecCnf * pSms_res = (CmiSmsDelSmsMsgRecCnf *)param;
-            //LUAT_DEBUG_PRINT("Delete SIM: error=%d", pSms_res->errorCode);
+            // LUAT_DEBUG_PRINT("Delete SIM: error=%d", pSms_res->errorCode);
             if(pSms_res->errorCode == 0) sms_delete_flag = 1;
             }
             break;
@@ -505,8 +506,9 @@ mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size
 //--------------------------------------------------------------------------------------
 //
 //                            SMS send (got from luat_sms_ec618.c)
-//                            Added UCS2 SMS, remove extra "DEBUG_PRINT" statements
-//
+//                            Added UCS2 SMS, 
+//                            Remove extra "DEBUG_PRINT" statements
+//                            TODO: add SMS multipart message
 //--------------------------------------------------------------------------------------
 static PsilSmsSendInfo *luat_p_sms_send_info = NULL;
 
@@ -703,8 +705,6 @@ static CmsRetId luat_sms_msg_encode_user_data(PsilMsgCodingType  coding_scheme, 
                 }
                 break;
             case PSIL_MSG_CODING_UCS2:
-                // Bug 7012\sunzhipeng\2022.11.14\Chinese text messages cannot be sent in text mode
-                // if (msgLen % 2 != 0) return CMS_FAIL;
                 if (p_send_info->udhPresent) {
                     // LUAT_DEBUG_PRINT("PSIL SMS, UDH is not supported in DCS UCS2");
                     udhIe.ieId = UDH_IEI_CONCATENATED_SMS_8_BIT;

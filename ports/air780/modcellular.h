@@ -53,11 +53,9 @@
 #include "luat_rtos.h"
 #include "luat_mem.h"
 #include "luat_mobile.h"
-// #include "luat_sms.h"
 #include "luat_debug.h"
 
-
-
+// from "luat_sms.h"
 #define LUAT_MSG_MAX_ADDR_LEN 80
 #define LUAT_SMS_MAX_TXT_SIZE 640
 #define LUAT_SMS_MAX_PDU_SIZE 180
@@ -65,14 +63,12 @@
 #define LUAT_SMS_MAX_ADDR_STR_MAX_LEN ((LUAT_SMS_MAX_LENGTH_OF_ADDRESS_VALUE + 1) * 4)
 typedef void (*LUAT_SMS_HANDLE_CB)(uint8_t event, void* param);
 typedef void (*LUAT_SMS_HANDLE_SEND_CB)(int ret);
-typedef struct
-{
+typedef struct {
     LUAT_SMS_HANDLE_CB cb;
     LUAT_SMS_HANDLE_SEND_CB send_cb;
-}LUAT_SMS_MAIN_CFG_T;
+} LUAT_SMS_MAIN_CFG_T;
 
-typedef enum
-{
+typedef enum {
     SMS_SEND_OK = 0,
     SMS_ME_FAILURE = 300,
     SMS_SERVICE_OF_ME_RESV,
@@ -100,7 +96,7 @@ typedef enum
     SMS_INVALID_DATA  = 550,
     SMS_UNSUPPORT_TEXT_WITH_CHINESE = 555,
     SMS_MAX_ERROR = 0xFFFF
-}LUAT_SMS_SEND_RET_CODE_E;
+} LUAT_SMS_SEND_RET_CODE_E;
 
 
 
@@ -131,8 +127,6 @@ typedef enum
 
 #define BANDS_ALL (999)
 
-//extern uint8_t network_status;
-//extern uint16_t network_exception;
 
 typedef struct _sms_obj_t {
     mp_obj_base_t base;
