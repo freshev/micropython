@@ -1424,7 +1424,7 @@ target(USER_PROJECT_NAME..".elf")
             elseif is_plat("macosx") then
                 cmd = "bash ./fcelf-docker.sh " .. cmd
             else
-                cmd = "./fcelf " .. cmd
+                cmd = SDK_PATH .. "/fcelf " .. cmd
             end
         end
         cmd = cmd .. " -outfile " .. "./out/" .. USER_PROJECT_NAME..".binpkg"
