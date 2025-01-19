@@ -1,2 +1,2 @@
 #!/bin/bash
-xmake f --menu # --root
+xmake f --menu $1
