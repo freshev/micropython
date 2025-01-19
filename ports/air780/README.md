@@ -9,10 +9,12 @@ Translated module documentation at [Docs](docs/)
 
 ## Build
 
-### Ubuntu (not tested)
-1. Install dependencies:
+### Ubuntu (known issues with `configure`)
+1. Install xmake
    ```bash
-   sudo apt-get install build-essential xmake
+   sudo add-apt-repository ppa:xmake-io/xmake
+   sudo apt update
+   sudo apt install xmake
    ```
 2. Clone this repo:
    ```bash
@@ -20,19 +22,17 @@ Translated module documentation at [Docs](docs/)
    ```
 3. Make
    ```bash
-   cd micropython
-   make -C mpy-cross
-   cd ports/air780
-   configure.bat
-   make.bat
+   cd micropython/ports/air780
+   configure # --root
+   xmake # --root
    ```
-
 4. Firmware `micropython.binpkg` file is in `micropython/ports/air780/out/` folder.
 
 5. Notes:  
-  Version number configured runing `configure.bat`  
+  Version number configured runing `configure`  
   Use simple `xmake` to build current version.  
   If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
+  `configure` command can report error `error: ncurses not found, please install it first.`. It's xmake internal error.  
 
 
 ### Windows
