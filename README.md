@@ -155,6 +155,7 @@ Main contrubutions:
 * Added Windows x64 support (compilation and firmware flashing)
 * Cut unused libs and binaries from Linux and Windows SDK-s
 * Added new features (and of course bugs). See [A9/A9G](ports/gprs_a9)
+* Added new port for Hezhou 4G Cat.1 Air780e (EC618) SoC. See [Air780e](ports/air780) for more details
 
 Others:
 * Add ESP-32-CAM module support (with I2C slave mode) to [esp32 port](ports/esp32)
