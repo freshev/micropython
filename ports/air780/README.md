@@ -557,5 +557,6 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware removes *.py files in SOC file system by SMS 'rmcode'
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall'
 * Firmware resets the module by SMS 'reset'
+* You can config module with auto respawned (after delete) `main.py` script from `examples` folder. Option available within build configure.
 
 

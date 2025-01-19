@@ -31,6 +31,11 @@ option("GPIO8-11 mux")
     add_defines("GPIO_MUX")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
+option("Main stub")
+    add_defines("MAINSTUB")
+    set_description("Boot module with (respawned on delete) main.py from examples folder")
+    set_default(true)
+    set_showmenu(true)
 
 
 package("gnu_rm")    
@@ -1207,6 +1212,107 @@ target(HEADER_BUILD .. "/root_pointers.h")
     end)
 target_end()
 
+
+--------------------------------------------------------
+--                     base64 encoder
+-- https://github.com/iskolbin/lbase64/blob/master/base64.lua
+--------------------------------------------------------
+local base64 = {}
+
+function base64.makeencoder( s62, s63, spad )
+    local encoder = {}
+    for b64code, char in pairs{[0]='A','B','C','D','E','F','G','H','I','J',
+        'K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y',
+        'Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n',
+        'o','p','q','r','s','t','u','v','w','x','y','z','0','1','2',
+        '3','4','5','6','7','8','9',s62 or '+',s63 or'/',spad or'='} do
+        encoder[b64code] = char:byte()
+    end
+    return encoder
+end
+local DEFAULT_ENCODER = base64.makeencoder()
+
+extract = function( v, from, width )
+    local w = 0
+    local flag = 2^from
+    for i = 0, width-1 do
+        local flag2 = flag + flag
+        if v % flag2 >= flag then
+            w = w + 2^i
+        end
+        flag = flag2
+    end
+    return w
+end
+
+local char, concat = string.char, table.concat
+
+function base64.encode( str, encoder, usecaching )
+    encoder = encoder or DEFAULT_ENCODER
+    local t, k, n = {}, 1, #str
+    local lastn = n % 3
+    local cache = {}
+    for i = 1, n-lastn, 3 do
+        local a, b, c = str:byte( i, i+2 )
+        local v = a*0x10000 + b*0x100 + c
+        local s
+        if usecaching then
+            s = cache[v]
+            if not s then
+                s = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[extract(v,0,6)])
+                cache[v] = s
+            end
+        else
+            s = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[extract(v,0,6)])
+        end
+        t[k] = s
+        k = k + 1
+    end
+    if lastn == 2 then
+        local a, b = str:byte( n-1, n )
+        local v = a*0x10000 + b*0x100
+        t[k] = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[extract(v,6,6)], encoder[64])
+    elseif lastn == 1 then
+        local v = str:byte( n )*0x10000
+        t[k] = char(encoder[extract(v,18,6)], encoder[extract(v,12,6)], encoder[64], encoder[64])
+    end
+    return concat( t )
+end
+
+--------------------------------------------------------
+--                     main stub target
+--------------------------------------------------------
+target("mainstub")
+    on_build(function (target)
+        local mainfn = "main.py"
+        local bootfn = "boot.py"
+        if(get_config("Main stub")) then
+            print("Generate boot.py module with inserted '" .. mainfn .. "'")
+            if os.exists("examples/" .. mainfn) then
+                local file = io.open("examples/" .. mainfn, "r")
+                local maincontent = base64.encode(file:read("*all"))
+                file:close(file)
+                file = io.open("modules/" .. bootfn, "w")
+                file:write("import binascii\n")
+                file:write("try:\n")
+                file:write("    os.stat('" .. mainfn .. "')\n")
+                file:write("except:\n")
+                file:write("    f=open('" .. mainfn .. "', 'w')\n")
+                file:write("    f.write(binascii.a2b_base64('" .. maincontent .. "'))\n")
+                file:write("    f.close()\n")
+                file:write("    pass")
+                file:close(file)
+            else
+                print(mainfn .. " not found. Continue")
+            end
+        else
+            if os.exists("modules/" .. bootfn) then
+                print("Remove '" .. bootfn .. "'")
+                os.rm("modules/" .. bootfn)
+            end
+        end
+    end)
+target_end()
 
 --------------------------------------------------------
 --                     main target
