@@ -25,7 +25,7 @@ option("Firmware version")
     set_default("v1.0")
 option("Micropython REPL port")
     add_defines("HW_UART_REPL")
-    set_default("REPL over USB")
+    set_default("UART1")
     set_values("REPL over USB", "UART1", "UART2")
 option("GPIO8-11 mux")
     add_defines("GPIO_MUX")
@@ -1508,6 +1508,14 @@ target(USER_PROJECT_NAME..".elf")
             os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
             os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
         end
+
+        -- copy to external folder
+        if is_plat("linux") then
+            if os.exists(OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg") then
+                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/Air780_FW/" .. USER_PROJECT_NAME .. ".binpkg")
+            end
+        end
+
     end)    
 target_end()
 
