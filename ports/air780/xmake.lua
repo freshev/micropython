@@ -15,27 +15,49 @@ local script_addr = nil
 local full_addr = nil
 
 -- to configure board run: xmake f --menu
-option("Board type")
+option("1 Board type")
     set_default(true)
+    set_description("Board type")
     add_defines("BOARD")
     set_default("Air780_GENERIC")
     set_values("Air780_GENERIC", "XMAKE_TEST_BOARD")
-option("Firmware version")
+option("2 Firmware version")
+    set_description("Firmware version")
     add_defines("FW_VERSION")
     set_default("v1.0")
-option("Micropython REPL port")
+option("3 REPL port")
+    set_description("REPL port")
     add_defines("HW_UART_REPL")
     set_default("UART1")
     set_values("REPL over USB", "UART1", "UART2")
-option("GPIO8-11 mux")
+option("4 GPIO8-11 mux")
+    set_description("GPIO8-11 mux")
     add_defines("GPIO_MUX")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
-option("Main stub")
+option("5 Main stub")
+    set_description("Main stub")
     add_defines("MAINSTUB")
-    set_description("Boot module with (respawned on delete) main.py from examples folder")
+    set_description("Boot module with (respawned on delete) main.py")
     set_default(true)
     set_showmenu(true)
+option("6 Reset on SMS")
+    set_description("Reset on SMS")
+    add_defines("SMSRESET")
+    set_description("Reset on SMS 'reset'")
+    set_default(true)
+    set_showmenu(true)
+option("7 Configiration by SMS")
+    set_description("Configiration by SMS")
+    add_defines("SMSCONFIG")
+    set_default(true)
+    set_showmenu(true)
+option("8 Acknowledge SMS on reset")
+    set_description("Acknowledge SMS on reset")
+    add_defines("SMSRESETACK")
+    set_default(true)
+    set_showmenu(true)
+
 
 
 package("gnu_rm")    
@@ -378,22 +400,22 @@ local RTE_UART2 = 1
 local RTE_I2C1 = 1
 local RTE_SPI0 = 1
 
-if get_config("Board type") ~= nil then
-    if os.isdir("boards/" .. get_config("Board type")) then BOARD = get_config("Board type") end
+if get_config("1 Board type") ~= nil then
+    if os.isdir("boards/" .. get_config("1 Board type")) then BOARD = get_config("1 Board type") end
 end
 
-if get_config("Firmware version") ~= nil then
-    USER_PROJECT_NAME_VERSION = get_config("Firmware version")
+if get_config("2 Firmware version") ~= nil then
+    USER_PROJECT_NAME_VERSION = get_config("2 Firmware version")
     FW_VERSION = USER_PROJECT_NAME_VERSION
 end
-if get_config("Micropython REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
-if get_config("Micropython REPL port") == "UART1" then HW_UART_REPL=1 end
-if get_config("Micropython REPL port") == "UART2" then HW_UART_REPL=2 end
-if get_config("GPIO8-11 mux") == "UART2 & I2C1" then 
+if get_config("3 REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
+if get_config("3 REPL port") == "UART1" then HW_UART_REPL=1 end
+if get_config("3 REPL port") == "UART2" then HW_UART_REPL=2 end
+if get_config("4 GPIO8-11 mux") == "UART2 & I2C1" then 
     RTE_SPI0 = 0 
 end
 
-if get_config("GPIO8-11 mux") == "SPI0" then
+if get_config("4 GPIO8-11 mux") == "SPI0" then
    RTE_UART2 = 0
    RTE_I2C1 = 0
 end
@@ -403,6 +425,9 @@ table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
 table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
 table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
 table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
+if get_config("6 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
+if get_config("7 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
+if get_config("8 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
 
 --------------------------------------------------------
 --------------- MICROPYTHON PART START -----------------
@@ -1286,7 +1311,7 @@ target("mainstub")
     on_build(function (target)
         local mainfn = "main.py"
         local bootfn = "boot.py"
-        if(get_config("Main stub")) then
+        if(get_config("5 Main stub")) then
             print("Generate boot.py module with inserted '" .. mainfn .. "'")
             if os.exists("examples/" .. mainfn) then
                 local file = io.open("examples/" .. mainfn, "r")
@@ -1335,11 +1360,6 @@ target(USER_PROJECT_NAME..".elf")
     add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded -ldriver -lmicropython", {force=true})
 
     on_load(function (target)
-        --[[if get_config("Board type") == nil or get_config("Firmware version") == nil then
-            print("BOARD = ", get_config("Board type"))
-            print("FW_VERSION = ", get_config("Firmware version"))
-            os.raise("First you should set up the project. Run \27[1;31mxmake f --menu\27[0m or \27[1;31mconfigure\27[0m")
-        end]]--
 
         print("----------------------------------------------------")
         print("Compiling Version " .. FW_VERSION .. " for " ..  BOARD .. " on " .. os.host():gsub("^%l", string.upper))

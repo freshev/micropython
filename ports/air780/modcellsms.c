@@ -65,7 +65,8 @@ void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
 }
 void modcellular_sms_send_cb(int ret) {
     // LUAT_DEBUG_PRINT("sms_send_cb, send ret:[%d]", ret);
-    if(ret == 0) sms_send_flag = 1;
+    if(ret == 0) sms_send_flag = 1; // Sent normally
+    else if(ret == 65535) sms_send_flag = 2; // Check balance 
 }
 
 // --------------------------------------------
@@ -291,7 +292,6 @@ void sms_event_cb(uint32_t event, void *param) {
 void modcellular_init_sms() {
     luat_sms_cfg.cb = modcellular_sms_recv_cb;
     luat_sms_cfg.send_cb = modcellular_sms_send_cb;
-    // soc_mobile_sms_event_register_handler(sms_event_cb);
     luat_mobile_sms_event_register_handler(sms_event_cb);
 
     // AT+CPMS="SM","SM","SM"
@@ -300,6 +300,7 @@ void modcellular_init_sms() {
     // AT+CNMI?
     // Above commands can be used only in AT mode (AirM2M_780E_V1170_LTE_AT.binpkg firmware)
 
+    // Set storage to SIM card
     MWNvmCfgCPMSParam cpmsConfig;
     memset(&cpmsConfig, 0, sizeof(MWNvmCfgCPMSParam));
     mwNvmCfgGetCpmsConfig(&cpmsConfig);
@@ -328,179 +329,6 @@ void modcellular_init_sms() {
         pSetCnmi.cnmiParam.mt = 1;
         mwNvmCfgSetAndSaveCnmiConfig(&pSetCnmi);
     }
-}
-
-// --------------------------------------------
-//                 SMS processing
-// --------------------------------------------
-int modcellular_endswith(const char *str, const char *suffix) {
-    if (!str || !suffix) return 0;
-    size_t lenstr = strlen(str);
-    size_t lensuffix = strlen(suffix);
-    if (lensuffix >  lenstr) return 0;
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-}
-
-void modcellular_remove_files(char *suffix) {
-    luat_fs_dirent_t *fs_dirent = (luat_fs_dirent_t*)m_new(uint8_t, sizeof(luat_fs_dirent_t) * 100);
-    memset(fs_dirent, 0, sizeof(luat_fs_dirent_t)*100);
-    int lsdir_cnt = luat_fs_lsdir("/", fs_dirent, 0, 100);
-    if (lsdir_cnt > 0) {
-        for (int i = 0; i < lsdir_cnt; i++) { // was size_t
-            switch ((fs_dirent+i)->d_type) {
-                case 0: // a file, not directory
-                    if(modcellular_endswith((fs_dirent + i)->d_name, suffix)) {
-                        mp_printf(&mp_plat_print, "Remove %s ... ", (fs_dirent + i)->d_name);
-                        int res = luat_fs_remove((fs_dirent+i)->d_name);
-                        if(res == 0) mp_printf(&mp_plat_print, "success\n");
-                        else mp_printf(&mp_plat_print, "failed\n");
-                    }
-                    break;
-                default: 
-                break;
-            }
-        }        
-    }
-    m_del(uint8_t, fs_dirent, sizeof(luat_fs_dirent_t) * 100);
-    fs_dirent = NULL;
-}
-
-int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
-    int result = 0;
-    if(file != NULL && luat_fs_fexist(file)) {
-        mp_printf(&mp_plat_print, "Open %s ... ", file);
-        FILE* fd = luat_fs_fopen(file, "r");
-        if(fd != NULL) {
-            mp_printf(&mp_plat_print, "success\n");
-            uint16_t buff_len = 255;
-            char * buff = m_new(char, buff_len);
-            memset(buff, 0, buff_len);
-            int res = luat_fs_fread((uint8_t*)buff, buff_len, 1, fd);
-            luat_fs_fclose(fd);
-            if(res > 0 && res < (int)sizeof(buff) - 1) {
-                cJSON *json = cJSON_Parse(buff);
-                if(json != NULL) {
-                    if(cJSON_HasObjectItem(json, "sname") && cJSON_HasObjectItem(json, "ssub") &&
-                       sname != NULL && ssub != NULL && strlen(sname) <= 20 && strlen(ssub) <= 20) {
-                        cJSON_ReplaceItemInObjectCaseSensitive(json, "sname", cJSON_CreateString(sname));
-                        cJSON_ReplaceItemInObjectCaseSensitive(json, "ssub", cJSON_CreateString(ssub));
-                        char *mess = cJSON_PrintUnformatted(json);
-                        if(mess != NULL) {
-                            mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
-                            if(luat_fs_remove(file) == 0) {
-                                fd = luat_fs_fopen(file, "w");
-                                if(fd != NULL) {
-                                    res = luat_fs_fwrite((uint8_t*)mess, strlen(mess), 1, fd);
-                                    if(res == (int)strlen(mess)) {
-                                        mp_printf(&mp_plat_print, "success\n");
-                                        result = 1;
-                                    }
-                                    else mp_printf(&mp_plat_print, "failed\n");
-                                    luat_fs_fclose(fd);
-                                    luat_rtos_task_sleep(1000);
-                                }
-                            }
-                            free(mess);
-                        }
-                    } else mp_printf(&mp_plat_print, "sname or ssub not found or too long\n");
-                    cJSON_Delete(json);
-                }
-            }
-            m_del(char, buff, buff_len);
-        } else mp_printf(&mp_plat_print, "failed\n");
-    }
-    return result;
-}
-
-
-void modcellular_sms_process(sms_obj_t *sms) {
-
-    const uint8_t* content = (const uint8_t*)mp_obj_str_get_str(sms->message);
-
-    bool to_reset = false;
-    char *pfiles = ".py";
-    char *tfiles = ".txt";
-    char *vfiles = ".version";
-
-    if(strcmp((char*)content, "rmcode") == 0) {
-      mp_printf(&mp_plat_print, "Remove versions...\n");
-      modcellular_remove_files(vfiles);
-      mp_printf(&mp_plat_print, "Remove code...\n");
-      modcellular_remove_files(pfiles);
-      to_reset = true;
-    }
-    if(strcmp((char*)content, "rmconfig") == 0) {
-      mp_printf(&mp_plat_print, "Remove config...\n");
-      modcellular_remove_files(tfiles);
-      to_reset = true;
-    }
-    if(strcmp((char*)content, "rmall") == 0) {
-      mp_printf(&mp_plat_print, "Remove all...\n");
-      modcellular_remove_files(pfiles);
-      modcellular_remove_files(tfiles);
-      modcellular_remove_files(vfiles);
-      to_reset = true;
-    }
-    if(strcmp((char*)content, "reset") == 0) {
-      mp_printf(&mp_plat_print, "Reset device...\n");
-      to_reset = true;
-    }
-    if(strncmp((char*)content, "set ", 4) == 0) {
-      char sname [52];
-      char snum  [52];
-      memset(sname, 0, sizeof(sname));
-      memset(snum, 0, sizeof(snum));
-      int len = strlen((char*)content);
-      char * last = (char*)content + len;
-      char * firstSpace = strstr((char*)content, " ");
-      if(firstSpace != NULL && ((int)(firstSpace + 2 - (char*)content)) < len) {
-          char * secondSpace = strstr(firstSpace + 2, " ");
-          if(secondSpace != NULL && ((int)(secondSpace + 2 - (char*)content)) < len) {
-              if(firstSpace < secondSpace && ((int)(secondSpace - firstSpace)) > 0 && ((int)(secondSpace - firstSpace)) <= 50 &&
-                 secondSpace < last && ((int)(last - secondSpace)) > 0 && ((int)(last - secondSpace)) <= 50) {
-                  strncpy(sname, firstSpace + 1, ((int)(secondSpace - firstSpace)) - 1);
-                  strncpy(snum, secondSpace + 1, ((int)(last - secondSpace)));
-                  mp_printf(&mp_plat_print, "Set device sname = '%s' snum = '%s'\n", sname, snum);
-                  if(modcellular_new_settings("settings.txt", sname, snum) == 1) to_reset = true;
-              } else mp_printf(&mp_plat_print, "Incorrect format (too long)\n");
-          } else mp_printf(&mp_plat_print, "Incorrect format (SS)\n");
-      } else mp_printf(&mp_plat_print, "Incorrect format (FS)\n");
-    }
-    if(to_reset) {
-        const char* message = "Done";
-        mp_printf(&mp_plat_print, "Send '%s' message to %s...\n", message, mp_obj_str_get_str(sms->phone_number));
-        //SMS_SendMessage((char*)phone, unicode, unicodeLen, SIM0);
-        //WAIT_UNTIL(sms_send_flag, TIMEOUT_SMS_SEND, 100, mp_warning(NULL, "The module will continue attempts sending SMS"));
-
-        // restart module
-        mp_printf(&mp_plat_print, "Restarting module...\n");
-        // luat_pm_reboot();
-        // while(1) luat_rtos_task_sleep(1000);
-    }
-}
-
-
-mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_phone_number, ARG_message, ARG_pn_type, ARG_index, ARG_type };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_phone_number, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_message, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_pn_type, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
-        { MP_QSTR_index, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
-        { MP_QSTR_type, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
-    };
-
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    sms_obj_t *self = m_new_obj(sms_obj_t);
-    self->base.type = type;
-    self->phone_number = args[ARG_phone_number].u_obj;
-    self->message = args[ARG_message].u_obj;
-    self->pn_type = args[ARG_pn_type].u_int;
-    self->index = args[ARG_index].u_int;
-    self->type = args[ARG_type].u_int;
-    return MP_OBJ_FROM_PTR(self);
 }
 
 //--------------------------------------------------------------------------------------
@@ -1022,7 +850,7 @@ int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_
             cmi_msg_req.optSca.addressInfo.addressType.numberPlanId = sc_address_info.addressType.numberPlanId;
             memcpy(&cmi_msg_req.optSca.addressInfo.addressDigits, sc_address_info.addressDigits, sc_address_info.addressLength);
             // LUAT_DEBUG_PRINT("smsGetSCAddrFromNvm: %s", sc_address_info.addressDigits);
-        }
+        } else LUAT_DEBUG_PRINT("Service center not defined!");
 
         // LUAT_DEBUG_PRINT("second p_input len: %u", luat_p_sms_send_info->inputOffset);
         cmsRet = luat_sms_submit_text_2_pdu(luat_p_sms_send_info, &(cmi_msg_req.pdu), dcs);
@@ -1040,6 +868,202 @@ int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_
 //                                            End SMS send 
 //
 //--------------------------------------------------------------------------------------
+
+// --------------------------------------------
+//                 SMS processing
+// --------------------------------------------
+int modcellular_endswith(const char *str, const char *suffix) {
+    if (!str || !suffix) return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr) return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+void modcellular_remove_files(char *suffix) {
+    luat_fs_dirent_t *fs_dirent = (luat_fs_dirent_t*)m_new(uint8_t, sizeof(luat_fs_dirent_t) * 100);
+    memset(fs_dirent, 0, sizeof(luat_fs_dirent_t)*100);
+    int lsdir_cnt = luat_fs_lsdir("/", fs_dirent, 0, 100);
+    if (lsdir_cnt > 0) {
+        for (int i = 0; i < lsdir_cnt; i++) { // was size_t
+            switch ((fs_dirent+i)->d_type) {
+                case 0: // a file, not directory
+                    if(modcellular_endswith((fs_dirent + i)->d_name, suffix)) {
+                        mp_printf(&mp_plat_print, "Remove %s ... ", (fs_dirent + i)->d_name);
+                        int res = luat_fs_remove((fs_dirent+i)->d_name);
+                        if(res == 0) mp_printf(&mp_plat_print, "success\n");
+                        else mp_printf(&mp_plat_print, "failed\n");
+                    }
+                    break;
+                default: 
+                break;
+            }
+        }        
+    }
+    m_del(uint8_t, fs_dirent, sizeof(luat_fs_dirent_t) * 100);
+    fs_dirent = NULL;
+}
+
+int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
+    int result = 0;
+    if(file != NULL && luat_fs_fexist(file)) {
+        mp_printf(&mp_plat_print, "Open %s ... ", file);
+        FILE* fd = luat_fs_fopen(file, "r");
+        if(fd != NULL) {
+            mp_printf(&mp_plat_print, "success\n");
+            uint16_t buff_len = 255;
+            char * buff = m_new(char, buff_len);
+            memset(buff, 0, buff_len);
+            int res = luat_fs_fread((uint8_t*)buff, buff_len, 1, fd);
+            luat_fs_fclose(fd);
+            if(res > 0 && res < (int)sizeof(buff) - 1) {
+                cJSON *json = cJSON_Parse(buff);
+                if(json != NULL) {
+                    if(cJSON_HasObjectItem(json, "sname") && cJSON_HasObjectItem(json, "ssub") &&
+                       sname != NULL && ssub != NULL && strlen(sname) <= 20 && strlen(ssub) <= 20) {
+                        cJSON_ReplaceItemInObjectCaseSensitive(json, "sname", cJSON_CreateString(sname));
+                        cJSON_ReplaceItemInObjectCaseSensitive(json, "ssub", cJSON_CreateString(ssub));
+                        char *mess = cJSON_PrintUnformatted(json);
+                        if(mess != NULL) {
+                            mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
+                            if(luat_fs_remove(file) == 0) {
+                                fd = luat_fs_fopen(file, "w");
+                                if(fd != NULL) {
+                                    res = luat_fs_fwrite((uint8_t*)mess, strlen(mess), 1, fd);
+                                    if(res == (int)strlen(mess)) {
+                                        mp_printf(&mp_plat_print, "success\n");
+                                        result = 1;
+                                    }
+                                    else mp_printf(&mp_plat_print, "failed\n");
+                                    luat_fs_fclose(fd);
+                                    luat_rtos_task_sleep(1000);
+                                }
+                            }
+                            free(mess);
+                        }
+                    } else mp_printf(&mp_plat_print, "sname or ssub not found or too long\n");
+                    cJSON_Delete(json);
+                }
+            }
+            m_del(char, buff, buff_len);
+        } else mp_printf(&mp_plat_print, "failed\n");
+    }
+    return result;
+}
+
+STATIC mp_sched_node_t modcellular_sms_reset_sched_node;
+STATIC char sms_reset_phone[20] = {0};
+
+void modcellular_sms_reset(mp_sched_node_t *node) {
+    if(sms_reset_phone != NULL) {
+
+#ifdef SMSRESETACK
+        const char* message = "Done";      
+        mp_printf(&mp_plat_print, "Send '%s' message to %s...\n", message, sms_reset_phone);
+        sms_send_flag = 0;
+        int res = luat_sms_send_msg((uint8_t*)message, sms_reset_phone, false, 0);
+        if(res == 0) {
+            WAIT_UNTIL(sms_send_flag, TIMEOUT_SMS_SEND, 100, mp_warning(NULL, "Failed to send SMS."));
+            if(sms_send_flag > 0) {
+                if(sms_send_flag == 2) mp_warning(NULL, "Check balance!");            
+            }
+        }
+#endif
+        mp_printf(&mp_plat_print, "Restarting module...\n");
+        luat_rtos_task_sleep(5000);
+        luat_pm_reboot();
+        while(1) luat_rtos_task_sleep(1000);        
+    }
+}
+
+void modcellular_sms_process(sms_obj_t *sms) {
+
+    const uint8_t* content = (const uint8_t*)mp_obj_str_get_str(sms->message);
+    char* phone =  (char*)mp_obj_str_get_str(sms->phone_number);        
+
+    char *pfiles = ".py";
+    char *tfiles = ".txt";
+    char *vfiles = ".version";
+    bool to_reset = false;
+
+#ifdef SMSCONFIG
+    if(strcmp((char*)content, "rmcode") == 0) {
+      mp_printf(&mp_plat_print, "Remove versions...\n");
+      modcellular_remove_files(vfiles);
+      mp_printf(&mp_plat_print, "Remove code...\n");
+      modcellular_remove_files(pfiles);
+      to_reset = true;
+    }
+    if(strcmp((char*)content, "rmconfig") == 0) {
+      mp_printf(&mp_plat_print, "Remove config...\n");
+      modcellular_remove_files(tfiles);
+      to_reset = true;
+    }
+    if(strcmp((char*)content, "rmall") == 0) {
+      mp_printf(&mp_plat_print, "Remove all...\n");
+      modcellular_remove_files(pfiles);
+      modcellular_remove_files(tfiles);
+      modcellular_remove_files(vfiles);
+      to_reset = true;
+    }
+    if(strncmp((char*)content, "set ", 4) == 0) {
+      char sname [52];
+      char snum  [52];
+      memset(sname, 0, sizeof(sname));
+      memset(snum, 0, sizeof(snum));
+      int len = strlen((char*)content);
+      char * last = (char*)content + len;
+      char * firstSpace = strstr((char*)content, " ");
+      if(firstSpace != NULL && ((int)(firstSpace + 2 - (char*)content)) < len) {
+          char * secondSpace = strstr(firstSpace + 2, " ");
+          if(secondSpace != NULL && ((int)(secondSpace + 2 - (char*)content)) < len) {
+              if(firstSpace < secondSpace && ((int)(secondSpace - firstSpace)) > 0 && ((int)(secondSpace - firstSpace)) <= 50 &&
+                 secondSpace < last && ((int)(last - secondSpace)) > 0 && ((int)(last - secondSpace)) <= 50) {
+                  strncpy(sname, firstSpace + 1, ((int)(secondSpace - firstSpace)) - 1);
+                  strncpy(snum, secondSpace + 1, ((int)(last - secondSpace)));
+                  mp_printf(&mp_plat_print, "Set device sname = '%s' snum = '%s'\n", sname, snum);
+                  if(modcellular_new_settings("settings.txt", sname, snum) == 1) to_reset = true;
+              } else mp_printf(&mp_plat_print, "Incorrect format (too long)\n");
+          } else mp_printf(&mp_plat_print, "Incorrect format (SS)\n");
+      } else mp_printf(&mp_plat_print, "Incorrect format (FS)\n");
+    }
+#endif
+
+#ifdef SMSRESET
+    if(strcmp((char*)content, "reset") == 0) { 
+      to_reset = true;
+    }
+#endif
+
+    if(to_reset) {
+        strcpy(sms_reset_phone, phone);
+        mp_sched_schedule_node(&modcellular_sms_reset_sched_node, modcellular_sms_reset);
+    }
+}
+
+mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    enum { ARG_phone_number, ARG_message, ARG_pn_type, ARG_index, ARG_type };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_phone_number, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_message, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_pn_type, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
+        { MP_QSTR_index, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
+        { MP_QSTR_type, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} }, 
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    sms_obj_t *self = m_new_obj(sms_obj_t);
+    self->base.type = type;
+    self->phone_number = args[ARG_phone_number].u_obj;
+    self->message = args[ARG_message].u_obj;
+    self->pn_type = args[ARG_pn_type].u_int;
+    self->index = args[ARG_index].u_int;
+    self->type = args[ARG_type].u_int;
+    return MP_OBJ_FROM_PTR(self);
+}
+
 
 STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     // ========================================
@@ -1062,13 +1086,13 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     const char* message = mp_obj_str_get_str(self->message);
 
     sms_send_flag = 0;
-    //int luat_sms_send_msg(uint8_t *p_input, char *p_des, bool is_pdu, int input_pdu_len)
     int res = luat_sms_send_msg((uint8_t*)message, (char*)destination, false, 0);
 
     if(res == 0) {
-        WAIT_UNTIL(sms_send_flag, timeout, 100, mp_warning(NULL, "Failed to send SMS immidiately. The module will continue attempts sending it"));
-        if(sms_send_flag == 1) {
-            return MP_OBJ_NEW_SMALL_INT(1);
+        WAIT_UNTIL(sms_send_flag, timeout, 100, mp_warning(NULL, "Failed to send SMS."));
+        if(sms_send_flag > 0) {
+            if(sms_send_flag == 2) mp_warning(NULL, "Check balance!");
+            return MP_OBJ_NEW_SMALL_INT(sms_send_flag);
         }
     }
     return MP_OBJ_NEW_SMALL_INT(0);

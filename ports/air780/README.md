@@ -553,10 +553,11 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 ## Notes ##
 
 * The size of micropython heap is roughly 512 Kb. 250k can be realistically allocated right after hard reset.
-* Firmware removes *.txt files in SOC file system by SMS 'rmconfig'
-* Firmware removes *.py files in SOC file system by SMS 'rmcode'
-* Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall'
-* Firmware resets the module by SMS 'reset'
-* You can config module with auto respawned (after delete) `main.py` script from `examples` folder. Option available within build configure.
+* Firmware removes *.txt files in SOC file system by SMS 'rmconfig' (configurable).
+* Firmware removes *.py files in SOC file system by SMS 'rmcode' (configurable).
+* Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable).
+* Firmware resets the module by SMS 'reset' (configurable).
+* You can config module with auto respawned (after delete) `main.py` script from `examples` folder (configurable).
+* Default `main.py` contains `SMS Sender` script.
 
 

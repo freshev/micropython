@@ -229,11 +229,49 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
     }
 }
 
+void delete_config_file(char * file) {
+    if (luat_fs_fexist(file)) {
+        int res = luat_fs_remove(file);
+        if (res != 0) LUAT_DEBUG_PRINT("Can not delete %s", file);
+        else LUAT_DEBUG_PRINT("Deleted %s", file);
+    } // else LUAT_DEBUG_PRINT("File not exists: %s", file);
+}
 
 void modcellular_init0(void) {
     network_status_callback = mp_const_none;
     sms_callback = mp_const_none;
     ussd_callback = mp_const_none;
+
+    // Remove unused files. They can lock bootup for certain SIM cards
+    // Commented files are respawned each time SoC bootup
+
+    //delete_config_file("cemmcomminfo.nvm");
+    //delete_config_file("cemmemminfo.nvm");
+    //delete_config_file("cemmplmninfo.nvm");
+    //delete_config_file("cerrcinfo.nvm");
+    //delete_config_file("cesmpdpauthconfig.nvm");
+    //delete_config_file("cesmpdpconfig.nvm");
+    //delete_config_file("main.py");
+    //delete_config_file("mwconfig.nvm");
+    //delete_config_file("mwinfo.nvm");
+    delete_config_file("mwsms.nvm");
+    delete_config_file("npiconfig.nvm");
+    //delete_config_file("plat_config");
+    delete_config_file("rfTestFile");
+    delete_config_file("sim_audo_on.txt");
+    delete_config_file("sim_csdt_cfg_on.txt");
+    //delete_config_file("timer_values");
+    //delete_config_file("uepsconfig.nvm");
+    //delete_config_file("uiccctrlconfig.nvm");
+    delete_config_file("AMNV_CT01_000");
+    delete_config_file("AMNV_CT02_000");
+    delete_config_file("AMNV_CT08_001");
+    delete_config_file("AMNV_CT11_000");
+    delete_config_file("AMNV_CT13_000");
+    delete_config_file("AMNV_CT28_000");
+    delete_config_file("AMNV_CT46_000");
+    delete_config_file("AMNV_CT48_000");
+    delete_config_file("GPS");
 
     // Reset statuses
     network_exception = NTW_NO_EXC;

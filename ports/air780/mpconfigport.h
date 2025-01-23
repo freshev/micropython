@@ -66,6 +66,7 @@
 #define MICROPY_USE_INTERNAL_PRINTF         (0)
 #define MICROPY_PY_BUILTINS_STR_UNICODE     (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE_CHECK (0)
+#define MICROPY_SCHEDULER_STATIC_NODES      (1)
 
 #define MICROPY_BEGIN_ATOMIC_SECTION()      luat_rtos_entry_critical ()
 #define MICROPY_END_ATOMIC_SECTION(state)   luat_rtos_exit_critical(state)

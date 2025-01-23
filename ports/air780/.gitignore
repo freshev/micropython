@@ -11,4 +11,5 @@ build/
 __py_cache__/
 a.bat
 b.bat
+test
 log*.*

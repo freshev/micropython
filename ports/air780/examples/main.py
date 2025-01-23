@@ -5,6 +5,10 @@ import json
 import gc
 import cellular
 
+# ----------------------------------------------
+# Attention: configure with "REPL port" = UART1
+# ----------------------------------------------
+
 uart_port = 0x20 # Virtual UART (USB) = 0x20
 uart_debug_port = 1  # HW UART1 = 1
 uart_speed = 115200
@@ -14,10 +18,10 @@ DEBUG = True
 data = False
 phone = ""
 
-# server commands and responses should be in json format:
+# server commands should be in json format:
 # {"command": "ping"} -> {"response" : "success"} or {"response" : "failed"}
-# {"command": "send", "phone" : "+7XXXXXXXXXX", "message": "test"} -> {"response" : "success"} or  {"response" : "failed"}
-# {"command": "receive" } -> {"response": "success", "list":[("from": "+7XXXXXXXXXX", "message": "test response", "ts":(2024, 12, 31, 23, 59, 59, 3)),("from": "+7...", "message": "...", "ts":(2024, 12, 31, 23, 59, 59, 3))]}
+# {"command": "send", "phone" : "+7XXXXXXXXXX", "message": "test"} -> {"response" : "success"}, {"response" : "failed"}, {"response" : "toolong"} or {"response" : "balance"}
+# {"command": "receive"} -> {"response": "success", "list":[("from": "+7XXXXXXXXXX", "message": "test response", "ts":(2024, 12, 31, 23, 59, 59, 3)),("from": "+7...", "message": "...", "ts":(2024, 12, 31, 23, 59, 59, 3))]}
 
 def debug(s):
     if DEBUG:
@@ -38,6 +42,7 @@ class server:
         if result == 1: res = 'success'
         if result == 2: res = 'partially'
         if result == 3: res = 'toolong'
+        if result == 4: res = 'balance'
         resp = {'response': res}
         return resp
 
@@ -46,7 +51,7 @@ class server:
         debug('Server started')
 
         uart = machine.UART(uart_port)
-        uart.init(baudrate=uart_speed, bits=8, parity=None, stop=1, rxbuf=1024) #rxbuf MUST be set
+        uart.init(baudrate=uart_speed, bits=8, parity=None, stop=1) #rxbuf MUST be set ? #, rxbuf=1024
 
         poller = select.poll()
         poller.register(uart, select.POLLIN)
@@ -77,14 +82,15 @@ class server:
                                       processed = 1
                                   if com['command'] == 'send' and 'phone' in com and 'message' in com:
                                       if len(com['message']) <= 70:
-
                                           cellular.sms_read_all()
                                           cellular.sms_delete_all_read()
                                           data = False
                                           phone = com['phone']
                                           sms = cellular.SMS(com['phone'], com['message'])
                                           resp = self.response(0)
-                                          if sms.send() == True:
+                                          res = sms.send()
+                                          if res == 1:
+                                              # wait for feedback SMS with 'Done' from far end
                                               resp = self.response(1)
                                               counter = 0
                                               while counter < 200: # 20 seconds
@@ -101,13 +107,17 @@ class server:
                                                   resp['list'] = retlist
                                                   uart.write(json.dumps(resp))
                                               else:
-                                                  resp = self.response(2)  #partially
+                                                  resp = self.response(2)  # partially
                                                   uart.write(json.dumps(resp))
                                           else:
-                                              resp = self.response(0)
-                                              uart.write(json.dumps(resp))
+                                              if(res == 2):
+                                                  resp = self.response(4) # check balance
+                                                  uart.write(json.dumps(resp))
+                                              else:
+                                                  resp = self.response(0)
+                                                  uart.write(json.dumps(resp))
                                       else:
-                                          resp = self.response(3)  #message too long
+                                          resp = self.response(3)  # message too long
                                           uart.write(json.dumps(resp))
                                       print(json.dumps(resp))
                                       processed = 1

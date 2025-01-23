@@ -94,9 +94,9 @@ Modules: `cellular`, `umqtt` (external), `gps`, `upip`
 
 SMS Sender Server software.
 
-server commands and responses should be in json format:
+server commands should be in json format:
 {"command": "ping"} -> {"response" : "success"} or {"response" : "failed"}
-{"command": "send", "phone" : "+7XXXXXXXXXX", "message": "test"} -> {"response" : "success"} or  {"response" : "failed"}
+{"command": "send", "phone" : "+7XXXXXXXXXX", "message": "test"} -> {"response" : "success"}, {"response" : "failed"}, {"response" : "toolong"} or {"response" : "balance"}
 {"command": "receive" } -> {"response": "success", "list":[("from": "+7XXXXXXXXXX", "message": "test response", "ts":(2024, 12, 31, 23, 59, 59, 3)),("from": "+7...", "message": "...", "ts":(2024, 12, 31, 23, 59, 59, 3))]}
 
 
