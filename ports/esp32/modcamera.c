@@ -21,8 +21,6 @@
 #include "py/runtime.h"
 #include "py/binary.h"
 
-#if MODULE_CAMERA_ENABLED
-
 #include "esp_system.h"
 #include "spi_flash_mmap.h"
 #include "esp_camera.h"
@@ -280,7 +278,7 @@ STATIC mp_obj_t camera_quality(mp_obj_t what){
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_quality_obj, camera_quality);
 
-STATIC mp_obj_t camera_contrast(mp_obj_t what){
+STATIC mp_obj_t camera_contrast(mp_obj_t what) {
     //acquire a frame
     sensor_t * s = esp_camera_sensor_get();
     if (!s) {
@@ -327,12 +325,12 @@ STATIC mp_obj_t camera_speffect(mp_obj_t what){
     int val = mp_obj_get_int(what);
     s->set_special_effect(s, val); // 0-6 (default 0).
                                    // 0 - no effect
-				   // 1 - negative
-				   // 2 - black and white
-				   // 3 - reddish
-				   // 4 - greenish
-				   // 5 - blue
-				   // 6 - retro
+                   // 1 - negative
+                   // 2 - black and white
+                   // 3 - reddish
+                   // 4 - greenish
+                   // 5 - blue
+                   // 6 - retro
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(camera_speffect_obj, camera_speffect);
@@ -430,4 +428,3 @@ const mp_obj_module_t mp_module_camera_system = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_camera, mp_module_camera_system);
-#endif

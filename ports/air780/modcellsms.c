@@ -57,7 +57,7 @@ static void modcellular_sms_recv_cb(uint8_t event,void *param) {
 
 void modcellular_sms_process(sms_obj_t *sms);
 void modcellular_sms_recv_custom_cb(sms_obj_t *sms) {
-    // LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
+    LUAT_DEBUG_PRINT("sms_recv_cb: [%d]", sms->index);
     modcellular_sms_process(sms); // process internal commands
     if (sms_callback && sms_callback != mp_const_none) {
         mp_sched_schedule(sms_callback, sms);

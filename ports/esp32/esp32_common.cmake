@@ -11,13 +11,17 @@ endif()
 # Include core source components.
 include(${MICROPY_DIR}/py/py.cmake)
 
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+set(ENV{MICROPY_MPYCROSS} "../../mpy-cross/build/mpy-cross.exe")
+endif()
+
 # CMAKE_BUILD_EARLY_EXPANSION is set during the component-discovery phase of
 # `idf.py build`, so none of the extmod/usermod (and in reality, most of the
 # micropython) rules need to happen. Specifically, you cannot invoke add_library.
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     # Enable extmod components that will be configured by extmod.cmake.
     # A board may also have enabled additional components.
-    set(MICROPY_PY_BTREE ON)
+    set(MICROPY_PY_BTREE OFF)
 
     include(${MICROPY_DIR}/py/usermod.cmake)
     include(${MICROPY_DIR}/extmod/extmod.cmake)
@@ -26,6 +30,41 @@ endif()
 list(APPEND MICROPY_QSTRDEFS_PORT
     ${MICROPY_PORT_DIR}/qstrdefsport.h
 )
+
+if(CONFIG_MAIN_STUB)
+    # Define paths
+    set(BOOT_FILE "${CMAKE_SOURCE_DIR}/modules/boot.py")
+    set(SOURCE_FILE "${CMAKE_SOURCE_DIR}/examples/main.py")
+    set(DEST_FILE "main.py")
+
+    # Read and encode the source file to base64
+    file(READ "${SOURCE_FILE}" SOURCE_CONTENT)
+    find_program(BASE64_EXECUTABLE base64)
+    if (BASE64_EXECUTABLE)
+        # Encode the source file directly using base64
+        execute_process(
+            COMMAND "${BASE64_EXECUTABLE}" -w 0 "${SOURCE_FILE}"
+            OUTPUT_VARIABLE BASE64_CONTENT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    else()
+        # Fallback to Python for base64 encoding
+        execute_process(
+            COMMAND "${Python_EXECUTABLE}" -c "import base64; print(base64.b64encode(open('${SOURCE_FILE}', 'rb').read()).decode('utf-8'))"
+            OUTPUT_VARIABLE BASE64_CONTENT
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+
+    # Generate the boot.py file
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/boot.py.in"
+        "${BOOT_FILE}"
+    )
+else()
+    file(REMOVE "${CMAKE_SOURCE_DIR}/modules/boot.py")
+endif()
+
 
 list(APPEND MICROPY_SOURCE_SHARED
     ${MICROPY_DIR}/shared/readline/readline.c
@@ -49,7 +88,7 @@ list(APPEND MICROPY_SOURCE_LIB
 
 list(APPEND MICROPY_SOURCE_DRIVERS
     ${MICROPY_DIR}/drivers/bus/softspi.c
-    ${MICROPY_DIR}/drivers/dht/dht.c
+    #${MICROPY_DIR}/drivers/dht/dht.c
 )
 
 list(APPEND MICROPY_SOURCE_PORT
@@ -67,8 +106,7 @@ list(APPEND MICROPY_SOURCE_PORT
     machine_timer.c
     machine_pin.c
     machine_touchpad.c
-    machine_dac.c
-    machine_i2c.c
+    machine_dac.c    
     network_common.c
     network_lan.c
     network_ppp.c
@@ -82,12 +120,29 @@ list(APPEND MICROPY_SOURCE_PORT
     esp32_ulp.c
     modesp32.c
     machine_hw_spi.c
+    machine_hw_i2c.c
     mpthreadport.c
     machine_rtc.c
     machine_sdcard.c
     modespnow.c
-    modcamera.c
 )
+
+if(CONFIG_CAMERA_MODULE)
+    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
+endif()
+if(CONFIG_DHT_MODULE)
+    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
+endif()
+if(CONFIG_CC1101_MODULE)
+    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
+endif()
+
+#message("----------------------------")
+#message(CONFIG_CAMERA_MODULE=${CONFIG_CAMERA_MODULE})
+#message(CONFIG_SPIRAM=${CONFIG_SPIRAM})
+#message("----------------------------")
+
+
 list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_PORT_DIR}/)
 list(APPEND MICROPY_SOURCE_PORT ${CMAKE_BINARY_DIR}/pins.c)
 
@@ -152,11 +207,6 @@ idf_component_register(
         ${MICROPY_PORT_DIR}
         ${MICROPY_BOARD_DIR}
         ${CMAKE_BINARY_DIR}
-        ${CMAKE_CURRENT_LIST_DIR}/components/esp32-camera/driver/include
-        ${CMAKE_CURRENT_LIST_DIR}/components/esp32-camera/driver/private_include
-        ${CMAKE_CURRENT_LIST_DIR}/components/esp32-camera/conversions/include
-        ${CMAKE_CURRENT_LIST_DIR}/components/esp32-camera/conversions/private_include
-        ${CMAKE_CURRENT_LIST_DIR}/components/esp32-camera/sensors/private_include
     REQUIRES
         ${IDF_COMPONENTS}
 )
@@ -194,7 +244,7 @@ target_include_directories(${MICROPY_TARGET} PUBLIC
 )
 
 # Add additional extmod and usermod components.
-target_link_libraries(${MICROPY_TARGET} micropy_extmod_btree)
+# target_link_libraries(${MICROPY_TARGET} micropy_extmod_btree)
 target_link_libraries(${MICROPY_TARGET} usermod)
 
 # Collect all of the include directories and compile definitions for the IDF components,
@@ -233,3 +283,16 @@ add_custom_command(
     VERBATIM
     COMMAND_EXPAND_LISTS
 )
+
+#message("-----------------------")
+#message(${CMAKE_BINARY_DIR})
+#message("-----------------------")
+
+#add_custom_target(PostBuildTasks ALL
+#    COMMAND ${Python3_EXECUTABLE} -m esptool --chip esp32 merge_bin -o "${CMAKE_BINARY_DIR}/firmware_camera.bin" --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 "${CMAKE_BINARY_DIR}/bootloader/bootloader.bin" 0x10000 "${CMAKE_BINARY_DIR}/micropython.bin" 0x8000 "${CMAKE_BINARY_DIR}/partition_table/partition-table.bin"
+#    DEPENDS 
+#        ${MICROPY_TARGET}
+#    VERBATIM
+#    COMMAND_EXPAND_LISTS
+#)
+

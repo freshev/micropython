@@ -30,7 +30,7 @@ endif
 
 # Device serial settings.
 PORT ?= /dev/ttyUSB0
-BAUD ?= 460800
+BAUD ?= 921600
 
 PYTHON ?= python3
 
@@ -39,7 +39,7 @@ PYTHON ?= python3
 CMAKE_ARGS =
 
 ifdef USER_C_MODULES
-	CMAKE_ARGS += -DUSER_C_MODULES=${USER_C_MODULES}
+    CMAKE_ARGS += -DUSER_C_MODULES=${USER_C_MODULES}
 endif
 
 IDFPY_FLAGS += -D MICROPY_BOARD=$(BOARD) -D MICROPY_BOARD_DIR=$(abspath $(BOARD_DIR)) $(CMAKE_ARGS)
@@ -49,51 +49,51 @@ ifdef FROZEN_MANIFEST
 endif
 
 ifdef BOARD_VARIANT
-	IDFPY_FLAGS += -D MICROPY_BOARD_VARIANT=$(BOARD_VARIANT)
+    IDFPY_FLAGS += -D MICROPY_BOARD_VARIANT=$(BOARD_VARIANT)
 endif
 
 ifdef MICROPY_PREVIEW_VERSION_2
-	IDFPY_FLAGS += -D MICROPY_PREVIEW_VERSION_2=1
+    IDFPY_FLAGS += -D MICROPY_PREVIEW_VERSION_2=1
 endif
 
 HELP_BUILD_ERROR ?= "See \033[1;31mhttps://github.com/micropython/micropython/wiki/Build-Troubleshooting\033[0m"
 
 define RUN_IDF_PY
-	idf.py $(IDFPY_FLAGS) -B $(BUILD) -p $(PORT) -b $(BAUD) $(1)
+    idf.py $(IDFPY_FLAGS) -B $(BUILD) -p $(PORT) -b $(BAUD) $(1)
 endef
 
 all:
-	idf.py $(IDFPY_FLAGS) -B $(BUILD) build || (echo -e $(HELP_BUILD_ERROR); false)
-	@$(PYTHON) makeimg.py \
-		$(BUILD)/sdkconfig \
-		$(BUILD)/bootloader/bootloader.bin \
-		$(BUILD)/partition_table/partition-table.bin \
-		$(BUILD)/micropython.bin \
-		$(BUILD)/firmware.bin \
-		$(BUILD)/micropython.uf2
+    idf.py $(IDFPY_FLAGS) -B $(BUILD) build || (echo -e $(HELP_BUILD_ERROR); false)
+    @$(PYTHON) makeimg.py \
+        $(BUILD)/sdkconfig \
+        $(BUILD)/bootloader/bootloader.bin \
+        $(BUILD)/partition_table/partition-table.bin \
+        $(BUILD)/micropython.bin \
+        $(BUILD)/firmware.bin \
+        $(BUILD)/micropython.uf2
 
 $(BUILD)/bootloader/bootloader.bin $(BUILD)/partition_table/partition-table.bin $(BUILD)/micropython.bin: FORCE
 
 clean:
-	$(call RUN_IDF_PY,fullclean)
+    $(call RUN_IDF_PY,fullclean)
 
 deploy:
-	$(call RUN_IDF_PY,flash)
+    $(call RUN_IDF_PY,flash)
 
 erase:
-	$(call RUN_IDF_PY,erase-flash)
+    $(call RUN_IDF_PY,erase-flash)
 
 monitor:
-	$(call RUN_IDF_PY,monitor)
+    $(call RUN_IDF_PY,monitor)
 
 size:
-	$(call RUN_IDF_PY,size)
+    $(call RUN_IDF_PY,size)
 
 size-components:
-	$(call RUN_IDF_PY,size-components)
+    $(call RUN_IDF_PY,size-components)
 
 size-files:
-	$(call RUN_IDF_PY,size-files)
+    $(call RUN_IDF_PY,size-files)
 
 # Running the build with ECHO_SUBMODULES set will trigger py/mkrules.cmake to
 # print out the value of the GIT_SUBMODULES variable, prefixed with
@@ -101,6 +101,6 @@ size-files:
 # output and passes the list of submodules to py/mkrules.mk which does the
 # `git submodule init` on each.
 submodules:
-	@GIT_SUBMODULES=$$(idf.py $(IDFPY_FLAGS) -B $(BUILD)/submodules -D ECHO_SUBMODULES=1 build 2>&1 | \
-	                  grep '^GIT_SUBMODULES=' | cut -d= -f2); \
-	$(MAKE) -f ../../py/mkrules.mk GIT_SUBMODULES="$${GIT_SUBMODULES}" submodules
+    @GIT_SUBMODULES=$$(idf.py $(IDFPY_FLAGS) -B $(BUILD)/submodules -D ECHO_SUBMODULES=1 build 2>&1 | \
+                      grep '^GIT_SUBMODULES=' | cut -d= -f2); \
+    $(MAKE) -f ../../py/mkrules.mk GIT_SUBMODULES="$${GIT_SUBMODULES}" submodules

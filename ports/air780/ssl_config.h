@@ -25,8 +25,11 @@
 
 #undef MBEDTLS_SSL_PROTO_SSL3
 #undef MBEDTLS_SSL_MAX_CONTENT_LEN
-#define MBEDTLS_SSL_MAX_CONTENT_LEN         (16*1024)
-#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (16*1024)
+//#define MBEDTLS_SSL_MAX_CONTENT_LEN         (16*1024) // ENOMEM during requests
+//#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (16*1024) // ENOMEM during requests
+#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K
+#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024) // should not be less than 4K
+
 
 /**
  * \name SECTION: System support
@@ -1792,7 +1795,7 @@
  *
  * This module provides debugging functions.
  */
-//#define MBEDTLS_DEBUG_C
+// #define MBEDTLS_DEBUG_C
 
 /**
  * \def MBEDTLS_DES_C

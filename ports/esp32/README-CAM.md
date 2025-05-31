@@ -24,7 +24,7 @@ Initial development of this ESP32 port was sponsored in part by Microbric Pty Lt
 
 PSRAM, I2C driver and ESP logging commonly used from 
 [MicroPython_ESP32_psRAM_LoBo](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo)
-rewritten to ESP-IDF v5.0.4 base.
+rewritten to ESP-IDF v5.1.2 base.
 
 Setting up ESP-IDF and the build environment
 --------------------------------------------
@@ -35,7 +35,7 @@ manage the ESP32 microcontroller, as well as a way to manage the required
 build environment and toolchains needed to build the firmware.
 
 The ESP-IDF changes quickly and MicroPython only supports certain versions.
-Currently MicroPython supports only v5.0.4.
+Currently MicroPython supports only v5.0.4, 5.1.2.
 
 To install the ESP-IDF the full instructions can be found at the
 [Espressif Getting Started guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/index.html#installation-step-by-step).
@@ -44,13 +44,18 @@ The Espressif instructions will guide you through using the `install.sh`
 (or `install.bat`) script to download the toolchain and set up your environment.
 The steps to take are summarised below.
 
+
+
+Building the firmware (Linux)
+-----------------------------
+
 To check out a copy of the IDF use git clone:
 
 ```bash
-$ git clone -b v5.0.4 --recursive https://github.com/espressif/esp-idf.git
+$ git clone -b v5.1.2 --recursive https://github.com/espressif/esp-idf.git
 ```
 
-You can replace `v5.0.4` with any other supported version.
+You can replace `v5.1.2` with any other supported version.
 (You don't need a full recursive clone; see the `ci_esp32_setup` function in
 `tools/ci.sh` in this repository for more detailed set-up commands.)
 
@@ -59,7 +64,7 @@ MicroPython and update the submodules using:
 
 ```bash
 $ cd esp-idf
-$ git checkout v5.0.4
+$ git checkout v5.1.2
 $ git submodule update --init --recursive
 ```
 
@@ -68,15 +73,12 @@ After you've cloned and checked out the IDF to the correct version, run the
 
 ```bash
 $ cd esp-idf
-$ ./install.sh       # (or install.bat on Windows)
-$ source export.sh   # (or export.bat on Windows)
+$ ./install.sh       
+$ source export.sh   
 ```
 
 The `install.sh` step only needs to be done once. You will need to source
 `export.sh` for every new session.
-
-Building the firmware
----------------------
 
 To build MicroPython for the ESP32-CAM run:
 
@@ -85,6 +87,20 @@ $ cd ports/esp32
 $ ./install.sh
 $ ./make.sh
 ```
+
+
+Building the firmware (Windows + VS Code)
+-----------------------------------------
+* Download and install VS Code ESP-IDF Extension 
+* Configure ESP-IDF Extension at ESP-IDF:EXPLORER -> Advanced -> Configure ESP-IDF Extension to set v5.1.2 SDK
+or select v5.1.2 SDK at ESP-IDF:EXPLORER -> Select current ESP-IDF version
+* Set device target at ESP-IDF:EXPLORER -> Set Espressif Device Target to ESP32 chip (via ESP USB Bridge)
+* At ESP-IDF:EXPLORER -> SDK Configuration Editor (menuconfig) find and select PSRAM support and SAVE
+* Attention: Add PSRAM support each time after ESP-IDF:EXPLORER -> Full Clean
+
+idf.py add-dependency --path main_esp32 "espressif/esp32-camera"
+
+
 
 This will produce a combined `firmware_camera.bin` image in the `./firmware/`
 folder (this firmware image is made up of: bootloader.bin, partitions.bin

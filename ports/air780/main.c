@@ -136,7 +136,9 @@ soft_reset:
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+#if MAINRUN
         pyexec_file_if_exists("main.py");
+#endif
     }
     
     while (1) {

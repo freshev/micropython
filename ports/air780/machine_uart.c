@@ -4,7 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2016-2023 Damien P. George
- * Copyright (c) 2024 freshev
+ * Copyright (c) 2024-2025 freshev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@
 #include "luat_debug.h"
 
 #define UART_NPORTS (3)
-#define UART_STATIC_RXBUF_LEN (1024 * 4)
+#define UART_STATIC_RXBUF_LEN (1024 * 2)
 
 typedef struct _machine_uart_obj_t {
     mp_obj_base_t base;
@@ -70,50 +70,72 @@ typedef struct _machine_uart_obj_t {
     If uart0 is configured for application use, exceptions that occur during the boot process will not be able to analyze and locate the problem because the underlying log cannot be captured.
  3. Serial port multiplexing problem
     1. UART reuse, the latest Hezhou standard CSDK no longer needs to be controlled through RTE_Device.h, the original driver still needs
-    2. Serial port multiplexing can be achieved through the luat_uart_pre_setup(int uart_id, uint8_t use_alt_type) function. If it is 1, UART0 is multiplexed to GPIO16, GPIO17; UART2 is multiplexed to GPIO12 GPIO13*/
+    2. Serial port multiplexing can be achieved through the luat_uart_pre_setup(int uart_id, uint8_t use_alt_type) function. If it is 1, UART0 is multiplexed to GPIO16, GPIO17; UART2 is multiplexed to GPIO12 GPIO13
 
+    UART_ID0 = 0 aka DEBUG_UART ping 38, 39
+    UART_ID1 = 1 aka MAIN_UART  pins 17, 18 
+    UART_ID2 = 2 aka AUX_UART   pins 28, 29 (used for GNSS ?)
+
+    */
 /******************************************************************************/
 // UART Luat specific
 
 // rx data buffers
-STATIC uint8_t uart1_ringbuf_array[UART_STATIC_RXBUF_LEN];
-STATIC uint8_t uart2_ringbuf_array[UART_STATIC_RXBUF_LEN];
-STATIC uint8_t uartv_ringbuf_array[UART_STATIC_RXBUF_LEN];
-STATIC uint8_t *uart_ringbuf_array[] = {uart1_ringbuf_array, uart2_ringbuf_array, uartv_ringbuf_array};
+uint8_t uart1_ringbuf_array[UART_STATIC_RXBUF_LEN];
+uint8_t uart2_ringbuf_array[UART_STATIC_RXBUF_LEN];
+uint8_t uartv_ringbuf_array[UART_STATIC_RXBUF_LEN];
+uint8_t *uart_ringbuf_array[] = {uart1_ringbuf_array, uart2_ringbuf_array, uartv_ringbuf_array};
 // rx ring buffers
-STATIC ringbuf_t uart_ringbuf[] = {
+ringbuf_t uart_ringbuf[] = {
     {uart1_ringbuf_array, sizeof(uart1_ringbuf_array), 0, 0},
     {uart2_ringbuf_array, sizeof(uart2_ringbuf_array), 0, 0},
     {uartv_ringbuf_array, sizeof(uartv_ringbuf_array), 0, 0},
 };
-STATIC uint8_t uart_tx_done[3]; 
-STATIC uint8_t uart_attached_to_dupterm[3]; 
 
+uint8_t uart_tx_done[3]; 
+uint8_t uart_attached_to_dupterm[3]; 
 
-STATIC uint8_t uart_tx_one_char(uint8_t uart_num, char c) {
-    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;    
-    uart_tx_done[uart] = 0;
+/*
+void uart_debug(int uart, const char * prefix, const char *buf_in, mp_uint_t size) {
+    char mess[255];
+    char mess2[10];
+    memset(mess, 0, sizeof(mess));
+    strcat(mess, "\n");
+    strcat(mess, prefix);
+    itoa(uart, mess2, 10);
+    strcat(mess, mess2);
+    strcat(mess, ":");
 
-    //LUAT_DEBUG_PRINT("luat_uart_before_write");
-    int ret = luat_uart_write(uart_num, (uint8_t*) &c, 1);
-    if(ret != 1) LUAT_DEBUG_PRINT("luat_uart_after_write %d", ret);
-    return ret;
-    
-    //return luat_uart_write(uart_num, (uint8_t*) &c, 1);
+    if(buf_in != NULL) {
+        strncat(mess, buf_in, size);
+        strcat(mess, " ");
+
+        for(int i = 0; i < size; i++) {
+            itoa(buf_in[i], mess2, 16);
+            strcat(mess, mess2);
+            strcat(mess, " ");
+        }
+        strcat(mess, "(size = ");
+        itoa(size, mess2, 10);
+        strcat(mess, mess2);
+        strcat(mess, ")");
+    } else {
+      strcat(mess, "NULL");
+    }
+    if(uart == 1) luat_uart_write(LUAT_VUART_ID_0, mess, strlen(mess)); 
 }
-STATIC uint8_t uart_rx_one_char(uint8_t uart_num) {
-    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
-    return ringbuf_get(uart_ringbuf + uart);
-}
+*/
 
-
-STATIC void luat_uart_recv_callback(int uart_num, uint32_t data_len) {
+void luat_uart_recv_callback(int uart_num, uint32_t data_len) {
     for (uint32_t i = 0; i < data_len; i++) {
         // For efficiency, when connected to dupterm we put incoming chars
         // directly on stdin_ringbuf, rather than going via uart_ringbuf
         // Do not care of speed, getting char by char
         uint8_t c;
         luat_uart_read(uart_num, &c, 1);
+
+        // uart_debug(uart_num, "rcb", (const char*)&c, 1);
+
         int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
         
         if (uart_attached_to_dupterm[uart]) {
@@ -132,25 +154,29 @@ STATIC void luat_uart_recv_callback(int uart_num, uint32_t data_len) {
     }
 }
 
-STATIC void luat_uart_sent_callback(int uart_num, void *param) {
+void luat_uart_sent_callback(int uart_num, void *param) {
+    // uart_debug(uart_num, "scb", NULL, 0);
     int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
     uart_tx_done[uart] = 1;
 }
 
-STATIC uint8_t uart_wait_tx_done(int uart_num, int timeout) {
+uint8_t uart_wait_tx_done(int uart_num, int timeout) {
     uint64_t start = mp_hal_ticks_ms_64();
     int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    // uart_debug(uart_num, "wait tx done start", NULL, 0);
     while (uart_tx_done[uart] == 0 && mp_hal_ticks_ms_64() - start < (uint64_t)timeout) {
         luat_rtos_task_sleep(1);
         MICROPY_EVENT_POLL_HOOK
     }
+    // uart_debug(uart_num, "wait tx done stop", NULL, 0);
     return uart_tx_done[uart] == 1;
 }
 
-STATIC bool uart_rx_wait(int uart_num, uint32_t timeout) {
+bool uart_rx_wait(int uart_num, uint32_t timeout) {
     // waits for rx to become populated
     uint64_t start = mp_hal_ticks_ms_64();
-    ringbuf_t *ringbuf = uart_ringbuf + ((uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1);
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    ringbuf_t *ringbuf = uart_ringbuf + uart;
     while(true) {
         if (ringbuf->iget != ringbuf->iput) {
             return true; // have at least 1 char ready for reading
@@ -161,23 +187,56 @@ STATIC bool uart_rx_wait(int uart_num, uint32_t timeout) {
     }
 }
 
-STATIC int uart_rx_any(uint8_t uart_num) {
-    ringbuf_t *ringbuf = uart_ringbuf + ((uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1);
+int uart_rx_any(uint8_t uart_num) {    
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    ringbuf_t *ringbuf = uart_ringbuf + uart;
     return ringbuf->iget != ringbuf->iput;
 }
 
-STATIC int uart_tx_any_room(uint8_t uart) {
-    (void) uart;
-    return true;
+int uart_get_rxbuf_len(uint8_t uart_num) {
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    return uart_ringbuf[uart].size;
 }
 
-STATIC void uart_set_rxbuf(uint8_t uart_num, uint8_t *buf, int len) {
+void uart_set_rxbuf(uint8_t uart_num, uint8_t *buf, int len) {
     int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
     uart_ringbuf[uart].buf = buf;
     uart_ringbuf[uart].size = len;
     uart_ringbuf[uart].iget = 0;
     uart_ringbuf[uart].iput = 0;
+    // uart_debug(uart_num, "z", &len, 1);
 }
+
+int uart_tx_any_room(uint8_t uart) {
+    (void) uart;
+    return true;
+}
+
+
+uint8_t uart_tx_one_char(uint8_t uart_num, char c, uint16_t timeout_char) {
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;    
+    uart_tx_done[uart] = 0;
+
+    int ret = luat_uart_write(uart_num, (uint8_t*) &c, 1);
+
+    if(uart_num == 1) {
+#if RS485_UART1_WAIT_TX
+        uart_wait_tx_done(1, timeout_char);
+#endif
+    }
+    if(uart_num == 2) {
+#if RS485_UART2_WAIT_TX
+        uart_wait_tx_done(2, timeout_char);
+#endif
+    }
+    return ret;
+}
+uint8_t uart_rx_one_char(uint8_t uart_num) {
+    int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
+    return ringbuf_get(uart_ringbuf + uart);
+}
+
+
 
 
 STATIC const char *_parity_name[] = {"None", "1", "0"};
@@ -222,7 +281,7 @@ STATIC void mp_machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "UART(%u, baudrate=%u, bits=%u, parity=%s, stop=%u, txbuf=%u, rxbuf=%u, timeout=%u, timeout_char=%u)",
         self->uart_num, self->baudrate, self->bits, _parity_name[self->parity],
-        self->stop, self->txbuf, self->rxbuf, self->timeout, self->timeout_char);
+        self->stop, self->txbuf, uart_get_rxbuf_len(self->uart_num) - 1, self->timeout, self->timeout_char);
 }
 
 STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -232,10 +291,10 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = 8} },
         { MP_QSTR_parity, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_stop, MP_ARG_INT, {.u_int = 1} },
-        { MP_QSTR_txbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_rxbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_timeout_char, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_txbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_rxbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_timeout_char, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -248,34 +307,56 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         .baud_rate = 115200,
         .data_bits = 8,
         .stop_bits = 1,
-        .parity    = LUAT_PARITY_NONE
+        .parity    = LUAT_PARITY_NONE,
     };
 
-    if (args[ARG_txbuf].u_int >= 0 || args[ARG_rxbuf].u_int >= 0) {
-        // must reinitialise driver to change the tx/rx buffer size
-        #if MICROPY_HW_ENABLE_UART_REPL
-        if (self->uart_num == HW_UART_REPL) {
-            mp_raise_ValueError(MP_ERROR_TEXT("UART buffer size is fixed"));
-        }
+    if(self->uart_num == 1) {
+        #if RS485_UART1_USE
+            uart.pin485 = (RS485_UART1_PIN);
+            uart.delay = (RS485_UART1_DELAY);
+            uart.rx_level = (RS485_UART1_PIN_LEVEL);
+        #else
+            uart.pin485 = 0;
+            uart.delay = 0;
+            uart.rx_level = 0;
         #endif
+    }
+    if(self->uart_num == 2) {
+        #if RS485_UART2_USE
+            uart.pin485 = (RS485_UART2_PIN);
+            uart.delay = (RS485_UART2_DELAY);
+            uart.rx_level = (RS485_UART2_PIN_LEVEL);
+        #else
+            uart.pin485 = 0;
+            uart.delay = 0;
+            uart.rx_level = 0;
+        #endif
+    }
 
-        if (args[ARG_txbuf].u_int >= 0) {
-            self->txbuf = args[ARG_txbuf].u_int;
+    // must reinitialise driver to change the tx/rx buffer size
+    // #if MICROPY_HW_ENABLE_UART_REPL
+    // if (self->uart_num == HW_UART_REPL) {
+    //     mp_raise_ValueError(MP_ERROR_TEXT("UART buffer size is fixed"));
+    // }
+    // #endif
+
+    if (args[ARG_txbuf].u_int >= 0) {
+        self->txbuf = args[ARG_txbuf].u_int;
+    }
+    if (args[ARG_rxbuf].u_int >= 0) {
+        self->rxbuf = args[ARG_rxbuf].u_int;
+        uint16_t len = args[ARG_rxbuf].u_int + 1; // account for usable items in ringbuf
+        uint8_t *buf;
+        int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
+        if (len <= UART_STATIC_RXBUF_LEN) {
+            buf = uart_ringbuf_array[uart];
+            len = UART_STATIC_RXBUF_LEN;
+            MP_STATE_PORT(uart_rxbuf[uart]) = NULL; // clear any old pointer
+        } else {
+            buf = m_new(uint8_t, len);
+            MP_STATE_PORT(uart_rxbuf[uart]) = buf; // retain root pointer
         }
-        if (args[ARG_rxbuf].u_int >= 0) {
-            self->rxbuf = args[ARG_rxbuf].u_int;
-            uint16_t len = args[ARG_rxbuf].u_int + 1; // account for usable items in ringbuf
-            uint8_t *buf;
-            int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;
-            if (len <= UART_STATIC_RXBUF_LEN) {
-                buf = uart_ringbuf_array[uart];
-                MP_STATE_PORT(uart_rxbuf[uart]) = NULL; // clear any old pointer
-            } else {
-                buf = m_new(uint8_t, len);
-                MP_STATE_PORT(uart_rxbuf[uart]) = buf; // retain root pointer
-            }
-            uart_set_rxbuf(self->uart_num, buf, len);
-        }
+        uart_set_rxbuf(self->uart_num, buf, len);
     }
     
     // set baudrate
@@ -330,25 +411,19 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
             break;
     }
     
-    // set timeout
-    if (args[ARG_timeout].u_int != -1) {
-        self->timeout = args[ARG_timeout].u_int;
-    }
+    // set timeout (in ms)
+    self->timeout = args[ARG_timeout].u_int;
     
+    
+    self->timeout_char = args[ARG_timeout_char].u_int;
+
     // set timeout_char
-    // make sure it is at least as long as a whole character (12 bits here)
-    // "dead" code
-    /*if (args[ARG_timeout_char].u_int != -1) {
-        self->timeout_char = args[ARG_timeout_char].u_int;
-        uint32_t char_time_ms = 12000 / self->baudrate + 1;
-        uint32_t rx_timeout = self->timeout_char / char_time_ms;
-        if (rx_timeout < 1) {
-            //check_esp_err(uart_set_rx_full_threshold(self->uart_num, 1));
-            //check_esp_err(uart_set_rx_timeout(self->uart_num, 1));
-        } else {
-            //check_esp_err(uart_set_rx_timeout(self->uart_num, rx_timeout));
-        }
-    }*/
+    // make sure it is at least as long as a whole character (13 bits here)
+    uint32_t min_timeout_char = 13000 / self->baudrate + 1;
+    if (self->timeout_char < min_timeout_char) {
+        self->timeout_char = min_timeout_char;
+    }
+
 
     #if MICROPY_HW_ENABLE_UART_REPL
     // Only reset the driver if it's not the REPL UART.
@@ -360,6 +435,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     }
     luat_uart_ctrl(self->uart_num, LUAT_UART_SET_RECV_CALLBACK, luat_uart_recv_callback);
     luat_uart_ctrl(self->uart_num, LUAT_UART_SET_SENT_CALLBACK, luat_uart_sent_callback);    
+
 }
 
 STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
@@ -367,7 +443,7 @@ STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
     
     // get uart id
     mp_int_t uart_num = mp_obj_get_int(args[0]);
-    if (!luat_uart_exist(uart_num) || uart_num <= 0) { // Currently only supports UART1, UART2, LUAT_VUART_ID_0 (from "luat_uart_ec618.c" = 0x20)
+    if (!luat_uart_exist(uart_num) || uart_num < 1) { // Currently only supports UART1, UART2, LUAT_VUART_ID_0 (from "luat_uart_ec618.c" = 0x20)
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("UART(%d) does not exist"), uart_num);
     }
     
@@ -377,8 +453,8 @@ STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
     self->bits = 8;
     self->parity = 0;
     self->stop = 1;
-    self->txbuf = 256;
-    self->rxbuf = 256; 
+    //self->txbuf = 0;
+    //self->rxbuf = 0; 
     self->timeout = 0;
     self->timeout_char = 0;    
 
@@ -410,9 +486,7 @@ STATIC mp_int_t mp_machine_uart_readchar(machine_uart_obj_t *self) {
 }
 
 STATIC void mp_machine_uart_writechar(machine_uart_obj_t *self, uint16_t data) {
-    LUAT_DEBUG_PRINT("mp_machine_uart_writechar");
-    //int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;    
-    uart_tx_one_char(self->uart_num, (byte)data);
+    uart_tx_one_char(self->uart_num, (byte)data, self->timeout_char);
 }
 
 
@@ -441,29 +515,26 @@ STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t 
     }
 }
 
-/*STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
-    machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    const byte *buf = buf_in;
-    //LUAT_DEBUG_PRINT("mp_machine_uart_write");
-
-    for (size_t i = 0; i < size; ++i) {
-        //LUAT_DEBUG_PRINT("mp_machine_uart_write_char_by_char %d", *buf);
-        uart_tx_one_char(self->uart_num, *buf++);
-    }
-    // return number of bytes written
-    return size;
-}*/
 STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
     machine_uart_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const byte *buf = buf_in;
-    //LUAT_DEBUG_PRINT("mp_machine_uart_write");
+    // uart_debug(self->uart_num, "w", buf_in, size);    
 
     int uart = (self->uart_num == LUAT_VUART_ID_0) ? 2 : self->uart_num - 1;    
     uart_tx_done[uart] = 0;
 
-    //LUAT_DEBUG_PRINT("luat_uart_before_write");
     int ret = luat_uart_write(self->uart_num, (uint8_t*) buf_in, size);
-    //LUAT_DEBUG_PRINT("luat_uart_write %d", ret);
+    
+    if(self->uart_num == 1) {
+#if RS485_UART1_WAIT_TX
+        uart_wait_tx_done(1, size * self->timeout_char);
+#endif
+    }
+    if(self->uart_num == 2) {
+#if RS485_UART2_WAIT_TX
+        uart_wait_tx_done(2, size * self->timeout_char);
+#endif
+    }
     return ret;
 }
 

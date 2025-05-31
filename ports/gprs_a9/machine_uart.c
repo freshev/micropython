@@ -105,11 +105,12 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     //     stop (int)
     //     tx (int): transmit pin;
     //     rx (int): receive pin;
-    //     rxbuf (int, array): receive buffer or its size;
-    //     timeout (int): default timeout in us for transmission start;
-    //     timeout_char (int): default timeout in us between characters;
+    //     txbuf (int): transmit buffer size;
+    //     rxbuf (int): receive buffer size;
+    //     timeout (int): default timeout in ms for transmission start;
+    //     timeout_char (int): default timeout in ms between characters;
     // ========================================
-    enum { ARG_baudrate, ARG_bits, ARG_parity, ARG_stop, ARG_tx, ARG_rx, ARG_rxbuf, ARG_timeout, ARG_timeout_char };
+    enum { ARG_baudrate, ARG_bits, ARG_parity, ARG_stop, ARG_tx, ARG_rx, ARG_txbuf, ARG_rxbuf, ARG_timeout, ARG_timeout_char };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = 0} },
@@ -117,6 +118,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         { MP_QSTR_stop, MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_tx, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_rx, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_txbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_rxbuf, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_timeout_char, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
@@ -175,8 +177,8 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         case 7:
         case 8:
             config->dataBits = (UART_Data_Bits_t) args[ARG_bits].u_int;
-        case 0:
-            break;
+        // case 0:
+        //     break;
         default:
             mp_raise_ValueError("invalid data bits");
             break;
@@ -206,35 +208,49 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         case 2:
             config->stopBits = UART_STOP_BITS_2;
             break;
-        case 0:
-            break;
+        // case 0:
+        //     break;
         default:
             mp_raise_ValueError("invalid stop bits");
             break;
     }
-    self->stop = config->stopBits + 1;
+    self->stop = config->stopBits; // was + 1
 
-    // set rx ring buffer
-    if (args[ARG_rxbuf].u_int > 0) {
+    // set tx rx ring buffer
+    // if (args[ARG_txbuf].u_int >= 0 || args[ARG_rxbuf].u_int >= 0) {
+        
+    // #if MICROPY_HW_ENABLE_UART_REPL
+    // if (self->uart_num == HW_UART_REPL) {
+    //    mp_raise_ValueError(MP_ERROR_TEXT("UART buffer size is fixed"));
+    // }
+    // #endif
+
+    if (args[ARG_txbuf].u_int >= 0) {
+        self->txbuf = args[ARG_txbuf].u_int;
+    }
+    if (args[ARG_rxbuf].u_int >= 0) {
+        self->rxbuf = args[ARG_rxbuf].u_int;
         uint16_t len = args[ARG_rxbuf].u_int + 1; // account for usable items in ringbuf
         uint8_t *buf;
+        int uart = self->uart_id;
         if (len <= UART_STATIC_RXBUF_LEN) {
-            buf = uart_ringbuf_array[self->uart_id];
-            MP_STATE_PORT(uart_rxbuf[self->uart_id]) = NULL; // clear any old pointer
+            buf = uart_ringbuf_array[uart];
+            len = UART_STATIC_RXBUF_LEN;
+            MP_STATE_PORT(uart_rxbuf[uart]) = NULL; // clear any old pointer
         } else {
             buf = m_new(uint8_t, len);
-            MP_STATE_PORT(uart_rxbuf[self->uart_id]) = buf; // retain root pointer
+            MP_STATE_PORT(uart_rxbuf[uart]) = buf; // retain root pointer
         }
-        uart_set_rxbuf(self->uart_id, buf, len);
+        uart_set_rxbuf(uart, buf, len);
     }
-
-    // set timeout
+    
+    // set timeout (in ms)
     self->timeout = args[ARG_timeout].u_int;
 
     // set timeout_char
-    // make sure it is at least as long as a whole character (13 bits to be safe)
+    // make sure it is at least as long as a whole character (12 bits to be safe)
     self->timeout_char = args[ARG_timeout_char].u_int;
-    uint32_t min_timeout_char = 13000 / self->baudrate + 1;
+    uint32_t min_timeout_char = 12000 / self->baudrate + 1; // was 13000
     if (self->timeout_char < min_timeout_char) {
         self->timeout_char = min_timeout_char;
     }
@@ -326,7 +342,7 @@ STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t 
     }
 
     // wait for first char to become available
-    if (!uart_rx_wait(self->uart_id, self->timeout * 1000)) {
+    if (!uart_rx_wait(self->uart_id, self->timeout * 1000)) { // self->timeout * 1000
         *errcode = MP_EAGAIN;
         return MP_STREAM_ERROR;
     }
@@ -335,7 +351,7 @@ STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t 
     uint8_t *buf = buf_in;
     for (;;) {
         *buf++ = uart_rx_one_char(self->uart_id);
-        if (--size == 0 || !uart_rx_wait(self->uart_id, self->timeout_char * 1000)) {
+        if (--size == 0 || !uart_rx_wait(self->uart_id, self->timeout_char * 1000)) { // was self->timeout_char * 1000
             // return number of bytes read
             return buf - (uint8_t*)buf_in;
         }

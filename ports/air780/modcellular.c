@@ -32,7 +32,7 @@
 #include "ps_lib_api.h"
 #include "modcellular.h"
 
-STATIC uint8_t network_status = 0;
+uint8_t network_status = 0;
 STATIC uint16_t network_exception = NTW_NO_EXC;
 STATIC uint8_t network_signal_quality = 0;
 STATIC int16_t network_signal_rx_level = 0;
@@ -167,8 +167,9 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             break;
 
         case LUAT_MOBILE_EVENT_PDP:
-            //LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
-            // modcellular_network_status_update(network_status & ~NTW_ACT_BIT, 0); ????
+            LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
+            // modcellular_network_status_update(network_status & ~NTW_ACT_BIT, 0); // ????
+            mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d", index, status);
             break;
 
         case LUAT_MOBILE_EVENT_NETIF:
@@ -282,10 +283,11 @@ void modcellular_init0(void) {
     luat_mobile_event_register_handler(mobile_event_cb); 
     modcellular_init_sms(); // set SMS storage to SM
 
-    net_lwip_init();
+    /*net_lwip_init(); // not need !
     net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
     network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
-
+    */
+    
     luat_mobile_set_period_work(90000, 5000, 4);
     luat_mobile_set_check_network_period(120000);
     luat_mobile_set_sim_id(2);
@@ -543,6 +545,18 @@ STATIC mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_set_bands_obj, 0, 1, modcellular_set_bands);
 
 
+/*void modcellular_get_attach_cb(uint16_t param_size, void* p_param) { 
+    psGetAttachState(PS_DIAL_REQ_HANDLER);
+}
+
+void modcellular_get_attach(uint16_t param_size, void* p_param) { 
+    get_attach_flag = 0;
+    cmsNonBlockApiCall(modcellular_get_attach_cb, 0, NULL);
+    WAIT_UNTIL(storage_flag, TIMEOUT_NETWORK_ACTIVATION, 100, mp_raise_RuntimeError("Can not get attach state");); // wait for CMI_PS_GET_ATTACH_STATE_CNF
+}
+*/
+
+
 STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Polls and switches GPRS status.
@@ -582,7 +596,21 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             mp_raise_ValueError("Network is already on");
             return mp_const_none;
         } else {
-            mp_raise_RuntimeError("Should never happens");
+            // luat_mobile_reset_stack();
+            REQUIRES_NETWORK_REGISTRATION;
+            int ret;
+
+            mp_printf(&mp_plat_print, "Warning: Deactivate APN\n");
+            ret = luat_mobile_active_apn(0, 1, 0);
+            mp_printf(&mp_plat_print, "Result: %d\n", ret);
+
+            mp_printf(&mp_plat_print, "Warning: Activate APN\n");
+            luat_mobile_active_apn(0, 1, 1);
+            mp_printf(&mp_plat_print, "Result: %d\n", ret);
+
+            if (!(network_status & NTW_ACT_BIT)) {
+                mp_raise_RuntimeError("Should never happens");
+            }
         }
     } else if (n_args != 0) {
         mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
@@ -665,7 +693,8 @@ STATIC mp_obj_t modcellular_stations(void) {
     luat_mobile_cell_info_t info = {0};
     if (luat_mobile_get_cell_info(&info) != 0) {
         mp_raise_RuntimeError("Failed to poll base stations");
-        return mp_const_none;
+        // return mp_const_none;
+        luat_mobile_get_last_notify_cell_info(&info);
     }
 
     mp_obj_t cell_list = mp_obj_new_list(0, NULL);

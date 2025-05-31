@@ -1,5 +1,0 @@
-#!/bin/bash
-
-idf.py -DMICROPY_BOARD=ESP32_CAM build
-cd ./build; esptool.py --chip esp32 merge_bin -o firmware_camera.bin @flash_args;cd ..
-cp ./build/firmware_camera.bin ./firmware/firmware_camera.bin

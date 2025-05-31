@@ -18,46 +18,93 @@ local full_addr = nil
 option("1 Board type")
     set_default(true)
     set_description("Board type")
-    add_defines("BOARD")
     set_default("Air780_GENERIC")
     set_values("Air780_GENERIC", "XMAKE_TEST_BOARD")
 option("2 Firmware version")
     set_description("Firmware version")
-    add_defines("FW_VERSION")
     set_default("v1.0")
 option("3 REPL port")
     set_description("REPL port")
-    add_defines("HW_UART_REPL")
-    set_default("UART1")
+    set_default("REPL over USB")
     set_values("REPL over USB", "UART1", "UART2")
 option("4 GPIO8-11 mux")
     set_description("GPIO8-11 mux")
-    add_defines("GPIO_MUX")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
-option("5 Main stub")
-    set_description("Main stub")
-    add_defines("MAINSTUB")
-    set_description("Boot module with (respawned on delete) main.py")
+option("5 Main stub respawn")
+    set_description("main.py respawn")
+    set_description("Respawned on delete main.py")
     set_default(true)
     set_showmenu(true)
-option("6 Reset on SMS")
+option("6 Main stub autorun")
+    set_description("main.py autorun")
+    set_description("Auto run main.py on load")
+    set_default(true)
+    set_showmenu(true)
+option("7 Reset on SMS")
     set_description("Reset on SMS")
-    add_defines("SMSRESET")
     set_description("Reset on SMS 'reset'")
     set_default(true)
     set_showmenu(true)
-option("7 Configiration by SMS")
+option("8 Configiration by SMS")
     set_description("Configiration by SMS")
-    add_defines("SMSCONFIG")
     set_default(true)
     set_showmenu(true)
-option("8 Acknowledge SMS on reset")
+option("9 Acknowledge SMS on reset")
     set_description("Acknowledge SMS on reset")
-    add_defines("SMSRESETACK")
     set_default(true)
     set_showmenu(true)
 
+option("1 RS485_UART1_USE")
+    set_description("UART1 connected to RS-485")
+    set_showmenu(true)
+    set_category("RS-485/UART1")
+    set_default(false)    
+option("2 RS485_UART1_PIN")
+    set_description("UART1 RS-485 control pin")
+    set_showmenu(true)
+    set_category("RS-485/UART1")
+    set_values(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 23, 24, 25, 26, 27, 28, 29, 30, 31)
+    set_default(16)    
+option("3 RS485_UART1_DELAY")
+    set_description("Delay after control pin flip (us)")
+    set_category("RS-485/UART1")
+    set_default("5000");
+option("4 RS485_UART1_PIN_LEVEL")
+    set_description("Control pin level to receive")
+    set_category("RS-485/UART1")
+    set_default(0);
+    set_values(0, 1)
+option("5 RS485_UART1_WAIT_TX")
+    set_description("Wait TX done (synchronious TX)")
+    set_category("RS-485/UART1")
+    set_default(true);
+
+
+option("1 RS485_UART2_USE")
+    set_description("UART2 connected to RS-485")
+    set_showmenu(true)
+    set_category("RS-485/UART2")
+    set_default(false)    
+option("2 RS485_UART2_PIN")
+    set_description("UART2 RS-485 control pin")
+    set_showmenu(true)
+    set_category("RS-485/UART2")
+    set_values(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 23, 24, 25, 26, 27, 28, 29, 30, 31)
+    set_default(30)    
+option("3 RS485_UART2_DELAY")
+    set_description("Delay after control pin flip (us)")
+    set_category("RS-485/UART2")
+    set_default("5000");
+option("4 RS485_UART2_PIN_LEVEL")
+    set_description("Control pin level to receive")
+    set_category("RS-485/UART2")
+    set_default(0);
+    set_values(0, 1)
+option("5 RS485_UART2_WAIT_TX")
+    set_description("Wait TX done (synchronious TX)")
+    set_category("RS-485/UART2")
+    set_default(true);
 
 
 package("gnu_rm")    
@@ -425,9 +472,22 @@ table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
 table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
 table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
 table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
-if get_config("6 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
-if get_config("7 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
-if get_config("8 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
+if get_config("6 Main stub autorun") then table.insert(DEFINES, "MAINRUN") end
+if get_config("7 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
+if get_config("8 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
+if get_config("9 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
+
+if get_config("1 RS485_UART1_USE") then table.insert(DEFINES, "RS485_UART1_USE") end
+if get_config("2 RS485_UART1_PIN")       then table.insert(DEFINES, "RS485_UART1_PIN="       .. get_config("2 RS485_UART1_PIN")) end
+if get_config("3 RS485_UART1_DELAY")     then table.insert(DEFINES, "RS485_UART1_DELAY="     .. get_config("3 RS485_UART1_DELAY")) end
+if get_config("4 RS485_UART1_PIN_LEVEL") then table.insert(DEFINES, "RS485_UART1_PIN_LEVEL=" .. get_config("4 RS485_UART1_PIN_LEVEL")) end
+if get_config("5 RS485_UART1_WAIT_TX")   then table.insert(DEFINES, "RS485_UART1_WAIT_TX") end
+
+if get_config("1 RS485_UART2_USE") then table.insert(DEFINES, "RS485_UART2_USE") end
+if get_config("2 RS485_UART2_PIN")       then table.insert(DEFINES, "RS485_UART2_PIN="       .. get_config("2 RS485_UART2_PIN")) end
+if get_config("3 RS485_UART2_DELAY")     then table.insert(DEFINES, "RS485_UART2_DELAY="     .. get_config("3 RS485_UART2_DELAY")) end
+if get_config("4 RS485_UART2_PIN_LEVEL") then table.insert(DEFINES, "RS485_UART2_PIN_LEVEL=" .. get_config("4 RS485_UART2_PIN_LEVEL")) end
+if get_config("5 RS485_UART2_WAIT_TX")   then table.insert(DEFINES, "RS485_UART2_WAIT_TX") end
 
 --------------------------------------------------------
 --------------- MICROPYTHON PART START -----------------
@@ -1311,7 +1371,7 @@ target("mainstub")
     on_build(function (target)
         local mainfn = "main.py"
         local bootfn = "boot.py"
-        if(get_config("5 Main stub")) then
+        if(get_config("5 Main stub respawn")) then
             print("Generate boot.py module with inserted '" .. mainfn .. "'")
             if os.exists("examples/" .. mainfn) then
                 local file = io.open("examples/" .. mainfn, "r")
@@ -1319,6 +1379,7 @@ target("mainstub")
                 file:close(file)
                 file = io.open("modules/" .. bootfn, "w")
                 file:write("import binascii\n")
+                -- file:write("os.remove('main.py')\n")
                 file:write("try:\n")
                 file:write("    os.stat('" .. mainfn .. "')\n")
                 file:write("except:\n")
@@ -1532,7 +1593,7 @@ target(USER_PROJECT_NAME..".elf")
         -- copy to external folder
         if is_plat("linux") then
             if os.exists(OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg") then
-                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/Air780_FW/" .. USER_PROJECT_NAME .. ".binpkg")
+                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
             end
         end
 

@@ -26,6 +26,8 @@
  * THE SOFTWARE.
  */
 
+#include "luat_debug.h"
+
 #include "py/mpconfig.h"
 #if MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS
 
@@ -538,6 +540,7 @@ STATIC mp_obj_t ssl_socket_make_new(mp_obj_ssl_context_t *ssl_context, mp_obj_t 
 
     ret = mbedtls_ssl_setup(&o->ssl, &ssl_context->conf);
     if (ret != 0) {
+        mp_printf(&mp_plat_print, "mbedtls_ssl_setup fail\n");
         goto cleanup;
     }
 
@@ -545,6 +548,7 @@ STATIC mp_obj_t ssl_socket_make_new(mp_obj_ssl_context_t *ssl_context, mp_obj_t 
         const char *sni = mp_obj_str_get_str(server_hostname);
         ret = mbedtls_ssl_set_hostname(&o->ssl, sni);
         if (ret != 0) {
+            mp_printf(&mp_plat_print, "mbedtls_ssl_set_hostname fail\n");
             goto cleanup;
         }
     } else if (ssl_context->authmode == MBEDTLS_SSL_VERIFY_REQUIRED && server_side == false) {
@@ -559,6 +563,7 @@ STATIC mp_obj_t ssl_socket_make_new(mp_obj_ssl_context_t *ssl_context, mp_obj_t 
     if (do_handshake_on_connect) {
         while ((ret = mbedtls_ssl_handshake(&o->ssl)) != 0) {
             if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+                mp_printf(&mp_plat_print, "do_handshake_on_connect fail\n");
                 goto cleanup;
             }
             mp_event_wait_ms(1);

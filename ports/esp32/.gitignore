@@ -1,2 +1,8 @@
+# Other files and folders
+.settings/
+.vscode/
+
 dependencies.lock
 managed_components/
+old/
+new/

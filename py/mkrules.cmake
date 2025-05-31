@@ -53,6 +53,20 @@ foreach(_arg ${MICROPY_CPP_DEF})
 endforeach()
 list(APPEND MICROPY_CPP_FLAGS ${MICROPY_CPP_FLAGS_EXTRA})
 
+set(CFLAGS_GENERATED "${CMAKE_BINARY_DIR}/cflags")
+list(JOIN MICROPY_CPP_FLAGS " " MICROPY_CPP_FLAGS_JOINED)
+
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+    set(SEDQ "s/^Q\(.*\)/\"^&\"/")
+    set(QUOTE "\"")
+    set(QUOTE2 "\\\"")
+    string(REPLACE ${QUOTE} ${QUOTE2} MICROPY_CPP_FLAGS_JOINED_ESCAPED ${MICROPY_CPP_FLAGS_JOINED})
+string(REPLACE "/" "\\" CMAKE_C_COMPILER ${CMAKE_C_COMPILER})
+else()
+    set(SEDQ "s/^Q(.*)/\"&\"/")
+endif()
+file(WRITE ${CFLAGS_GENERATED} ${MICROPY_CPP_FLAGS_JOINED_ESCAPED})
+
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 target_sources(${MICROPY_TARGET} PRIVATE
@@ -80,7 +94,7 @@ add_custom_target(
 # it was last run, but it looks like it's not possible to specify that with cmake.
 add_custom_command(
     OUTPUT ${MICROPY_QSTRDEFS_LAST}
-    COMMAND ${Python3_EXECUTABLE} ${MICROPY_PY_DIR}/makeqstrdefs.py pp ${CMAKE_C_COMPILER} -E output ${MICROPY_GENHDR_DIR}/qstr.i.last cflags ${MICROPY_CPP_FLAGS} -DNO_QSTR cxxflags ${MICROPY_CPP_FLAGS} -DNO_QSTR sources ${MICROPY_SOURCE_QSTR}
+    COMMAND ${Python3_EXECUTABLE} ${MICROPY_PY_DIR}/makeqstrdefs.py pp ${CMAKE_C_COMPILER} -E output ${MICROPY_GENHDR_DIR}/qstr.i.last cflags @${CFLAGS_GENERATED} -DNO_QSTR cxxflags @${CFLAGS_GENERATED} -DNO_QSTR sources ${MICROPY_SOURCE_QSTR}
     DEPENDS ${MICROPY_MPVERSION}
         ${MICROPY_SOURCE_QSTR}
     VERBATIM
@@ -107,7 +121,10 @@ add_custom_command(
 
 add_custom_command(
     OUTPUT ${MICROPY_QSTRDEFS_PREPROCESSED}
-    COMMAND cat ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED} | sed "s/^Q(.*)/\"&\"/" | ${CMAKE_C_COMPILER} -E ${MICROPY_CPP_FLAGS} - | sed "s/^\\\"\\(Q(.*)\\)\\\"/\\1/" > ${MICROPY_QSTRDEFS_PREPROCESSED}
+    get_cmake_property(_variableNames VARIABLES)    
+    #COMMAND cat ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED} | sed "s/^Q(.*)/\"&\"/" | ${CMAKE_C_COMPILER} -E ${MICROPY_CPP_FLAGS} - | sed "s/^\\\"\\(Q(.*)\\)\\\"/\\1/" > ${MICROPY_QSTRDEFS_PREPROCESSED}
+    #COMMAND cat ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED} | sed "s/^Q\(.*\)/\"^&\"/" | ${CMAKE_C_COMPILER} -E ${MICROPY_CPP_FLAGS} - | sed "s/^\\\"\\(Q(.*)\\)\\\"/\\1/" > ${MICROPY_QSTRDEFS_PREPROCESSED}
+    COMMAND cat ${MICROPY_QSTRDEFS_PY} ${MICROPY_QSTRDEFS_PORT} ${MICROPY_QSTRDEFS_COLLECTED} | sed "${SEDQ}" | ${CMAKE_C_COMPILER} -E ${MICROPY_CPP_FLAGS} - | sed "s/^\\\"\\(Q(.*)\\)\\\"/\\1/" > ${MICROPY_QSTRDEFS_PREPROCESSED}
     DEPENDS ${MICROPY_QSTRDEFS_PY}
         ${MICROPY_QSTRDEFS_PORT}
         ${MICROPY_QSTRDEFS_COLLECTED}

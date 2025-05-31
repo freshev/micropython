@@ -1,6 +1,7 @@
 ## IDF Component Manager Manifest File
 dependencies:
-  espressif/mdns: "~1.1.0"
-  espressif/esp_tinyusb: "~1.0.0"
+  espressif/mdns: ~1.1.0
   idf:
-    version: ">=5.0.4"
+    version: '>=5.0.4'
+  espressif/esp32-camera: ^2.0.15
+  espressif/esp_tinyusb: ^1.6.0
