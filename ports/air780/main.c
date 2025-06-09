@@ -51,6 +51,7 @@
 #include "luat_pm.h"
 #include "luat_uart.h"
 #include "luat_network_adapter.h"
+#include "plat_config.h"
 
 
 // #include "luat_sms.h"
@@ -60,7 +61,7 @@
 #define MICROPYTHON_TASK_PRIORITY   (20) 
 
 #define MICROPY_HEAP_MAX_SIZE       (1024 * 300)
-#define MICROPY_HEAP_MIN_SIZE       (1024 * 10)
+#define MICROPY_HEAP_MIN_SIZE       (1024 * 10) 
 
 #define MP_TASK_STACK_LIMIT_MARGIN  (2048)
 #define MICROPY_TASK_STACK_SIZE     (16 * 1024)
@@ -90,17 +91,6 @@ void* mp_allocate_heap(uint32_t* size) {
              counter++;
         }
     }
-    /*
-    // reduce heap size for 
-    luat_heap_free(ptr);
-    h_size = h_size - 5 * MICROPY_HEAP_MIN_SIZE; // at least MICROPY_HEAP_MIN_SIZE available to system heap
-    ptr = luat_heap_malloc(h_size);
-    if (ptr == 0) {
-        LUAT_DEBUG_PRINT("Unrecoverable error: %d heap size", h_size);
-        luat_pm_reboot();
-        while(1);
-    }*/
-
     size[0] = h_size;
     if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
     LUAT_DEBUG_PRINT("finally: %d heap size", h_size);
@@ -108,6 +98,11 @@ void* mp_allocate_heap(uint32_t* size) {
 }
 
 void mp_task(void *param) {
+
+#ifdef HALTONEXC
+    // If the system crashes, it will print information instead of restarting.
+    BSP_SetPlatConfigItemValue(PLAT_CONFIG_ITEM_FAULT_ACTION, 0); 
+#endif
 
     gc_helper_regs_t regs;    
     uint32_t mp_task_heap_size;

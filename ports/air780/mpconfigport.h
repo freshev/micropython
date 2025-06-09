@@ -7,7 +7,7 @@
 #include "mpconfigboard.h"
 
 #define MICROPY_PY_SYS_PLATFORM "Air780"
-#define FOTA_URL "https://asque.ru/firmware/DeviceAir_FW/firmware_debug_%s_to_%s.pack"
+#define FOTA_URL "https://asque.ru/firmware/Device_FW/firmware_debug_%s_to_%s.pack"
 #define MACHINE_HW_WATCHDOG_TIMEOUT (500)
 #define MACHINE_HW_WATCHDOG_PIN (GPIO_PIN7)
 

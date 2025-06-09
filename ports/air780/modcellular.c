@@ -38,6 +38,9 @@ STATIC uint8_t network_signal_quality = 0;
 STATIC int16_t network_signal_rx_level = 0;
 STATIC int8_t network_signal_snr = 0;
 STATIC mp_obj_t network_status_callback = mp_const_none;
+STATIC int8_t activate_flag = 0;
+STATIC int8_t deactivate_flag = 0;
+
 
 #define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
 
@@ -46,6 +49,7 @@ STATIC mp_obj_t network_status_callback = mp_const_none;
 // Tracks the status on the network
 
 void modcellular_network_status_update(uint8_t new_status, uint16_t new_exception) {
+    if(new_exception) mp_printf(&mp_plat_print, "new_status: 0x%02x, exc: 0x%04x, a_flag: %d, d_flag: %d\n", new_status, new_exception, activate_flag, deactivate_flag);
     if (new_exception) network_exception = new_exception;
     network_status = new_status;
     if (network_status_callback && network_status_callback != mp_const_none) {
@@ -63,12 +67,15 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
     ip_addr_t ipv4;
     ip_addr_t ipv6;
 
+    // if(event != LUAT_MOBILE_EVENT_CELL_INFO) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
+    if(event == 7) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
+
     switch(event) {
-        case LUAT_MOBILE_EVENT_CFUN:
-            LUAT_DEBUG_PRINT("CFUN message, status %d", status);
+        case LUAT_MOBILE_EVENT_CFUN: // 0
+            // LUAT_DEBUG_PRINT("CFUN message, status %d", status);
             break;
         
-        case LUAT_MOBILE_EVENT_SIM:
+        case LUAT_MOBILE_EVENT_SIM: // 1
             //if (status != LUAT_MOBILE_SIM_NUMBER) {  LUAT_DEBUG_PRINT("SIM card message, card slot %d", index); }
             switch(status) {
                 case LUAT_MOBILE_SIM_READY:
@@ -87,14 +94,14 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
                     break;
                 }
             break;
-        case LUAT_MOBILE_EVENT_REGISTER_STATUS:
+        case LUAT_MOBILE_EVENT_REGISTER_STATUS: // 2
             
             switch(status) {
-                case LUAT_MOBILE_STATUS_UNREGISTER:
+                case LUAT_MOBILE_STATUS_UNREGISTER: // 0
                     LUAT_DEBUG_PRINT("Mobile status unregistered");
                     modcellular_network_status_update(0, 0);
                     break;
-                case LUAT_MOBILE_STATUS_REGISTERED:
+                case LUAT_MOBILE_STATUS_REGISTERED: // 1
                     LUAT_DEBUG_PRINT("Mobile status registered home", status);
                     modcellular_network_status_update(NTW_REG_BIT, 0);
                     break;  
@@ -122,7 +129,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             }
             break;
 
-        case LUAT_MOBILE_EVENT_CELL_INFO:
+        case LUAT_MOBILE_EVENT_CELL_INFO: // 3
             //LUAT_DEBUG_PRINT("LUAT_MOBILE_EVENT_CELL_INFO with status %d", status);
             switch(status) {                
                 case LUAT_MOBILE_CELL_INFO_UPDATE:
@@ -166,20 +173,20 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             }
             break;
 
-        case LUAT_MOBILE_EVENT_PDP:
-            LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
-            // modcellular_network_status_update(network_status & ~NTW_ACT_BIT, 0); // ????
-            mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d", index, status);
+        case LUAT_MOBILE_EVENT_PDP: // 4
+            // LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
+            mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d\n", index, status);
+            // mp_printf(&mp_plat_print, "network_check_ready: %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
             break;
 
-        case LUAT_MOBILE_EVENT_NETIF:
+        case LUAT_MOBILE_EVENT_NETIF: // 5
             switch (status) {
                 case LUAT_MOBILE_NETIF_LINK_ON: {
-                    // LUAT_DEBUG_PRINT("Can access the Internet (index=%d)", index);
-                    // moved to modsocket.c, important for network socket 
+                    // LUAT_DEBUG_PRINT("Can access the Internet (index=%d)", index);                    
                     // here index is NW_ADAPTER_INDEX_LWIP_GPRS
                     // uint8_t is_ipv6;
-                    // luat_socket_check_ready(index, &is_ipv6);
+                    // luat_socket_check_ready(index, &is_ipv6); // adding this leads to reboot while mobile searching! 
+
                     luat_mobile_get_local_ip(0, 1, &ipv4, &ipv6);
                     if (ipv4.type != 0xff) { LUAT_DEBUG_PRINT("IPV4 %s", ip4addr_ntoa(&ipv4.u_addr.ip4)); }
                     if (ipv6.type != 0xff) { LUAT_DEBUG_PRINT("IPV6 %s", ip6addr_ntoa(&ipv4.u_addr.ip6)); }
@@ -187,12 +194,12 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
                     break;
                 default:
                     //LUAT_DEBUG_PRINT("Can't access the Internet");
-                    modcellular_network_status_update(network_status & ~NTW_ACT_BIT, NTW_EXC_ACT_FAILED);
+                    modcellular_network_status_update(network_status & ~NTW_ACT_BIT, deactivate_flag ? 0:NTW_EXC_ACT_FAILED);
                     break;
             }
             }
             break;
-        case LUAT_MOBILE_EVENT_TIME_SYNC:
+        case LUAT_MOBILE_EVENT_TIME_SYNC: // 6
             //if (status == 0) {
             //  LUAT_DEBUG_PRINT("Time synchronized");
             //} else {
@@ -200,11 +207,11 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             //}
             break;
 
-        case LUAT_MOBILE_EVENT_CSCON:
+        case LUAT_MOBILE_EVENT_CSCON: // 7, RRC status: 0 idle 1 active 
             //LUAT_DEBUG_PRINT("LUAT_MOBILE_EVENT_CSCON with status %d", status);
             if(status == 0) {
                 //LUAT_DEBUG_PRINT("RRC status detached");
-                modcellular_network_status_update(network_status & ~NTW_ATT_BIT, 0);
+                modcellular_network_status_update(network_status & ~NTW_ATT_BIT & ~NTW_ACT_BIT, 0);
             }
             if(status == 1) {
                 //LUAT_DEBUG_PRINT("RRC status attached");
@@ -213,16 +220,38 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             // modcellular_network_status_update(network_status & ~NTW_ATT_BIT, NTW_EXC_ATT_FAILED);
             break;
 
-        case LUAT_MOBILE_EVENT_BEARER:
-            //LUAT_DEBUG_PRINT("BEARER status %d", status);
+        case LUAT_MOBILE_EVENT_BEARER: // 8
+            // LUAT_DEBUG_PRINT("BEARER status %d", status);
+            mp_printf(&mp_plat_print, "BEARER status %d\n", status);
+            // LUAT_MOBILE_BEARER_GET_DEFAULT_APN = 0, /**< Get the default APN*/
+            // LUAT_MOBILE_BEARER_APN_SET_DONE    = 1, /**< Set APN information completed*/
+            // LUAT_MOBILE_BEARER_AUTH_SET_DONE   = 2, /**< Set APN encryption status completed*/
+            // LUAT_MOBILE_BEARER_DEL_DONE        = 3, /**< Deletion of APN information completed*/
+            // LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE = 4, /**< APN activation/deactivation completed*/
+            if(status == LUAT_MOBILE_BEARER_AUTH_SET_DONE) luat_mobile_active_apn(0, 1, 1);
+            if(status == LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE) {
+                if(activate_flag == 1) {
+                    // cellular.gprs("apn", "user", "pass")
+                    activate_flag = 0;
+                    modcellular_network_status_update(network_status | NTW_ACT_BIT, 0);
+                }
+                if(deactivate_flag == 1) {
+                    // cellular.gprs(0)
+                    deactivate_flag = 0;
+                    modcellular_network_status_update(network_status & ~NTW_ACT_BIT, 0);
+                }
+            }
             break;
 
         case LUAT_MOBILE_EVENT_NAS_ERROR:
             LUAT_DEBUG_PRINT("NAS exception type %d, rejection reason %d", index, status);
+            // NAS exception type 6, rejection reason 17 - (Mobile status registration denied) Registration may be rejected. Please contact the SIM card provider to check whether the SIM card is in arrears or the device and card are separated. 
+            modcellular_network_status_update(0, NTW_EXC_REG_FAILED);
             break;
 
         case LUAT_MOBILE_EVENT_FATAL_ERROR:
             LUAT_DEBUG_PRINT("The network needs serious failure. It is recommended to restart the protocol stack after 5 seconds.");
+            modcellular_network_status_update(0, NTW_EXC_REG_FAILED);
             break;
         default:
             LUAT_DEBUG_PRINT("No handler: event=%d, status=%d", event, status);
@@ -277,17 +306,13 @@ void modcellular_init0(void) {
     // Reset statuses
     network_exception = NTW_NO_EXC;
     // set RRC release time to 1 sec and "idle timeout" to 55 secs
-    luat_mobile_set_auto_rrc_default();    
+    luat_mobile_set_auto_rrc_default();
+
     // luat_mobile_set_sync_time(1);
 
     luat_mobile_event_register_handler(mobile_event_cb); 
     modcellular_init_sms(); // set SMS storage to SM
 
-    /*net_lwip_init(); // not need !
-    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
-    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
-    */
-    
     luat_mobile_set_period_work(90000, 5000, 4);
     luat_mobile_set_check_network_period(120000);
     luat_mobile_set_sim_id(2);
@@ -355,7 +380,7 @@ STATIC mp_obj_t modcellular_poll_network_exception(void) {
     // ========================================
     // Raises a last network exception.
     // ========================================
-    uint8_t e = network_exception;
+    uint32_t e = network_exception;
     network_exception = NTW_NO_EXC;
 
     switch (e) {
@@ -545,16 +570,38 @@ STATIC mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_set_bands_obj, 0, 1, modcellular_set_bands);
 
 
-/*void modcellular_get_attach_cb(uint16_t param_size, void* p_param) { 
-    psGetAttachState(PS_DIAL_REQ_HANDLER);
+STATIC mp_obj_t modcellular_reset_wto(int timeout) {
+    // ========================================
+    // Resets network settings to defaults.
+    // Note:
+    //     Conflicts with setting flight mode. 
+    //     Only one can be used within a certain period of time.
+    // ========================================    
+    modcellular_init0();
+    // do not use luat_mobile_reset_stack, use fly_mode instead
+    // luat_mobile_reset_stack(); 
+
+    /*char apn[64] = {0};
+    luat_mobile_set_flymode(0, 1);    // Delete the advanced flight mode saved by the system            
+    luat_rtos_task_sleep(100);
+    luat_mobile_set_flymode(0, 0);    // Exit airplane mode
+    */
+    luat_mobile_reset_stack();
+    WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+
+    uint8_t is_ipv6;
+    net_lwip_init();
+    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
+    luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket
+
+    return mp_const_none;
+}
+STATIC mp_obj_t modcellular_reset(void) {
+    modcellular_reset_wto(TIMEOUT_NETWORK_ACTIVATION);
 }
 
-void modcellular_get_attach(uint16_t param_size, void* p_param) { 
-    get_attach_flag = 0;
-    cmsNonBlockApiCall(modcellular_get_attach_cb, 0, NULL);
-    WAIT_UNTIL(storage_flag, TIMEOUT_NETWORK_ACTIVATION, 100, mp_raise_RuntimeError("Can not get attach state");); // wait for CMI_PS_GET_ATTACH_STATE_CNF
-}
-*/
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_reset_obj, modcellular_reset);
 
 
 STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
@@ -579,43 +626,62 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             mp_raise_ValueError("Unkown integer argument supplied, zero (or False) expected");
             return mp_const_none;
         }
-        // mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
-        // if (n_args == 2) timeout = mp_obj_get_int(args[1]);
-        // Do nothing
+        mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
+        if (n_args == 2) timeout = mp_obj_get_int(args[1]);
+
+        /*deactivate_flag = 1;
+        luat_mobile_active_apn(0, 1, 0);
         // Perhaps deactivate RRC ?
+        WAIT_UNTIL((network_status & NTW_ACT_BIT) == 0, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+        */
+
         return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 
     } else if (n_args == 3 || n_args == 4) {
         const char* c_apn = mp_obj_str_get_str(args[0]);
         const char* c_user = mp_obj_str_get_str(args[1]);
         const char* c_pass = mp_obj_str_get_str(args[2]);
-        //mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
-        //if (n_args == 4) timeout = mp_obj_get_int(args[3]);
+        mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
+        if (n_args == 4) timeout = mp_obj_get_int(args[3]);
 
-        if (network_status & NTW_ACT_BIT) {
+        /*if (network_status & NTW_ACT_BIT) {
             mp_raise_ValueError("Network is already on");
             return mp_const_none;
-        } else {
-            // luat_mobile_reset_stack();
-            REQUIRES_NETWORK_REGISTRATION;
-            int ret;
+        } else */ {
+            //mp_printf(&mp_plat_print, "network_check_ready(1): %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
+            
+            deactivate_flag = 1;
+            activate_flag = 1;
+            modcellular_reset_wto(timeout);
+            
+            gc_collect();
 
-            mp_printf(&mp_plat_print, "Warning: Deactivate APN\n");
-            ret = luat_mobile_active_apn(0, 1, 0);
-            mp_printf(&mp_plat_print, "Result: %d\n", ret);
+            WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+            //mp_printf(&mp_plat_print, "network_check_ready(2): %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
+            
 
-            mp_printf(&mp_plat_print, "Warning: Activate APN\n");
-            luat_mobile_active_apn(0, 1, 1);
-            mp_printf(&mp_plat_print, "Result: %d\n", ret);
+            /*activate_flag = 1;
+            luat_mobile_user_apn_auto_active(0, 1, 3, 3, (uint8_t*)c_apn, strlen(c_apn), (uint8_t*)c_user, strlen(c_user), (uint8_t*)c_pass, strlen(c_pass));
+            WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+
+            uint8_t is_ipv6;
+            net_lwip_init();
+            net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+            network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
+            luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket
+
+            gc_collect();
+            */
+            modcellular_poll_network_exception();
 
             if (!(network_status & NTW_ACT_BIT)) {
-                mp_raise_RuntimeError("Should never happens");
+                mp_raise_RuntimeError("Failed to activate network");
             }
         }
     } else if (n_args != 0) {
         mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
     }
-
+    
     return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 }
 
@@ -692,7 +758,7 @@ STATIC mp_obj_t modcellular_stations(void) {
     // ========================================
     luat_mobile_cell_info_t info = {0};
     if (luat_mobile_get_cell_info(&info) != 0) {
-        mp_raise_RuntimeError("Failed to poll base stations");
+        // mp_raise_RuntimeError("Failed to poll base stations");
         // return mp_const_none;
         luat_mobile_get_last_notify_cell_info(&info);
     }
@@ -734,20 +800,6 @@ STATIC mp_obj_t modcellular_stations(void) {
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_stations_obj, modcellular_stations);
-
-STATIC mp_obj_t modcellular_reset(void) {
-    // ========================================
-    // Resets network settings to defaults.
-    // Note:
-    //     Conflicts with setting flight mode. 
-    //     Only one can be used within a certain period of time.
-    // ========================================    
-    luat_mobile_reset_stack();
-    modcellular_init0();
-    return mp_const_none;
-}
-
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_reset_obj, modcellular_reset);
 
 STATIC mp_obj_t modcellular_on_status_event(mp_obj_t callable) {
     // ========================================

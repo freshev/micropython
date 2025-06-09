@@ -15,45 +15,50 @@ local script_addr = nil
 local full_addr = nil
 
 -- to configure board run: xmake f --menu
-option("1 Board type")
+option("01 Board type")
     set_default(true)
     set_description("Board type")
     set_default("Air780_GENERIC")
     set_values("Air780_GENERIC", "XMAKE_TEST_BOARD")
-option("2 Firmware version")
+option("02 Firmware version")
     set_description("Firmware version")
     set_default("v1.0")
-option("3 REPL port")
+option("03 REPL port")
     set_description("REPL port")
     set_default("REPL over USB")
     set_values("REPL over USB", "UART1", "UART2")
-option("4 GPIO8-11 mux")
+option("04 GPIO8-11 mux")
     set_description("GPIO8-11 mux")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
-option("5 Main stub respawn")
+option("05 Main stub respawn")
     set_description("main.py respawn")
     set_description("Respawned on delete main.py")
     set_default(true)
     set_showmenu(true)
-option("6 Main stub autorun")
+option("06 Main stub autorun")
     set_description("main.py autorun")
     set_description("Auto run main.py on load")
     set_default(true)
     set_showmenu(true)
-option("7 Reset on SMS")
+option("07 Reset on SMS")
     set_description("Reset on SMS")
     set_description("Reset on SMS 'reset'")
     set_default(true)
     set_showmenu(true)
-option("8 Configiration by SMS")
+option("08 Configiration by SMS")
     set_description("Configiration by SMS")
     set_default(true)
     set_showmenu(true)
-option("9 Acknowledge SMS on reset")
+option("09 Acknowledge SMS on reset")
     set_description("Acknowledge SMS on reset")
     set_default(true)
     set_showmenu(true)
+option("10 Dump and halt on core exception")
+    set_description("Dump and halt on core exception")
+    set_default(false)
+    set_showmenu(true)
+
 
 option("1 RS485_UART1_USE")
     set_description("UART1 connected to RS-485")
@@ -447,22 +452,22 @@ local RTE_UART2 = 1
 local RTE_I2C1 = 1
 local RTE_SPI0 = 1
 
-if get_config("1 Board type") ~= nil then
-    if os.isdir("boards/" .. get_config("1 Board type")) then BOARD = get_config("1 Board type") end
+if get_config("01 Board type") ~= nil then
+    if os.isdir("boards/" .. get_config("01 Board type")) then BOARD = get_config("01 Board type") end
 end
 
-if get_config("2 Firmware version") ~= nil then
-    USER_PROJECT_NAME_VERSION = get_config("2 Firmware version")
+if get_config("02 Firmware version") ~= nil then
+    USER_PROJECT_NAME_VERSION = get_config("02 Firmware version")
     FW_VERSION = USER_PROJECT_NAME_VERSION
 end
-if get_config("3 REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
-if get_config("3 REPL port") == "UART1" then HW_UART_REPL=1 end
-if get_config("3 REPL port") == "UART2" then HW_UART_REPL=2 end
-if get_config("4 GPIO8-11 mux") == "UART2 & I2C1" then 
+if get_config("03 REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
+if get_config("03 REPL port") == "UART1" then HW_UART_REPL=1 end
+if get_config("03 REPL port") == "UART2" then HW_UART_REPL=2 end
+if get_config("04 GPIO8-11 mux") == "UART2 & I2C1" then 
     RTE_SPI0 = 0 
 end
 
-if get_config("4 GPIO8-11 mux") == "SPI0" then
+if get_config("04 GPIO8-11 mux") == "SPI0" then
    RTE_UART2 = 0
    RTE_I2C1 = 0
 end
@@ -472,10 +477,11 @@ table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
 table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
 table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
 table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
-if get_config("6 Main stub autorun") then table.insert(DEFINES, "MAINRUN") end
-if get_config("7 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
-if get_config("8 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
-if get_config("9 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
+if get_config("06 Main stub autorun") then table.insert(DEFINES, "MAINRUN") end
+if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
+if get_config("08 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
+if get_config("09 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
+if get_config("10 Dump and halt on core exception") then table.insert(DEFINES, "HALTONEXC") end
 
 if get_config("1 RS485_UART1_USE") then table.insert(DEFINES, "RS485_UART1_USE") end
 if get_config("2 RS485_UART1_PIN")       then table.insert(DEFINES, "RS485_UART1_PIN="       .. get_config("2 RS485_UART1_PIN")) end
@@ -1371,7 +1377,7 @@ target("mainstub")
     on_build(function (target)
         local mainfn = "main.py"
         local bootfn = "boot.py"
-        if(get_config("5 Main stub respawn")) then
+        if(get_config("05 Main stub respawn")) then
             print("Generate boot.py module with inserted '" .. mainfn .. "'")
             if os.exists("examples/" .. mainfn) then
                 local file = io.open("examples/" .. mainfn, "r")

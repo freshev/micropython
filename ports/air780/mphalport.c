@@ -39,6 +39,8 @@
 
 #include "luat_mcu.h"
 #include "luat_gpio.h"
+#include "luat_rtos.h"
+#include "luat_debug.h"
 
 uint8_t stdin_ringbuf_array[1024 * 2];
 ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array), 0, 0};
@@ -54,10 +56,28 @@ uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
     return ret;
 }
 
+
+luat_rtos_task_handle replTimeoutTaskHandle;
+void mp_repl_timeout_task(void *param) {
+    while(1);
+}
+int replTimeoutTaskFlag = 0;
+
 int mp_hal_stdin_rx_chr(void) {
+
+    if(replTimeoutTaskFlag) {
+        // LUAT_DEBUG_PRINT("Start repl timeout task");
+        luat_rtos_task_create(&replTimeoutTaskHandle, 1024, 10, "repl_timeout_task", mp_repl_timeout_task, NULL, NULL);
+    }
     for (;;) {
         int c = ringbuf_get(&stdin_ringbuf);
         if (c != -1) {
+            if(replTimeoutTaskFlag)  {
+                if(replTimeoutTaskHandle) {
+                    // LUAT_DEBUG_PRINT("Stop repl timeout task");
+                    luat_rtos_task_delete(replTimeoutTaskHandle);
+                }
+            }
             return c;
         }
         luat_rtos_task_sleep(1);

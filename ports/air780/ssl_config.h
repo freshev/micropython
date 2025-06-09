@@ -1,7 +1,6 @@
 /*
  *the mbedtls configuration file of  libcoap
  */
-
 #ifndef MBEDTLS_CONFIG_COMM_H
 #define MBEDTLS_CONFIG_COMM_H
 
@@ -18,17 +17,17 @@
 #endif
 
 #include "config_ec_ssl_normal.h"
-
 #include "config_ec_ssl_http.h"
-
 #include "config_ec_ssl_mqtt.h"
+
+#include "stdio.h"
 
 #undef MBEDTLS_SSL_PROTO_SSL3
 #undef MBEDTLS_SSL_MAX_CONTENT_LEN
-//#define MBEDTLS_SSL_MAX_CONTENT_LEN         (16*1024) // ENOMEM during requests
-//#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (16*1024) // ENOMEM during requests
-#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K
-#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024) // should not be less than 4K
+//#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K, 
+//#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024) // 4K buffer causes too frequent "TLS handshake fragmentation not supported" error
+#define MBEDTLS_SSL_MAX_CONTENT_LEN         (8*1024) 
+#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (8*1024) 
 
 
 /**
@@ -186,7 +185,7 @@
  */
 //#define MBEDTLS_PLATFORM_EXIT_ALT
 //#define MBEDTLS_PLATFORM_TIME_ALT
-//#define MBEDTLS_PLATFORM_FPRINTF_ALT
+#define MBEDTLS_PLATFORM_FPRINTF_ALT
 //#define MBEDTLS_PLATFORM_PRINTF_ALT
 //#define MBEDTLS_PLATFORM_SNPRINTF_ALT
 //#define MBEDTLS_PLATFORM_NV_SEED_ALT
@@ -959,7 +958,7 @@
  *
  * Uncomment this macro to let the buffer allocator print out error messages.
  */
-//#define MBEDTLS_MEMORY_DEBUG
+#define MBEDTLS_MEMORY_DEBUG
 
 /**
  * \def MBEDTLS_MEMORY_BACKTRACE
@@ -1019,7 +1018,7 @@
  *
  * Enable the checkup functions (*_self_test).
  */
-//#define MBEDTLS_SELF_TEST
+// #define MBEDTLS_SELF_TEST
 
 /**
  * \def MBEDTLS_SHA256_SMALLER
@@ -1065,7 +1064,7 @@
  * a timing side-channel.
  *
  */
-//#define MBEDTLS_SSL_DEBUG_ALL
+// #define MBEDTLS_SSL_DEBUG_ALL
 
 /** \def MBEDTLS_SSL_ENCRYPT_THEN_MAC
  *
@@ -2043,7 +2042,7 @@
  *
  * Enable this module to enable the buffer memory allocator.
  */
-//#define MBEDTLS_MEMORY_BUFFER_ALLOC_C
+#define MBEDTLS_MEMORY_BUFFER_ALLOC_C
 
 /**
  * \def MBEDTLS_NET_C
@@ -2619,6 +2618,8 @@
 //#define MBEDTLS_PLATFORM_STD_FREE            free /**< Default free to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
+extern int mp_printf2(FILE *stream, const char *format, ...);
+#define MBEDTLS_PLATFORM_STD_FPRINTF mp_printf2
 //#define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
 /* Note: your snprintf must correclty zero-terminate the buffer! */
@@ -2692,7 +2693,7 @@
 #define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_KEY_EXCHANGE
 
 // undefine MBEDTLS_THREADING_C, because of crash in ctr_drbg.c:
-#undef MBEDTLS_THREADING_C
+// #undef MBEDTLS_THREADING_C
 // undefine MBEDTLS_DEBUG_C to disable DEBUG output to stdout
 #undef MBEDTLS_DEBUG_C
 

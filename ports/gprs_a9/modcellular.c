@@ -949,7 +949,7 @@ STATIC mp_obj_t modcellular_poll_network_exception(void) {
     // ========================================
     // Raises a last network exception.
     // ========================================
-    uint8_t e = network_exception;
+    uint32_t e = network_exception;
     network_exception = NTW_NO_EXC;
 
     switch (e) {

@@ -77,9 +77,9 @@ typedef struct _socket_obj_t {
     network_ctrl_t *ctrl;
     uint8_t state;
     unsigned int retries;
-    ringbuf_t *recv_buffer;  // A ring buffer for received packets
+    uint8_t *recv_buffer;  // A buffer for received packets
     size_t recv_buffer_size; // The size of the recv_buffer
-    // uint8_t *in_recv_buffer; // Income packets buffer
+    int recv_buffer_pos; // buffer write position
 
     #if MICROPY_PY_SOCKET_EVENTS
     mp_obj_t events_callback;
@@ -298,10 +298,9 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
     network_set_base_mode(sock->ctrl, /*is_tcp*/ 1, /*tcp timeout ms*/15000, /*keep alive*/1, /*keep idle ms*/300, /*keep interval*/5, /*keep count*/9);
 
     sock->recv_buffer_size = MBEDTLS_SSL_MAX_CONTENT_LEN; // at least the size of SSL packet maximum length
-    sock->recv_buffer = m_new_obj(ringbuf_t);
-    ringbuf_alloc(sock->recv_buffer, sock->recv_buffer_size + 1);
-    // sock->in_recv_buffer = m_new(uint8_t, sock->recv_buffer_size); 
-    if(sock->recv_buffer->buf == NULL /*|| sock->in_recv_buffer == NULL*/) mp_raise_OSError(MP_ENOMEM);
+    sock->recv_buffer = m_new(uint8_t, sock->recv_buffer_size);
+    if(sock->recv_buffer == NULL) mp_raise_OSError(MP_ENOMEM);
+    sock->recv_buffer_pos = 0;
 
     luat_mobile_set_rrc_auto_release_time(5); 
 
@@ -395,7 +394,7 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
         
         return client;
     } else {
-        LUAT_DEBUG_PRINT("client socket allocation failed");
+        LUAT_DEBUG_PRINT("Client socket allocation failed");
         return mp_const_none;
     } 
 }
@@ -422,12 +421,14 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
             mp_raise_RuntimeError("network_wait_link_up failed. Network status: %d", network_status);
             raise_err = errno;
         }
+        luat_rtos_task_sleep(100);
         int r = network_connect(self->ctrl, addrstring, strlen(addrstring), NULL, remote_port, 15000);
 
         if (r != 0) {
             raise_err = errno;
         }
-        // LUAT_DEBUG_PRINT("socket_connect (%d) result=%d, error=%d ", self->ctrl->socket_id, r, errno);
+        // LUAT_DEBUG_PRINT("Connect socket %d result=%d, error=%d", self->ctrl->socket_id, r, raise_err);
+        mp_printf(&mp_plat_print, "Connect socket %d result=%d, error=%d\n", self->ctrl->socket_id, r, raise_err);
         self->state = SOCKET_STATE_CONNECTED;
     }
     lwip_freeaddrinfo(res);
@@ -528,13 +529,17 @@ STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
 
-// XXX this can end up waiting a very long time if the content is dribbled in one character
-// at a time, as the timeout resets each time a recvfrom succeeds ... this is probably not
-// good behaviour.
 STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     struct sockaddr *from, socklen_t *from_len, int *errcode) {
     socket_obj_t *sock = MP_OBJ_TO_PTR(self_in);
-    // LUAT_DEBUG_PRINT("socket_read_data (%d) buf=%p, size=%d", sock->ctrl->socket_id, buf, size);
+
+    if(sock != NULL && sock->recv_buffer_pos >= size) {
+       memcpy(buf, sock->recv_buffer, size);
+       memmove(sock->recv_buffer, sock->recv_buffer + size, sock->recv_buffer_pos); // shift sock->recv_buffer on "size"
+       sock->recv_buffer_pos -= size;
+       // if(size > 1) LUAT_DEBUG_PRINT("read cached returns %d bytes", size);
+       return size;
+    }
 
     // A new socket cannot be read from.
     if (sock->state == SOCKET_STATE_NEW) {
@@ -550,80 +555,69 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     // from lwip_recvfrom and then block on subsequent calls.  To emulate POSIX behaviour,
     // which continues to return "0" for each call on a closed socket, we set a flag when
     // the peer closed the socket.
-    if (sock->state == SOCKET_STATE_PEER_CLOSED) {
-        return 0;
-    }
+    if (sock->state == SOCKET_STATE_PEER_CLOSED) { return 0; }
 
-    // XXX Would be nicer to use RTC to handle timeouts
+    MP_THREAD_GIL_EXIT();
+
     uint32_t total_len = 0;
-    for (uint i = 0; i <= sock->retries; ++i) {
-        MP_THREAD_GIL_EXIT();        
-
-        // int r = lwip_recvfrom(sock->fd, buf, size, 0, from, from_len);
-        uint8_t is_break = 0, is_timeout = 0;
-        int r;
-        uint32_t rx_len;
-
-        uint8_t *in_recv_buffer; // Income packets buffer
-        in_recv_buffer = m_new(uint8_t, sock->recv_buffer_size); 
-        if(in_recv_buffer == NULL) mp_raise_OSError(MP_ENOMEM);
-
-        while(ringbuf_avail(sock->recv_buffer) < size && is_timeout == 0 && is_break == 0) {
-            // LUAT_DEBUG_PRINT("wait data from network");
+    uint8_t is_break = 0, is_timeout = 0;
+    int r;
+    uint32_t rx_len;
+    uint32_t pos = sock->recv_buffer_pos;
+    while(total_len + pos < size && is_timeout == 0 && is_break == 0) {
+        // LUAT_DEBUG_PRINT("Wait data from network from pos = %d. Size = %d", pos, size);
+        if(sock->ctrl != NULL) {
             int result = network_wait_rx(sock->ctrl, 5000, &is_break, &is_timeout);
             if (result == 0) {
                 if (!is_timeout && !is_break) {
-                    // fill socket ring buffer
-                    r = network_rx(sock->ctrl, in_recv_buffer, sock->recv_buffer_size, 0, NULL, NULL, &rx_len);
-                    if(r == 0 && rx_len > 0) {
-                       // LUAT_DEBUG_PRINT("socket_read_data (%d) put to ringbuf %d bytes (after wait)", sock->ctrl->socket_id, rx_len);
-                       ringbuf_put_bytes(sock->recv_buffer, in_recv_buffer, rx_len);
-                    }                     
+                    r = network_rx(sock->ctrl, sock->recv_buffer, sock->recv_buffer_size - sock->recv_buffer_pos, 0, NULL, NULL, &rx_len);
+                    if(r == 0 && rx_len > 0) {                                                        
+                        total_len += rx_len;
+                        sock->recv_buffer_pos += rx_len;
+                        // LUAT_DEBUG_PRINT("Socket %d read %d bytes", sock->ctrl->socket_id, rx_len);
+                    }
                 } else if (is_timeout) { 
-                    // LUAT_DEBUG_PRINT("socket_read_data (%d) timeout", sock->ctrl->socket_id); 
+                    // LUAT_DEBUG_PRINT("Socket timeout"); 
+                    break;
                 } else { 
-                    // LUAT_DEBUG_PRINT("socket_read_data (%d) break", sock->ctrl->socket_id); 
+                    // LUAT_DEBUG_PRINT("Socket break"); 
+                    break;
                 }
             } else { 
-                // LUAT_DEBUG_PRINT("network_wait_rx (%d) failed", sock->ctrl->socket_id); 
+                // LUAT_DEBUG_PRINT("network_wait_rx failed (%d)", result); 
+                break;
             }
+        } else { 
+            // LUAT_DEBUG_PRINT("socket is NULL"); 
+            break;
         }
-        m_del(uint8_t, in_recv_buffer, sock->recv_buffer_size);
-
-        // read from ring buffer        
-        if(ringbuf_avail(sock->recv_buffer) > 0) {
-            int res = -1;
-            if(size == 1) {
-                res = ringbuf_get(sock->recv_buffer);
-                if(res > 0) {
-                    *(uint8_t*)buf = (uint8_t)(res & 0xFF);
-                    total_len++;
-                }
-            } else {
-                res = ringbuf_get_bytes(sock->recv_buffer, buf, size);
-                if(res == 0) {
-                    total_len += size;
-                }
-            }
-        }
-        
-        MP_THREAD_GIL_ENTER();
-        if (is_break) {
-            sock->state = SOCKET_STATE_PEER_CLOSED;
-        }
-        if (total_len == size) {
-            // LUAT_DEBUG_PRINT("socket_read_data (%d) return %d bytes", sock->ctrl->socket_id, total_len);
-            return total_len;
-        }
-        if (errno != EWOULDBLOCK) {
-            *errcode = errno;
-            // LUAT_DEBUG_PRINT("socket_read_data (%d) errno = %d -> STREAM_ERROR", sock->ctrl->socket_id, errno);
-            return MP_STREAM_ERROR;
-        }
-        check_for_exceptions();
     }
+
+    int read_size = MIN(size, pos + total_len);
+    memcpy(buf, sock->recv_buffer, read_size);
+    memmove(sock->recv_buffer, sock->recv_buffer + read_size, sock->recv_buffer_pos); // shift sock->recv_buffer on "size"
+
+    sock->recv_buffer_pos -= read_size;
+    // LUAT_DEBUG_PRINT("read from network returns %d bytes, break = %d, timeout = %d", read_size, is_break, is_timeout);
+
+    MP_THREAD_GIL_ENTER();
+
+    if (read_size == 0) {
+        sock->state = SOCKET_STATE_PEER_CLOSED;
+    }
+    if (read_size >= 0) {
+        return read_size;
+    }
+
+    if (errno != EWOULDBLOCK) {
+        *errcode = errno;
+        LUAT_DEBUG_PRINT("Socket %d errno = %d", sock->ctrl->socket_id, errno);
+        return MP_STREAM_ERROR;
+    }
+    check_for_exceptions();
+
     *errcode = sock->retries == 0 ? MP_EWOULDBLOCK : MP_ETIMEDOUT;
-    // LUAT_DEBUG_PRINT("socket_read_data (%d) errcode = %d -> STREAM_ERROR", sock->ctrl->socket_id, errcode);
+    LUAT_DEBUG_PRINT("Socket %d errcode = %d", sock->ctrl->socket_id, errcode);
     return MP_STREAM_ERROR;
 }
 
@@ -676,7 +670,7 @@ int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
             mp_raise_OSError(errno);
         }
         if (r >= 0) {
-            // LUAT_DEBUG_PRINT("_socket_send (%d) %d bytes", sock->ctrl->socket_id, tx_len);
+            // LUAT_DEBUG_PRINT("Send %d socket %d bytes", sock->ctrl->socket_id, tx_len);
             sentlen += r;
         }
         check_for_exceptions();
@@ -731,7 +725,7 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
 
         MP_THREAD_GIL_ENTER();
         if (r >= 0) {
-            // LUAT_DEBUG_PRINT("socket_sendto (%d) %d bytes", self->ctrl->socket_id, tx_len);
+            // LUAT_DEBUG_PRINT("SendTo %d socket %d bytes", self->ctrl->socket_id, tx_len);
             return mp_obj_new_int_from_uint(tx_len);
         }
         if (r == -1 && errno != EWOULDBLOCK) {
@@ -761,19 +755,19 @@ STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size,
 
 STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *sock = self_in;
-    // LUAT_DEBUG_PRINT("socket_stream_write (%d) %d bytes", sock->ctrl->socket_id, size);
+    // LUAT_DEBUG_PRINT("Write %d socket %d bytes", sock->ctrl->socket_id, size);
     for (uint i = 0; i <= sock->retries; i++) {
         MP_THREAD_GIL_EXIT();
         uint32_t tx_len;        
         int r = network_tx(sock->ctrl, buf, size, 0, NULL, 0, &tx_len, 15000);
         MP_THREAD_GIL_ENTER();
         if (r >= 0) {
-            // LUAT_DEBUG_PRINT("socket_stream_write (%d) %d bytes", sock->ctrl->socket_id, tx_len);
+            // LUAT_DEBUG_PRINT("Write %d socket %d bytes", sock->ctrl->socket_id, tx_len);
             return tx_len;
         }
         // lwip returns MP_EINPROGRESS when trying to write right after a non-blocking connect
         if (r < 0 && errno != EWOULDBLOCK && errno != EINPROGRESS) {
-            // LUAT_DEBUG_PRINT("socket_stream_write (%d) error: %d", sock->ctrl->socket_id, errno);
+            // LUAT_DEBUG_PRINT("Write %d socket error: %d", sock->ctrl->socket_id, errno);
             *errcode = errno;
             return MP_STREAM_ERROR;
         }
@@ -832,6 +826,8 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
         return ret;
     } else if (request == MP_STREAM_CLOSE) {
         if (socket->ctrl->socket_id >= 0) {
+            // LUAT_DEBUG_PRINT("Close socket %d", socket->ctrl->socket_id);
+
             #if MICROPY_PY_SOCKET_EVENTS
             if (socket->events_callback != MP_OBJ_NULL) {
                 socket_events_remove(socket);
@@ -841,17 +837,16 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
             int ret = network_close(socket->ctrl, 15000);
             if (ret != 0) {
                 *errcode = errno;
+                network_release_ctrl(socket->ctrl);
                 return MP_STREAM_ERROR;
             }
             network_release_ctrl(socket->ctrl);
 
-            if(socket->recv_buffer != NULL /* && socket->recv_buffer->buf != NULL*/) {
-                m_del(uint8_t, socket->recv_buffer->buf, socket->recv_buffer_size + 1);
-                // m_del(uint8_t, socket->in_recv_buffer, socket->recv_buffer_size);
+            if(socket->recv_buffer != NULL) {
+                // LUAT_DEBUG_PRINT("Free socket %d buffer", socket->ctrl->socket_id);
+                m_del(uint8_t, socket->recv_buffer, socket->recv_buffer_size);
             }
-            socket->recv_buffer->buf = NULL;
             socket->recv_buffer = NULL;
-            // socket->in_recv_buffer = NULL;
         }
         return 0;
     }
@@ -951,6 +946,7 @@ STATIC mp_obj_t air_socket_initialize() {
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(air_socket_initialize_obj, air_socket_initialize);
+
 
 STATIC const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_socket) },
