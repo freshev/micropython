@@ -16,18 +16,22 @@
 #define MBEDTLS_PLATFORM_FREE_MACRO free //mbedtls_free //
 #endif
 
-#include "config_ec_ssl_normal.h"
-#include "config_ec_ssl_http.h"
-#include "config_ec_ssl_mqtt.h"
-
-#include "stdio.h"
+// #include "config_ec_ssl_normal.h"
+// #include "config_ec_ssl_http.h"
+// #include "config_ec_ssl_mqtt.h"
 
 #undef MBEDTLS_SSL_PROTO_SSL3
 #undef MBEDTLS_SSL_MAX_CONTENT_LEN
-//#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K, 
-//#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024) // 4K buffer causes too frequent "TLS handshake fragmentation not supported" error
-#define MBEDTLS_SSL_MAX_CONTENT_LEN         (8*1024) 
-#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (8*1024) 
+#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K, 
+#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024) // 4K buffer causes too frequent "TLS handshake fragmentation not supported" error
+// #define MBEDTLS_SSL_MAX_CONTENT_LEN         (8*1024) 
+// #define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (8*1024) 
+
+#define MBEDTLS_THREADING_IMPL
+#define MBEDTLS_CIPHER_MODE_CBC
+
+// custom define
+#define MBEDTLS_USE_RAND_API_ENTROPY
 
 
 /**
@@ -741,7 +745,7 @@
  *      MBEDTLS_TLS_ECDHE_RSA_WITH_3DES_EDE_CBC_SHA
  *      MBEDTLS_TLS_ECDHE_RSA_WITH_RC4_128_SHA
  */
-#define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
+// #define MBEDTLS_KEY_EXCHANGE_ECDHE_RSA_ENABLED
 
 /**
  * \def MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
@@ -765,7 +769,7 @@
  *      MBEDTLS_TLS_ECDHE_ECDSA_WITH_3DES_EDE_CBC_SHA
  *      MBEDTLS_TLS_ECDHE_ECDSA_WITH_RC4_128_SHA
  */
-#define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
+// #define MBEDTLS_KEY_EXCHANGE_ECDHE_ECDSA_ENABLED
 
 /**
  * \def MBEDTLS_KEY_EXCHANGE_ECDH_ECDSA_ENABLED
@@ -1381,7 +1385,7 @@
  *
  * Uncomment this to enable pthread mutexes.
  */
-//#define MBEDTLS_THREADING_PTHREAD
+// #define MBEDTLS_THREADING_PTHREAD
 
 /**
  * \def MBEDTLS_VERSION_FEATURES
@@ -1924,7 +1928,7 @@
  *
  * This module enables mbedtls_strerror().
  */
-//#define MBEDTLS_ERROR_C
+#define MBEDTLS_ERROR_C
 
 /**
  * \def MBEDTLS_GCM_C
@@ -2319,7 +2323,7 @@
  *
  * This module adds support for SHA-384 and SHA-512.
  */
-//#define MBEDTLS_SHA512_C
+// #define MBEDTLS_SHA512_C
 
 /**
  * \def MBEDTLS_SSL_CACHE_C
@@ -2470,7 +2474,7 @@
  *
  * This module is required for the X.509 parsing modules.
  */
-//#define MBEDTLS_X509_USE_C
+#define MBEDTLS_X509_USE_C
 
 /**
  * \def MBEDTLS_X509_CRT_PARSE_C
@@ -2600,7 +2604,7 @@
 //#define MBEDTLS_HMAC_DRBG_MAX_SEED_INPUT      384 /**< Maximum size of (re)seed buffer */
 
 /* ECP options */
-#define MBEDTLS_ECP_MAX_BITS             521 /**< Maximum bit size of groups */
+// #define MBEDTLS_ECP_MAX_BITS             521 /**< Maximum bit size of groups */
 #define MBEDTLS_ECP_WINDOW_SIZE            2 /**< Maximum window size used */
 //#define MBEDTLS_ECP_FIXED_POINT_OPTIM      1 /**< Enable fixed-point speed-up */
 
@@ -2618,8 +2622,6 @@
 //#define MBEDTLS_PLATFORM_STD_FREE            free /**< Default free to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_EXIT            exit /**< Default exit to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_TIME            time /**< Default time to use, can be undefined. MBEDTLS_HAVE_TIME must be enabled */
-extern int mp_printf2(FILE *stream, const char *format, ...);
-#define MBEDTLS_PLATFORM_STD_FPRINTF mp_printf2
 //#define MBEDTLS_PLATFORM_STD_FPRINTF      fprintf /**< Default fprintf to use, can be undefined */
 //#define MBEDTLS_PLATFORM_STD_PRINTF        printf /**< Default printf to use, can be undefined */
 /* Note: your snprintf must correclty zero-terminate the buffer! */
@@ -2679,7 +2681,7 @@ extern int mp_printf2(FILE *stream, const char *format, ...);
  * recommended because of it is possible to generte SHA-1 collisions, however
  * this may be safe for legacy infrastructure where additional controls apply.
  */
-#define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_CERTIFICATES
+// #define MBEDTLS_TLS_DEFAULT_ALLOW_SHA1_IN_CERTIFICATES
 
 /**
  * Allow SHA-1 in the default TLS configuration for TLS 1.2 handshake
@@ -2695,13 +2697,12 @@ extern int mp_printf2(FILE *stream, const char *format, ...);
 // undefine MBEDTLS_THREADING_C, because of crash in ctr_drbg.c:
 // #undef MBEDTLS_THREADING_C
 // undefine MBEDTLS_DEBUG_C to disable DEBUG output to stdout
-#undef MBEDTLS_DEBUG_C
+// #undef MBEDTLS_DEBUG_C
 
 #ifndef MBEDTLS_DEBUG_C
 void mbedtls_debug_set_threshold( int threshold );
 #endif
 
-#include "mbedtls/check_config.h"
-
+// #include "mbedtls/check_config.h"
 
 #endif /* MBEDTLS_CONFIG_H */

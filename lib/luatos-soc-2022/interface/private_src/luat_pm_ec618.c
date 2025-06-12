@@ -60,7 +60,7 @@ int luat_pm_set_sleep_mode(int mode, const char *vote_tag)
                 }
                 else
                 {
-                    luat_heap_free(reportMode[sleepMode][j]);
+                    luat_heap_free((uint32_t *)reportMode[sleepMode][j]);
                     reportMode[sleepMode][j] = (uint32_t)NULL;
                     reportMode[sleepMode][9] = reportMode[sleepMode][9] - 1;
                     if (reportMode[mode][9] < 9)
@@ -184,7 +184,8 @@ int luat_pm_sleep_deregister_post_handler(void)
 
 int luat_pm_wakeup_pad_set_callback(luat_pm_wakeup_pad_isr_callback_t callback_fun)
 {
-    soc_set_pad_wakeup_callback(callback_fun);
+    // soc_set_pad_wakeup_callback(*((pad_wakeup_fun_t*)&callback_fun));
+    soc_set_pad_wakeup_callback((pad_wakeup_fun_t)callback_fun);
     return 0;
 }
 
@@ -271,11 +272,11 @@ int luat_pm_wakeup_pad_set(uint8_t enable, LUAT_PM_WAKEUP_PAD_E source_id, luat_
     GPIO_GlobalInit(NULL);
     if (enable)
     {
-    	GPIO_WakeupPadConfig(HAL_WAKEUP_0 + source_id, cfg->pos_edge_enable, cfg->neg_edge_enable, cfg->pull_up_enable, cfg->pull_down_enable);
+        GPIO_WakeupPadConfig(HAL_WAKEUP_0 + source_id, cfg->pos_edge_enable, cfg->neg_edge_enable, cfg->pull_up_enable, cfg->pull_down_enable);
     }
     else
     {
-    	GPIO_WakeupPadConfig(HAL_WAKEUP_0 + source_id, 0, 0, 0, 0);
+        GPIO_WakeupPadConfig(HAL_WAKEUP_0 + source_id, 0, 0, 0, 0);
     }
 #endif
     return 0;
@@ -315,7 +316,7 @@ int luat_pm_wakeup_pad_get_value(LUAT_PM_WAKEUP_PAD_E source_id)
         }
     return luat_gpio_get(pin);
 #else
-	return (slpManGetWakeupPinValue() & (1 << source_id))?1:0;
+    return (slpManGetWakeupPinValue() & (1 << source_id))?1:0;
 #endif
 }
 
@@ -332,64 +333,67 @@ int luat_pm_set_pwrkey(LUAT_PM_POWERKEY_MODE_E mode, bool pullUpEn, luat_pm_pwrk
 int luat_pm_get_poweron_reason(void)
 {
     LastResetState_e apRstState,cpRstState;
-	ResetStateGet(&apRstState, &cpRstState);
-	DBG("ap %d,cp %d", apRstState, cpRstState);
-	int id = 0;
+    ResetStateGet(&apRstState, &cpRstState);
+    DBG("ap %d,cp %d", apRstState, cpRstState);
+    int id = 0;
 
-	switch(cpRstState)
-	{
-	case LAST_RESET_HARDFAULT:
-	case LAST_RESET_ASSERT:
-		return LUAT_PM_POWERON_REASON_EXCEPTION;
-		break;
-	case LAST_RESET_WDTSW:
-	case LAST_RESET_WDTHW:
-	case LAST_RESET_LOCKUP:
-	case LAST_RESET_AONWDT:
-		return LUAT_PM_POWERON_REASON_WDT;
-		break;
-	}
+    switch(cpRstState)
+    {
+    case LAST_RESET_HARDFAULT:
+    case LAST_RESET_ASSERT:
+        return LUAT_PM_POWERON_REASON_EXCEPTION;
+        break;
+    case LAST_RESET_WDTSW:
+    case LAST_RESET_WDTHW:
+    case LAST_RESET_LOCKUP:
+    case LAST_RESET_AONWDT:
+        return LUAT_PM_POWERON_REASON_WDT;
+        break;
+    default:
+        return LUAT_PM_POWERON_REASON_UNKNOWN;
+        break;
+    }
 
-	switch(apRstState)
-	{
-	case LAST_RESET_POR:
-	case LAST_RESET_NORMAL:
-		id = LUAT_PM_POWERON_REASON_NORMAL;
-		break;
-	case LAST_RESET_SWRESET:
-		id = LUAT_PM_POWERON_REASON_SWRESET;
-		break;
-	case LAST_RESET_HARDFAULT:
-	case LAST_RESET_ASSERT:
-		id = LUAT_PM_POWERON_REASON_EXCEPTION;
-		break;
-	case LAST_RESET_WDTSW:
-	case LAST_RESET_WDTHW:
-	case LAST_RESET_LOCKUP:
-	case LAST_RESET_AONWDT:
-		id = LUAT_PM_POWERON_REASON_WDT;
-		break;
-	case LAST_RESET_BATLOW:
-	case LAST_RESET_TEMPHI:
-		id = LUAT_PM_POWERON_REASON_EXTERNAL;
-		break;
-	case LAST_RESET_FOTA:
-		id = LUAT_PM_POWERON_REASON_FOTA;
-		break;
-	case LAST_RESET_CPRESET:
-		id = 100 + cpRstState;
-		break;
-	default:
-		id = 200 + cpRstState;
-		break;
-	}
-	return id;
+    switch(apRstState)
+    {
+    case LAST_RESET_POR:
+    case LAST_RESET_NORMAL:
+        id = LUAT_PM_POWERON_REASON_NORMAL;
+        break;
+    case LAST_RESET_SWRESET:
+        id = LUAT_PM_POWERON_REASON_SWRESET;
+        break;
+    case LAST_RESET_HARDFAULT:
+    case LAST_RESET_ASSERT:
+        id = LUAT_PM_POWERON_REASON_EXCEPTION;
+        break;
+    case LAST_RESET_WDTSW:
+    case LAST_RESET_WDTHW:
+    case LAST_RESET_LOCKUP:
+    case LAST_RESET_AONWDT:
+        id = LUAT_PM_POWERON_REASON_WDT;
+        break;
+    case LAST_RESET_BATLOW:
+    case LAST_RESET_TEMPHI:
+        id = LUAT_PM_POWERON_REASON_EXTERNAL;
+        break;
+    case LAST_RESET_FOTA:
+        id = LUAT_PM_POWERON_REASON_FOTA;
+        break;
+    case LAST_RESET_CPRESET:
+        id = 100 + cpRstState;
+        break;
+    default:
+        id = 200 + cpRstState;
+        break;
+    }
+    return id;
 }
 
 int luat_pm_poweroff(void)
 {
-	luat_wdt_close();
-	slpManStartPowerOff();
+    luat_wdt_close();
+    slpManStartPowerOff();
     return 0;
 }
 
@@ -401,8 +405,8 @@ int luat_pm_reboot(void)
 
 int luat_pm_reset(void)
 {
-	ResetECSystemReset();
-	return 0;
+    ResetECSystemReset();
+    return 0;
 }
 
 
@@ -415,13 +419,13 @@ int luat_pm_get_vbus_status(uint8_t *status)
 
 int luat_pm_set_usb_power(uint8_t onoff)
 {
-	soc_set_usb_sleep(!onoff);
-	soc_usb_onoff(onoff);
+    soc_set_usb_sleep(!onoff);
+    soc_usb_onoff(onoff);
 }
 
 int luat_pm_deep_sleep_mode_timer_start(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id, uint32_t timeout)
 {
-    if (timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6 || timeout <= 0)
+    if (/*timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || */ timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6 || timeout <= 0)
         return -1;
     if ((timer_id == LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id == LUAT_PM_DEEPSLEEP_TIMER_ID1) && (timeout > 9000000))
         timeout = 9000000;
@@ -433,7 +437,7 @@ int luat_pm_deep_sleep_mode_timer_start(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id, ui
 
 int luat_pm_deep_sleep_mode_timer_stop(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id)
 {
-    if (timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
+    if (/*timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || */ timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
         return -1;
     slpManDeepSlpTimerDel(timer_id);
     return 0;
@@ -441,14 +445,14 @@ int luat_pm_deep_sleep_mode_timer_stop(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id)
 
 int luat_pm_deep_sleep_mode_timer_is_running(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id)
 {
-    if (timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
+    if (/*timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || */ timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
         return -1;
     return slpManDeepSlpTimerIsRunning(timer_id) == true ? 1 : 0;
 }
 
 int luat_pm_deep_sleep_mode_register_timer_cb(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id, luat_pm_deep_sleep_mode_timer_callback_t callback)
 {
-    if (timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6 || callback == NULL)
+    if (/*timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || */timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6 || callback == NULL)
         return -1;
     slpManDeepSlpTimerRegisterExpCb(timer_id, callback);
     return 0;
@@ -456,7 +460,7 @@ int luat_pm_deep_sleep_mode_register_timer_cb(LUAT_PM_DEEPSLEEP_TIMERID_E timer_
 
 uint32_t luat_pm_get_deep_sleep_mode_timer_remain_time(LUAT_PM_DEEPSLEEP_TIMERID_E timer_id)
 {
-    if (timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
+    if (/*timer_id < LUAT_PM_DEEPSLEEP_TIMER_ID0 || */ timer_id > LUAT_PM_DEEPSLEEP_TIMER_ID6)
         return 0xffffffff;
     return slpManDeepSlpTimerRemainMs(timer_id);
 }
@@ -490,7 +494,7 @@ int luat_pm_set_gnss_power(uint8_t onoff)
 
 int luat_pm_set_power_mode(uint8_t mode, uint8_t sub_mode)
 {
-	return soc_power_mode(mode, sub_mode);
+    return soc_power_mode(mode, sub_mode);
 }
 
 void luat_pm_print_state(void)
@@ -523,11 +527,11 @@ void luat_pm_print_state(void)
         {
             if(vote_counter != 0)
             {
-            	DBG("handle %d name %s state %d, cnt %d", i, slpManGetVoteInfo(i), appVoteDetail, vote_counter);
+                DBG("handle %d name %s state %d, cnt %d", i, slpManGetVoteInfo(i), appVoteDetail, vote_counter);
             }
             else
             {
-            	DBG("handle %d name %s state NULL, cnt %d", i, slpManGetVoteInfo(i), vote_counter);
+                DBG("handle %d name %s state NULL, cnt %d", i, slpManGetVoteInfo(i), vote_counter);
             }
         }
     }
@@ -536,31 +540,31 @@ void luat_pm_print_state(void)
 }
 
 int luat_pm_iovolt_ctrl(int id, int val) {
-	IOVoltageSel_t set;
-	if (val > 3400)
-	{
-		set = IOVOLT_3_40V;
-	}
-	else if (val >= 2650)
-	{
-		set = (val - 2650)/50 + IOVOLT_2_65V;
-	}
-	else if (val > 2000)
-	{
-		DBG("iovolt: out of range %d %d", id, val);
-		return -1;
-	}
-	else if (val >= 1650)
-	{
-		set = (val - 1650)/50;
-	}
-	else
-	{
-		set = IOVOLT_1_65V;
-	}
-	slpManNormalIOVoltSet(set);
-	slpManAONIOVoltSet(set);
-	return 0;
+    IOVoltageSel_t set;
+    if (val > 3400)
+    {
+        set = IOVOLT_3_40V;
+    }
+    else if (val >= 2650)
+    {
+        set = (val - 2650)/50 + IOVOLT_2_65V;
+    }
+    else if (val > 2000)
+    {
+        DBG("iovolt: out of range %d %d", id, val);
+        return -1;
+    }
+    else if (val >= 1650)
+    {
+        set = (val - 1650)/50;
+    }
+    else
+    {
+        set = IOVOLT_1_65V;
+    }
+    slpManNormalIOVoltSet(set);
+    slpManAONIOVoltSet(set);
+    return 0;
 
 }
 
@@ -572,10 +576,10 @@ int luat_pm_set_powerkey_mode(uint8_t onoff)
         return -1;
     }
     if(BSP_GetPlatConfigItemValue(PLAT_CONFIG_ITEM_PWRKEY_MODE) != onoff)
-	{
-		DBG("powerkey mode %d to %d", BSP_GetPlatConfigItemValue(PLAT_CONFIG_ITEM_PWRKEY_MODE), onoff);
-		BSP_SetPlatConfigItemValue(PLAT_CONFIG_ITEM_PWRKEY_MODE, onoff);
-		BSP_SavePlatConfigToRawFlash();
-	}
+    {
+        DBG("powerkey mode %d to %d", BSP_GetPlatConfigItemValue(PLAT_CONFIG_ITEM_PWRKEY_MODE), onoff);
+        BSP_SetPlatConfigItemValue(PLAT_CONFIG_ITEM_PWRKEY_MODE, onoff);
+        BSP_SavePlatConfigToRawFlash();
+    }
     return 0;
 }

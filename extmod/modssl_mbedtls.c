@@ -234,26 +234,29 @@ STATIC mp_obj_t ssl_context_make_new(const mp_obj_type_t *type_in, size_t n_args
     mbedtls_pk_init(&self->pkey);
     self->ciphersuites = NULL;
 
+    // Whenever the PSA interface is used (if MBEDTLS_PSA_CRYPTO), psa_crypto_init() needs to be called before any TLS related operations.
+    // TLSv1.3 depends on the PSA interface, TLSv1.2 only uses the PSA stack if MBEDTLS_USE_PSA_CRYPTO is defined.
+    #if defined(MBEDTLS_SSL_PROTO_TLS1_3) || defined(MBEDTLS_USE_PSA_CRYPTO)
+    psa_crypto_init();
+    mp_printf(&mp_plat_print, "psa_crypto_init\n");
+    #endif
+
     #ifdef MBEDTLS_DEBUG_C
     // Debug level (0-4) 1=warning, 2=info, 3=debug, 4=verbose
     mbedtls_debug_set_threshold(3);
     #endif
 
-    // Whenever the PSA interface is used (if MBEDTLS_PSA_CRYPTO), psa_crypto_init() needs to be called before any TLS related operations.
-    // TLSv1.3 depends on the PSA interface, TLSv1.2 only uses the PSA stack if MBEDTLS_USE_PSA_CRYPTO is defined.
-    #if defined(MBEDTLS_SSL_PROTO_TLS1_3) || defined(MBEDTLS_USE_PSA_CRYPTO)
-    psa_crypto_init();
-    #endif
-
     const byte seed[] = "upy";
     int ret = mbedtls_ctr_drbg_seed(&self->ctr_drbg, mbedtls_entropy_func, &self->entropy, seed, sizeof(seed));
     if (ret != 0) {
+        mp_printf(&mp_plat_print, "mbedtls_ctr_drbg_seed failed\n");
         mbedtls_raise_error(ret);
     }
 
     ret = mbedtls_ssl_config_defaults(&self->conf, endpoint,
         MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
     if (ret != 0) {
+        mp_printf(&mp_plat_print, "mbedtls_ssl_config_defaults failed\n");
         mbedtls_raise_error(ret);
     }
 

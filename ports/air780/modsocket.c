@@ -305,6 +305,7 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
     luat_mobile_set_rrc_auto_release_time(5); 
 
     sock->ctrl->is_debug = 0; //Turn off debug when testing downlink speed. If it is just a normal test, turn on debug.
+
     return MP_OBJ_FROM_PTR(sock);
 }
 
