@@ -150,7 +150,6 @@ static int sysctl_arnd_wrapper(unsigned char *buf, size_t buflen)
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include "luat_debug.h"
 
 int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len,
                            size_t *olen ) 
@@ -182,7 +181,6 @@ int mbedtls_platform_entropy_poll( void *data, unsigned char *output, size_t len
         }
         *olen = len;
     }
-    // LUAT_DEBUG_PRINT("data = %p, len = %d, output = %p, olen = %d", data, output, len, *olen);
     return 0;
 }
 

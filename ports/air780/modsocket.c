@@ -571,7 +571,7 @@ STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
             int result = network_wait_rx(sock->ctrl, 5000, &is_break, &is_timeout);
             if (result == 0) {
                 if (!is_timeout && !is_break) {
-                    r = network_rx(sock->ctrl, sock->recv_buffer, sock->recv_buffer_size - sock->recv_buffer_pos, 0, NULL, NULL, &rx_len);
+                    r = network_rx(sock->ctrl, sock->recv_buffer + sock->recv_buffer_pos, sock->recv_buffer_size - sock->recv_buffer_pos, 0, NULL, NULL, &rx_len);
                     if(r == 0 && rx_len > 0) {                                                        
                         total_len += rx_len;
                         sock->recv_buffer_pos += rx_len;
