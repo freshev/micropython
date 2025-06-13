@@ -68,7 +68,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
     ip_addr_t ipv6;
 
     // if(event != LUAT_MOBILE_EVENT_CELL_INFO) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
-    if(event == 7) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
+    // if(event == 7) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
 
     switch(event) {
         case LUAT_MOBILE_EVENT_CFUN: // 0

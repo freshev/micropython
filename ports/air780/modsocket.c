@@ -429,7 +429,7 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
             raise_err = errno;
         }
         // LUAT_DEBUG_PRINT("Connect socket %d result=%d, error=%d", self->ctrl->socket_id, r, raise_err);
-        mp_printf(&mp_plat_print, "Connect socket %d result=%d, error=%d\n", self->ctrl->socket_id, r, raise_err);
+        // mp_printf(&mp_plat_print, "Connect socket %d result=%d, error=%d\n", self->ctrl->socket_id, r, raise_err);
         self->state = SOCKET_STATE_CONNECTED;
     }
     lwip_freeaddrinfo(res);
