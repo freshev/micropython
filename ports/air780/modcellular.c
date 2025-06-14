@@ -49,7 +49,7 @@ STATIC int8_t deactivate_flag = 0;
 // Tracks the status on the network
 
 void modcellular_network_status_update(uint8_t new_status, uint16_t new_exception) {
-    if(new_exception) mp_printf(&mp_plat_print, "new_status: 0x%02x, exc: 0x%04x, a_flag: %d, d_flag: %d\n", new_status, new_exception, activate_flag, deactivate_flag);
+    if (new_exception) mp_printf(&mp_plat_print, "new_status: 0x%02x, exc: 0x%04x, a_flag: %d, d_flag: %d\n", new_status, new_exception, activate_flag, deactivate_flag);
     if (new_exception) network_exception = new_exception;
     network_status = new_status;
     if (network_status_callback && network_status_callback != mp_const_none) {
@@ -175,8 +175,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
 
         case LUAT_MOBILE_EVENT_PDP: // 4
             // LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
-            mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d\n", index, status);
-            // mp_printf(&mp_plat_print, "network_check_ready: %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
+            // mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d\n", index, status);
             break;
 
         case LUAT_MOBILE_EVENT_NETIF: // 5
@@ -193,7 +192,8 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
                     modcellular_network_status_update(network_status | NTW_ACT_BIT, 0);
                     break;
                 default:
-                    //LUAT_DEBUG_PRINT("Can't access the Internet");
+                    LUAT_DEBUG_PRINT("Can't access the Internet");
+                    mp_warning(NULL, "Can't access the Internet");
                     modcellular_network_status_update(network_status & ~NTW_ACT_BIT, deactivate_flag ? 0:NTW_EXC_ACT_FAILED);
                     break;
             }
@@ -211,7 +211,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             //LUAT_DEBUG_PRINT("LUAT_MOBILE_EVENT_CSCON with status %d", status);
             if(status == 0) {
                 //LUAT_DEBUG_PRINT("RRC status detached");
-                modcellular_network_status_update(network_status & ~NTW_ATT_BIT & ~NTW_ACT_BIT, 0);
+                modcellular_network_status_update(network_status & ~NTW_ATT_BIT, 0);
             }
             if(status == 1) {
                 //LUAT_DEBUG_PRINT("RRC status attached");
@@ -222,7 +222,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
 
         case LUAT_MOBILE_EVENT_BEARER: // 8
             // LUAT_DEBUG_PRINT("BEARER status %d", status);
-            mp_printf(&mp_plat_print, "BEARER status %d\n", status);
+            // mp_printf(&mp_plat_print, "BEARER status %d\n", status);
             // LUAT_MOBILE_BEARER_GET_DEFAULT_APN = 0, /**< Get the default APN*/
             // LUAT_MOBILE_BEARER_APN_SET_DONE    = 1, /**< Set APN information completed*/
             // LUAT_MOBILE_BEARER_AUTH_SET_DONE   = 2, /**< Set APN encryption status completed*/
@@ -230,13 +230,11 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             // LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE = 4, /**< APN activation/deactivation completed*/
             if(status == LUAT_MOBILE_BEARER_AUTH_SET_DONE) luat_mobile_active_apn(0, 1, 1);
             if(status == LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE) {
-                if(activate_flag == 1) {
-                    // cellular.gprs("apn", "user", "pass")
+                if(activate_flag == 1) { // cellular.gprs("apn", "user", "pass")
                     activate_flag = 0;
                     modcellular_network_status_update(network_status | NTW_ACT_BIT, 0);
                 }
-                if(deactivate_flag == 1) {
-                    // cellular.gprs(0)
+                if(deactivate_flag == 1) { // cellular.gprs(0)
                     deactivate_flag = 0;
                     modcellular_network_status_update(network_status & ~NTW_ACT_BIT, 0);
                 }
@@ -629,12 +627,11 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
         if (n_args == 2) timeout = mp_obj_get_int(args[1]);
 
-        /*deactivate_flag = 1;
-        luat_mobile_active_apn(0, 1, 0);
-        // Perhaps deactivate RRC ?
-        WAIT_UNTIL((network_status & NTW_ACT_BIT) == 0, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
-        */
-
+        if(flag == 0)  {
+            deactivate_flag = 1;
+            luat_mobile_active_apn(0, 1, 0);
+            WAIT_UNTIL((network_status & NTW_ACT_BIT) == 0, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+        }
         return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 
     } else if (n_args == 3 || n_args == 4) {
@@ -644,44 +641,34 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
         if (n_args == 4) timeout = mp_obj_get_int(args[3]);
 
-        /*if (network_status & NTW_ACT_BIT) {
+        // int ret = network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS);
+        // mp_printf(&mp_plat_print, "network_check_ready(1): %d\n", ret);
+
+        if (network_status & NTW_ACT_BIT) {
             mp_raise_ValueError("Network is already on");
             return mp_const_none;
-        } else */ {
-            //mp_printf(&mp_plat_print, "network_check_ready(1): %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
+        } else {
             
+            /*
             deactivate_flag = 1;
             activate_flag = 1;
             modcellular_reset_wto(timeout);
-            
-            gc_collect();
-
             WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
-            //mp_printf(&mp_plat_print, "network_check_ready(2): %d\n", network_check_ready(NULL, NW_ADAPTER_INDEX_LWIP_GPRS));
-            
+            */
 
-            /*activate_flag = 1;
+            activate_flag = 1;
             luat_mobile_user_apn_auto_active(0, 1, 3, 3, (uint8_t*)c_apn, strlen(c_apn), (uint8_t*)c_user, strlen(c_user), (uint8_t*)c_pass, strlen(c_pass));
             WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
-
-            uint8_t is_ipv6;
-            net_lwip_init();
-            net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
-            network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
-            luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket
-
-            gc_collect();
-            */
             modcellular_poll_network_exception();
 
             if (!(network_status & NTW_ACT_BIT)) {
                 mp_raise_RuntimeError("Failed to activate network");
             }
         }
+        // mp_printf(&mp_plat_print, "network_check_ready(2): %d\n", ret);
     } else if (n_args != 0) {
         mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
-    }
-    
+    }     
     return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 }
 

@@ -58,7 +58,11 @@ option("10 Dump and halt on core exception")
     set_description("Dump and halt on core exception")
     set_default(false)
     set_showmenu(true)
-
+option("11 FOTA")
+    set_description("Firmware over the air URL")
+    set_default(false)
+    set_showmenu(true)
+    set_default("https://example.com/firmware_%s_to_%s.pack")
 
 option("1 RS485_UART1_USE")
     set_description("UART1 connected to RS-485")
