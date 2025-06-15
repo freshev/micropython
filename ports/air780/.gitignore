@@ -6,6 +6,7 @@
 out/
 old/
 build/
+fota/
 .xmake/
 *.o
 __py_cache__/

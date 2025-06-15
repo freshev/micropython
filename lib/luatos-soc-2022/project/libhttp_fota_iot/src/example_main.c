@@ -18,15 +18,28 @@ luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
 #if USE_CUSTOM_URL == 0
 
 #define IOT_FOTA_URL "http://iot.openluat.com"
-#define PROJECT_VERSION  "1.0.1"                  			//If you use Hezhou iot to upgrade, this field must exist, and the mandatory fixed format is x.x.x, x can be any number
-#define PROJECT_KEY "ABCDEFGHIJKLMNOPQRSTUVWXYZ"  			//Modify it to PRODUCT_KEY on your own iot. This is an error. This field must exist if you use Hezhou iot to upgrade.
-#define PROJECT_NAME "TEST_FOTA"                  			//If you use Hezhou iot to upgrade, this field must exist and can be modified at will, but it must be consistent with the upgrade package.
+#define PROJECT_VERSION  "1.0.1"                            //If you use Hezhou iot to upgrade, this field must exist, and the mandatory fixed format is x.x.x, x can be any number
+#define PROJECT_KEY "ABCDEFGHIJKLMNOPQRSTUVWXYZ"            //Modify it to PRODUCT_KEY on your own iot. This is an error. This field must exist if you use Hezhou iot to upgrade.
+#define PROJECT_NAME "TEST_FOTA"                            //If you use Hezhou iot to upgrade, this field must exist and can be modified at will, but it must be consistent with the upgrade package.
 
 #else
 
-#define OTA_URL        "http://airtest.openluat.com:2900/download/csdk_delta_test.par"	//If you use a custom url to upgrade, just modify this field.
+#define OTA_URL        "http://airtest.openluat.com:2900/download/csdk_delta_test.par"  //If you use a custom url to upgrade, just modify this field.
 
 #endif
+
+#if MBEDTLS_VERSION_NUMBER >= 0x03000000
+int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 ) {
+    mbedtls_sha256_starts(ctx, is224);
+}
+int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx, const unsigned char *input, size_t ilen ) {
+    mbedtls_sha256_update(ctx, input, ilen);
+}
+int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx, unsigned char output[32]) {
+    mbedtls_sha256_finish(ctx, output);
+}
+#endif
+
 
 /*Things to note! ! ! ! ! ! ! ! ! ! ! ! !
 
@@ -87,151 +100,151 @@ static luat_rtos_task_handle g_s_task_handle;
 
 enum
 {
-	OTA_HTTP_GET_HEAD_DONE = 1,
-	OTA_HTTP_GET_DATA,
-	OTA_HTTP_GET_DATA_DONE,
-	OTA_HTTP_FAILED,
+    OTA_HTTP_GET_HEAD_DONE = 1,
+    OTA_HTTP_GET_DATA,
+    OTA_HTTP_GET_DATA_DONE,
+    OTA_HTTP_FAILED,
 };
 static void luatos_mobile_event_callback(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t status)
 {
-	if (LUAT_MOBILE_EVENT_NETIF == event)
-	{
-		if (LUAT_MOBILE_NETIF_LINK_ON == status)
-		{
-			luat_socket_check_ready(index, NULL);
-		}
-	}
+    if (LUAT_MOBILE_EVENT_NETIF == event)
+    {
+        if (LUAT_MOBILE_NETIF_LINK_ON == status)
+        {
+            luat_socket_check_ready(index, NULL);
+        }
+    }
 }
 
 static void luatos_http_cb(int status, void *data, uint32_t len, void *param)
 {
-	uint8_t *ota_data;
+    uint8_t *ota_data;
     if(status < 0) 
     {
         LUAT_DEBUG_PRINT("http failed! %d", status);
-		luat_rtos_event_send(param, OTA_HTTP_FAILED, 0, 0, 0, 0);
-		return;
+        luat_rtos_event_send(param, OTA_HTTP_FAILED, 0, 0, 0, 0);
+        return;
     }
-	switch(status)
-	{
-	case HTTP_STATE_GET_BODY:
-		if (data)
-		{
-			ota_data = malloc(len);
-			memcpy(ota_data, data, len);
-			luat_rtos_event_send(param, OTA_HTTP_GET_DATA, ota_data, len, 0, 0);
-		}
-		else
-		{
-			luat_rtos_event_send(param, OTA_HTTP_GET_DATA_DONE, 0, 0, 0, 0);
-		}
-		break;
-	case HTTP_STATE_GET_HEAD:
-		if (data)
-		{
-			LUAT_DEBUG_PRINT("%s", data);
-		}
-		else
-		{
-			luat_rtos_event_send(param, OTA_HTTP_GET_HEAD_DONE, 0, 0, 0, 0);
-		}
-		break;
-	case HTTP_STATE_IDLE:
-		break;
-	case HTTP_STATE_SEND_BODY_START:
-		//If it is POST, send the POST body data here. If it cannot be sent completely at one time, you can continue to send it in the HTTP_STATE_SEND_BODY callback.
-		break;
-	case HTTP_STATE_SEND_BODY:
-		//If it is POST, you can send the remaining body data of POST here
-		break;
-	default:
-		break;
-	}
+    switch(status)
+    {
+    case HTTP_STATE_GET_BODY:
+        if (data)
+        {
+            ota_data = malloc(len);
+            memcpy(ota_data, data, len);
+            luat_rtos_event_send(param, OTA_HTTP_GET_DATA, ota_data, len, 0, 0);
+        }
+        else
+        {
+            luat_rtos_event_send(param, OTA_HTTP_GET_DATA_DONE, 0, 0, 0, 0);
+        }
+        break;
+    case HTTP_STATE_GET_HEAD:
+        if (data)
+        {
+            LUAT_DEBUG_PRINT("%s", data);
+        }
+        else
+        {
+            luat_rtos_event_send(param, OTA_HTTP_GET_HEAD_DONE, 0, 0, 0, 0);
+        }
+        break;
+    case HTTP_STATE_IDLE:
+        break;
+    case HTTP_STATE_SEND_BODY_START:
+        //If it is POST, send the POST body data here. If it cannot be sent completely at one time, you can continue to send it in the HTTP_STATE_SEND_BODY callback.
+        break;
+    case HTTP_STATE_SEND_BODY:
+        //If it is POST, you can send the remaining body data of POST here
+        break;
+    default:
+        break;
+    }
 }
 
 
 static void luat_test_task(void *param)
 {
-	luat_event_t event;
-	int result, is_error;
-	uint8_t is_end = 0;
-	/*After an exception occurs, the default is to crash and restart.
+    luat_event_t event;
+    int result, is_error;
+    uint8_t is_end = 0;
+    /*After an exception occurs, the default is to crash and restart.
 The demo here is set to LUAT_DEBUG_FAULT_HANG_RESET. After an exception occurs, try to upload the crash information to the PC tool. The upload is successful or restarts after timeout.
 If you want to facilitate debugging, you can set it to LUAT_DEBUG_FAULT_HANG. If an exception occurs, it will crash without restarting.
 However, mass production shipments must be set to restart in case of an exception! ! ! ! ! ! ! ! ! 1*/
-	luat_debug_set_fault_mode(LUAT_DEBUG_FAULT_HANG_RESET);
-	uint32_t all,now_free_block,min_free_block,done_len;
-	luat_http_ctrl_t *http = luat_http_client_create(luatos_http_cb, luat_rtos_get_current_handle(), -1);
-	const char remote_domain[200];
+    luat_debug_set_fault_mode(LUAT_DEBUG_FAULT_HANG_RESET);
+    uint32_t all,now_free_block,min_free_block,done_len;
+    luat_http_ctrl_t *http = luat_http_client_create(luatos_http_cb, luat_rtos_get_current_handle(), -1);
+    const char remote_domain[200];
 #if USE_CUSTOM_URL == 0
-	char imei[16] = {0};
-	luat_mobile_get_imei(0, imei, 15);
-	//The first upgrade method
-	snprintf(remote_domain, 200, "%s/api/site/firmware_upgrade?project_key=%s&imei=%s&device_key=&firmware_name=%s_%s_%s_%s&version=%s", IOT_FOTA_URL, PROJECT_KEY, imei, PROJECT_VERSION, PROJECT_NAME, soc_get_sdk_type(), "EC618", PROJECT_VERSION);
+    char imei[16] = {0};
+    luat_mobile_get_imei(0, imei, 15);
+    //The first upgrade method
+    snprintf(remote_domain, 200, "%s/api/site/firmware_upgrade?project_key=%s&imei=%s&device_key=&firmware_name=%s_%s_%s_%s&version=%s", IOT_FOTA_URL, PROJECT_KEY, imei, PROJECT_VERSION, PROJECT_NAME, soc_get_sdk_type(), "EC618", PROJECT_VERSION);
 
-	// The second upgrade method
- 	// snprintf(remote_domain, 200, "%s/api/site/firmware_upgrade?project_key=%s&imei=%s&device_key=&firmware_name=%s_%s_%s&version=%s", IOT_FOTA_URL, PROJECT_KEY, imei, PROJECT_NAME, soc_get_sdk_type(), "EC618", PROJECT_VERSION);
+    // The second upgrade method
+    // snprintf(remote_domain, 200, "%s/api/site/firmware_upgrade?project_key=%s&imei=%s&device_key=&firmware_name=%s_%s_%s&version=%s", IOT_FOTA_URL, PROJECT_KEY, imei, PROJECT_NAME, soc_get_sdk_type(), "EC618", PROJECT_VERSION);
 #else
-	snprintf(remote_domain, 200, "%s", OTA_URL);
+    snprintf(remote_domain, 200, "%s", OTA_URL);
 #endif
-	
+    
     LUAT_DEBUG_PRINT("print url %s", remote_domain);
-	test_luat_fota_handle = luat_fota_init();
-	luat_http_client_start(http, remote_domain, 0, 0, 1);
+    test_luat_fota_handle = luat_fota_init();
+    luat_http_client_start(http, remote_domain, 0, 0, 1);
 
-	while (!is_end)
-	{
-		luat_rtos_event_recv(g_s_task_handle, 0, &event, NULL, LUAT_WAIT_FOREVER);
-		switch(event.id)
-		{
-		case OTA_HTTP_GET_HEAD_DONE:
-			done_len = 0;
-			LUAT_DEBUG_PRINT("status %d total %u", luat_http_client_get_status_code(http), http->total_len);
-			break;
-		case OTA_HTTP_GET_DATA:
-			done_len += event.param2;
-			result = luat_fota_write(test_luat_fota_handle, event.param1, event.param2);
-			free(event.param1);
-			break;
-		case OTA_HTTP_GET_DATA_DONE:
-			is_end = 1;
-			break;
-		case OTA_HTTP_FAILED:
-			is_end = 1;
-			break;
-		default:
-			break;
-		}
-	}
+    while (!is_end)
+    {
+        luat_rtos_event_recv(g_s_task_handle, 0, &event, NULL, LUAT_WAIT_FOREVER);
+        switch(event.id)
+        {
+        case OTA_HTTP_GET_HEAD_DONE:
+            done_len = 0;
+            LUAT_DEBUG_PRINT("status %d total %u", luat_http_client_get_status_code(http), http->total_len);
+            break;
+        case OTA_HTTP_GET_DATA:
+            done_len += event.param2;
+            result = luat_fota_write(test_luat_fota_handle, event.param1, event.param2);
+            free(event.param1);
+            break;
+        case OTA_HTTP_GET_DATA_DONE:
+            is_end = 1;
+            break;
+        case OTA_HTTP_FAILED:
+            is_end = 1;
+            break;
+        default:
+            break;
+        }
+    }
 
-	is_error = luat_fota_done(test_luat_fota_handle);
+    is_error = luat_fota_done(test_luat_fota_handle);
     if(is_error != 0)
     {
         LUAT_DEBUG_PRINT("image_verify error");
-		LUAT_DEBUG_PRINT("ota test failed");
+        LUAT_DEBUG_PRINT("ota test failed");
     }
-	else
-	{
-    	luat_pm_reboot();
-	}
-	luat_http_client_close(http);
-	luat_http_client_destroy(&http);
-	luat_meminfo_sys(&all, &now_free_block, &min_free_block);
-	LUAT_DEBUG_PRINT("meminfo %d,%d,%d",all,now_free_block,min_free_block);
-	while(1)
-	{
-		luat_rtos_task_sleep(60000);
-	}
+    else
+    {
+        luat_pm_reboot();
+    }
+    luat_http_client_close(http);
+    luat_http_client_destroy(&http);
+    luat_meminfo_sys(&all, &now_free_block, &min_free_block);
+    LUAT_DEBUG_PRINT("meminfo %d,%d,%d",all,now_free_block,min_free_block);
+    while(1)
+    {
+        luat_rtos_task_sleep(60000);
+    }
 }
 
 static void luat_test_init(void)
 {
-	luat_mobile_event_register_handler(luatos_mobile_event_callback);
-	luat_mobile_set_period_work(0, 5000, 0);
-	net_lwip_init();
-	net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
-	network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
-	luat_rtos_task_create(&g_s_task_handle, 4 * 1024, 50, "test", luat_test_task, NULL, 16);
+    luat_mobile_event_register_handler(luatos_mobile_event_callback);
+    luat_mobile_set_period_work(0, 5000, 0);
+    net_lwip_init();
+    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
+    luat_rtos_task_create(&g_s_task_handle, 4 * 1024, 50, "test", luat_test_task, NULL, 16);
 
 }
 

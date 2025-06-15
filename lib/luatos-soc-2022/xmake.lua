@@ -16,47 +16,47 @@ local script_addr = nil
 local full_addr = nil
 
 package("gnu_rm")
-	set_kind("toolchain")
-	set_homepage("https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm")
-	set_description("GNU Arm Embedded Toolchain")
-	local version_map = {
-		["2021.10"] = "10.3-2021.10"
-	}
-	if is_host("windows") then
-		set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-win32.zip", {version = function (version)
-			return version_map[tostring(version)]
-		end})
-		add_versions("2021.10", "d287439b3090843f3f4e29c7c41f81d958a5323aecefcf705c203bfd8ae3f2e7")
-	elseif is_host("linux") then
-		set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-x86_64-linux.tar.bz2", {version = function (version)
-			return version_map[tostring(version)]
-		end})
-		add_versions("2021.10", "97dbb4f019ad1650b732faffcc881689cedc14e2b7ee863d390e0a41ef16c9a3")
+    set_kind("toolchain")
+    set_homepage("https://developer.arm.com/tools-and-software/open-source-software/developer-tools/gnu-toolchain/gnu-rm")
+    set_description("GNU Arm Embedded Toolchain")
+    local version_map = {
+        ["2021.10"] = "10.3-2021.10"
+    }
+    if is_host("windows") then
+        set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-win32.zip", {version = function (version)
+            return version_map[tostring(version)]
+        end})
+        add_versions("2021.10", "d287439b3090843f3f4e29c7c41f81d958a5323aecefcf705c203bfd8ae3f2e7")
+    elseif is_host("linux") then
+        set_urls("http://cdndownload.openluat.com/xmake/toolchains/gcc-arm/gcc-arm-none-eabi-$(version)-x86_64-linux.tar.bz2", {version = function (version)
+            return version_map[tostring(version)]
+        end})
+        add_versions("2021.10", "97dbb4f019ad1650b732faffcc881689cedc14e2b7ee863d390e0a41ef16c9a3")
     elseif is_host("macosx") then
         set_urls("https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-$(version)-mac.tar.bz2", {version = function (version)
-			return version_map[tostring(version)]
-		end})
-		add_versions("2021.10", "fb613dacb25149f140f73fe9ff6c380bb43328e6bf813473986e9127e2bc283b")
-	end
-	on_install("@windows", "@linux", "@macosx", function (package)
-		os.vcp("*", package:installdir())
-	end)
+            return version_map[tostring(version)]
+        end})
+        add_versions("2021.10", "fb613dacb25149f140f73fe9ff6c380bb43328e6bf813473986e9127e2bc283b")
+    end
+    on_install("@windows", "@linux", "@macosx", function (package)
+        os.vcp("*", package:installdir())
+    end)
 package_end()
 
 if os.getenv("GCC_PATH") then
-	toolchain("arm_toolchain")
-	    set_kind("standalone")
-	    set_sdkdir(os.getenv("GCC_PATH"))
-	toolchain_end()
-	set_toolchains("arm_toolchain")
+    toolchain("arm_toolchain")
+        set_kind("standalone")
+        set_sdkdir(os.getenv("GCC_PATH"))
+    toolchain_end()
+    set_toolchains("arm_toolchain")
 else
-	add_requires("gnu_rm 2021.10")
-	set_toolchains("gnu-rm@gnu_rm")
+    add_requires("gnu_rm 2021.10")
+    set_toolchains("gnu-rm@gnu_rm")
 end
 
 --Get project name
 if os.getenv("PROJECT_NAME") then
-	USER_PROJECT_NAME = os.getenv("PROJECT_NAME")
+    USER_PROJECT_NAME = os.getenv("PROJECT_NAME")
 end
 
 --Whether it is rndis csdk
@@ -80,9 +80,9 @@ if is_lspd == true then
 end
 
 if os.getenv("ROOT_PATH") then
-	SDK_TOP = os.getenv("ROOT_PATH")
+    SDK_TOP = os.getenv("ROOT_PATH")
 else
-	SDK_TOP = os.curdir()
+    SDK_TOP = os.curdir()
 end
 SDK_TOP = SDK_TOP .. "/"
 SDK_PATH = SDK_TOP
@@ -293,8 +293,9 @@ add_includedirs(
 {public = true})
 
 if USER_PROJECT_NAME ~= 'luatos' then
-    add_defines("MBEDTLS_CONFIG_FILE=\"config_user_ssl.h\"")
-    add_includedirs(SDK_TOP .. "/interface/include", 
+    add_defines("MBEDTLS_CONFIG_FILE=\"ssl_config.h\"")
+    add_includedirs(SDK_TOP,
+                    SDK_TOP .. "/interface/include", 
                     SDK_TOP .. "/interface/base_include", 
                     SDK_TOP .. "/interface/private_include", 
                     SDK_TOP .. "/thirdparty/mbedtls/include",
@@ -371,21 +372,21 @@ end)
 target("driver")
     set_kind("static")
     add_deps(USER_PROJECT_NAME)
-	--driver
-	add_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/**.c",
+    --driver
+    add_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/**.c",
                 SDK_TOP .. "/PLAT/driver/chip/ec618/ap/**.c",
                 SDK_TOP .. "/PLAT/driver/chip/ec618/common/gcc/memcpy-armv7m.S",
                 SDK_TOP .. "/PLAT/driver/hal/**.c",
                 SDK_TOP .. "/PLAT/core/speed/*.c"
     )
-	
-	remove_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/camAT.c",
+    
+    remove_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/camAT.c",
                 SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/exstorage/*.c",
-				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
-				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_lpusart_stub.c",
-				SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/tls.c",
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_lpusart_stub.c",
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/tls.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c"
-	)
+    )
 
     set_targetdir("$(buildir)/libdriver_" .. USER_PROJECT_NAME)
 target_end()
@@ -393,29 +394,29 @@ target_end()
 includes(USER_PROJECT_DIR)
 
 target(USER_PROJECT_NAME..".elf")
-	set_kind("binary")
+    set_kind("binary")
     -- add_deps(USER_PROJECT_NAME)
     set_targetdir("$(buildir)/"..USER_PROJECT_NAME)
     add_deps("driver")
-	--if os.getenv("GCC_PATH") then
-	--LD_BASE_FLAGS = " --specs=nano.specs " .. LD_BASE_FLAGS
-	-- end
+    --if os.getenv("GCC_PATH") then
+    --LD_BASE_FLAGS = " --specs=nano.specs " .. LD_BASE_FLAGS
+    -- end
 
     if USER_PROJECT_NAME ~= 'luatos' then
         add_files(SDK_TOP .. "/interface/private_src/*.c",{public = true})
         add_files(SDK_TOP .. "/thirdparty/mbedtls/library/*.c",{public = true})
         add_files(SDK_TOP .. "/thirdparty/printf/*.c",{public = true})
-		add_files(SDK_TOP.."/thirdparty/fal/src/*.c",{public = true})
+        add_files(SDK_TOP.."/thirdparty/fal/src/*.c",{public = true})
         add_files(SDK_TOP.."/thirdparty/flashdb/src/*.c",{public = true})
-		add_files(SDK_TOP .. "/interface/src/*.c",{public = true})
-		add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
+        add_files(SDK_TOP .. "/interface/src/*.c",{public = true})
+        add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
     else
         remove_files(SDK_TOP .. "/interface/src/luat_kv_ec618.c")
     end
     
 
-	add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded  -ldriver", {force=true})
-	
+    add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded  -ldriver", {force=true})
+    
     on_load(function (target)
         if USER_PROJECT_NAME == 'luatos' then
             local conf_data = io.readfile("$(projectdir)/project/luatos/inc/luat_conf_bsp.h")
@@ -463,28 +464,28 @@ target(USER_PROJECT_NAME..".elf")
         os.exec(GCC_DIR .. "bin/arm-none-eabi-gcc -E " .. FLAGS .. " -I " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc" .. " -P " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.c" ..  " -o " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.ld")
         
     end)
-	after_build(function(target)
-		if os.getenv("GCC_PATH") then
-			GCC_DIR = os.getenv("GCC_PATH").."/"
-		else
-			GCC_DIR = target:toolchains()[1]:sdkdir().."/"
-		end
-		OUT_PATH = SDK_PATH .. "/out/" ..USER_PROJECT_NAME
-		if not os.exists(OUT_PATH) then
-			os.mkdir(OUT_PATH)
-		end
-		os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
-		--io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".list", os.iorun(GCC_DIR .. "bin/arm-none-eabi-objdump -h -S $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
-		io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size", os.iorun(GCC_DIR .. "bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
-		-- io.cat("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size")
-		os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
-		os.exec(GCC_DIR .."bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf")
+    after_build(function(target)
+        if os.getenv("GCC_PATH") then
+            GCC_DIR = os.getenv("GCC_PATH").."/"
+        else
+            GCC_DIR = target:toolchains()[1]:sdkdir().."/"
+        end
+        OUT_PATH = SDK_PATH .. "/out/" ..USER_PROJECT_NAME
+        if not os.exists(OUT_PATH) then
+            os.mkdir(OUT_PATH)
+        end
+        os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
+        --io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".list", os.iorun(GCC_DIR .. "bin/arm-none-eabi-objdump -h -S $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
+        io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size", os.iorun(GCC_DIR .. "bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
+        -- io.cat("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size")
+        os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
+        os.exec(GCC_DIR .."bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf")
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin", "$(buildir)/"..USER_PROJECT_NAME.."/ap.bin")
         
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.bin", OUT_PATH)
-		os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.map", OUT_PATH)
-		os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.elf", OUT_PATH)
-		os.cp("./PLAT/comdb.txt", OUT_PATH)
+        os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.map", OUT_PATH)
+        os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.elf", OUT_PATH)
+        os.cp("./PLAT/comdb.txt", OUT_PATH)
 
         ---------------------------------------------------------
         -------------- This part is not yet cross-platform
@@ -522,7 +523,7 @@ target(USER_PROJECT_NAME..".elf")
             print("7z not find")
             return
         end
-		import("core.base.json")
+        import("core.base.json")
         if USER_PROJECT_NAME == 'luatos' then
             os.cp("$(projectdir)/project/luatos/pack", OUT_PATH)
             local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
@@ -582,5 +583,5 @@ target(USER_PROJECT_NAME..".elf")
             os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
             os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
         end
-	end)
+    end)
 target_end()

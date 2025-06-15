@@ -58,7 +58,7 @@ option("10 Dump and halt on core exception")
     set_description("Dump and halt on core exception")
     set_default(false)
     set_showmenu(true)
-option("11 FOTA")
+option("11 FOTA URL")
     set_description("Firmware over the air URL")
     set_default(false)
     set_showmenu(true)
@@ -487,6 +487,7 @@ if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
 if get_config("08 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
 if get_config("09 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
 if get_config("10 Dump and halt on core exception") then table.insert(DEFINES, "HALTONEXC") end
+if get_config("11 FOTA URL") then table.insert(DEFINES, "FOTAURL=" .. get_config("11 FOTA URL")) end
 
 if get_config("1 RS485_UART1_USE") then table.insert(DEFINES, "RS485_UART1_USE") end
 if get_config("2 RS485_UART1_PIN")       then table.insert(DEFINES, "RS485_UART1_PIN="       .. get_config("2 RS485_UART1_PIN")) end
@@ -1519,7 +1520,7 @@ target(USER_PROJECT_NAME..".elf")
                 cmd = SDK_PATH .. "/fcelf " .. cmd
             end
         end
-        cmd = cmd .. " -outfile " .. "./out/" .. USER_PROJECT_NAME..".binpkg"
+        cmd = cmd .. " -outfile " .. "./out/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
         --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
         --You can still use other tools to continue flashing your phone
         print("fcelf CMD --> ", cmd)
@@ -1594,12 +1595,65 @@ target(USER_PROJECT_NAME..".elf")
         end
 
         --To calculate the differential package size, you need to put the old binpkg in the root directory and name it $project name.binpkg
-        if os.exists(USER_PROJECT_NAME .. ".binpkg") then
-            os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
-            os.cp(OUT_PATH.."/"..USER_PROJECT_NAME..".binpkg", "tools/dtools/new.binpkg")
-            os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
-            os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
+        -- os.listdir()
+        -- if os.exists(USER_PROJECT_NAME .. ".binpkg") then
+        --    os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
+        --    os.cp(OUT_PATH.."/"..USER_PROJECT_NAME..".binpkg", "tools/dtools/new.binpkg")
+        --    os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
+        --    os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
+        -- end
+
+        fota_dir = "./fota"
+        fota_dep_dir = "./fota/dep"
+        if not os.exists(fota_dir) then os.mkdir(fota_dir) end
+        if not os.exists(fota_dep_dir) then os.mkdir(fota_dep_dir) end
+
+        if is_plat("windows") then
+            fcelf = "fcelf.exe"
+            sha256sum = "sha256sum.exe"
+            deltagen = "deltagen.exe"
+            ftk = "FotaToolkit.exe"
+            ftk_run = "fota.bat"
+            ftk_exec = string.gsub(fota_dir, "./", "") .. "\\" .. ftk_run
+            file = io.open(fota_dir .. "/" .. ftk_run, "w")
+            file:write("cd " .. string.gsub(fota_dir, "./", "") .. "\n")
+            file:write(ftk .. " %*\n")
+            file:close(file)
+        elseif is_plat("macosx") then
+            -- TODO
+        else
+            fcelf = "fcelf"
+            sha256sum = "sha256sum"
+            deltagen = "bsdiff"
+            ftk = "FotaToolkit.exe" -- TODO
+            ftk_run = "fota.sh"
+            ftk_exec = string.gsub(fota_dir, "./", "") .. "\\" .. ftk_run
+            file = io.open(fota_dir .. "/" .. ftk_run, "w")
+            file:write("cd " .. fota_dir .. "\n")
+            file:write(ftk .. " $@\n")
+            file:close(file)
         end
+        fcelf_from = SDK_PATH .. "/tools/dtools/dep/" .. fcelf
+        fcelf_to = fota_dep_dir .. "/" .. fcelf
+        sha256sum_from = SDK_PATH .. "/tools/dtools/dep/" .. sha256sum
+        sha256sum_to = fota_dep_dir .. "/" .. sha256sum
+        deltagen_from = SDK_PATH .. "/tools/dtools/dep/" .. deltagen
+        deltagen_to = fota_dep_dir .. "/" .. deltagen
+        ftk_from = SDK_PATH .. "/tools/dtools/" .. ftk
+        ftk_to = fota_dir .. "/" .. ftk 
+
+        if not os.exists(fcelf_to) then os.cp(fcelf_from, fcelf_to) end
+        if not os.exists(sha256sum_to) then os.cp(sha256sum_from, sha256sum_to) end
+        if not os.exists(deltagen_to) then os.cp(deltagen_from, deltagen_to) end
+        if not os.exists(ftk_to) then os.cp(ftk_from, ftk_to) end
+        -- OUT_PATH = string.gsub(OUT_PATH, "./", "")
+                
+        print(ftk_exec .. " -d ../ec618_2.json BINPKG ../" .. OUT_PATH .. "/delta.par ../" .. OUT_PATH .. "/micropython" .. ".binpkg ../" .. OUT_PATH .. "/micropython_v1.1.binpkg")
+        os.exec(ftk_exec .. " -d ../ec618_2.json BINPKG ../" .. OUT_PATH .. "/delta.par ../" .. OUT_PATH .. "/micropython" .. ".binpkg ../" .. OUT_PATH .. "/micropython_v1.1.binpkg")
+
+        -- os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
+        -- os.exec(SDK_PATH .. "/tools/dtools/FotaToolkit.exe -d ec618.json BINPKG out/delta.par " .. "out/micropython" .. ".binpkg out/micropython_v1.1.binpkg")
+        -- FotaToolkit.exe -d config\ec618.json %1 %2 old.binpkg new.binpkg
 
         -- copy to external folder
         if is_plat("linux") then
@@ -1613,6 +1667,7 @@ target_end()
 
 ------------------------------------------------
 -- to extract from *.binpkg
--- fcelf.exe -E -input micropython.binpkg 
+-- fcelf.exe -E -info imagedata.json -input micropython.binpkg 
 --
 ------------------------------------------------
+

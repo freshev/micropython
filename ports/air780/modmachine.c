@@ -166,7 +166,6 @@ NORETURN STATIC void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
 // ------
 //  FOTA
 // ------
-/*
 int modmachine_endswith(const char *str, const char *suffix) {
     if (!str || !suffix) return 0;
     size_t lenstr = strlen(str);
@@ -174,7 +173,7 @@ int modmachine_endswith(const char *str, const char *suffix) {
     if (lensuffix >  lenstr) return 0;
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
-
+/*
 void modmachine_remove_files(char *suffix) {
     Dir_t* dir = API_FS_OpenDir("/");
     const Dirent_t* entry = NULL;
@@ -188,9 +187,11 @@ void modmachine_remove_files(char *suffix) {
     }
     API_FS_CloseDir(dir);
 }
+*/
+
 
 static uint8_t _fota_result = 0;
-static void processFota(const unsigned char *data, int len) {
+/*static void processFota(const unsigned char *data, int len) {
     Trace(1,"FOTA total length:%d, data:%s", len, data);
     if(len) {
         MEMBLOCK_Trace(1, (uint8_t*)data, (uint16_t)len, 16);
@@ -215,6 +216,7 @@ static void processFota(const unsigned char *data, int len) {
     //mp_printf(&mp_plat_print, "FOTA failed\n");
     API_FotaClean();
 }
+*/
 
 STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
     // ========================================
@@ -227,14 +229,15 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
             char url[512];
             memset(url, 0, sizeof(url));
             sprintf(url, FOTA_URL, FW_VERSION, newv);
-            Trace(1,"FOTA URL %s", url);
+            LUAT_DEBUG_PRINT("FOTA URL %s", url);
             mp_printf(&mp_plat_print, "FOTA URL %s.\n", url);
-            if(API_FotaByServer(url, processFota) == 0) {
+            luat_fota_init();
+            /*if(API_FotaByServer(url, processFota) == 0) {
                return mp_obj_new_int(_fota_result);
             } else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection.\n");
+            */
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
     } else mp_raise_ValueError("FOTA requested version should be string.");
     return mp_obj_new_int(0);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_ota_obj, modmachine_ota);
-*/
