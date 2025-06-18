@@ -18,8 +18,8 @@
 
 #undef MBEDTLS_SSL_PROTO_SSL3
 #undef MBEDTLS_SSL_MAX_CONTENT_LEN
-#define MBEDTLS_SSL_MAX_CONTENT_LEN         (4*1024) // should not be less than 4K, 
-#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (4*1024)
+#define MBEDTLS_SSL_MAX_CONTENT_LEN         (16701) // should not be less than 4K, 
+#define MBEDTLS_SSL_MAX_OUT_CONTENT_LEN     (16701)
 
 #define MBEDTLS_THREADING_IMPL
 #define MBEDTLS_CIPHER_MODE_CBC
@@ -2059,7 +2059,7 @@
  *
  * This module provides networking routines.
  */
-//#define MBEDTLS_NET_C
+// #define MBEDTLS_NET_C
 
 /**
  * \def MBEDTLS_OID_C

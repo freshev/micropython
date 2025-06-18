@@ -1651,8 +1651,7 @@ int network_init_tls(network_ctrl_t *ctrl, int verify_mode)
         mbedtls_ssl_config_defaults(ctrl->config, MBEDTLS_SSL_IS_CLIENT, ctrl->is_tcp?MBEDTLS_SSL_TRANSPORT_STREAM:MBEDTLS_SSL_TRANSPORT_DATAGRAM, MBEDTLS_SSL_PRESET_DEFAULT);
 
         #if MBEDTLS_VERSION_NUMBER >= 0x03000000
-        mbedtls_ssl_conf_authmode(ctrl->config, verify_mode);
-        mbedtls_ssl_conf_handshake_timeout(ctrl->config, 20000, 20000);        
+        mbedtls_ssl_conf_authmode(ctrl->config, verify_mode);                
         mbedtls_ssl_conf_rng(ctrl->config, tls_random, NULL);
         mbedtls_ssl_conf_dbg(ctrl->config, tls_dbg, NULL);
         mbedtls_ssl_conf_verify(ctrl->config, tls_verify, ctrl);
@@ -1662,7 +1661,6 @@ int network_init_tls(network_ctrl_t *ctrl, int verify_mode)
         mbedtls_ssl_conf_renegotiation(ctrl->config, MBEDTLS_SSL_RENEGOTIATION_ENABLED);
         #else
         ctrl->config->authmode = verify_mode;
-        ctrl->config->hs_timeout_min = 20000;
         ctrl->config->f_rng = tls_random;
         ctrl->config->p_rng = NULL;
         ctrl->config->f_dbg = tls_dbg;
@@ -1673,6 +1671,14 @@ int network_init_tls(network_ctrl_t *ctrl, int verify_mode)
         ctrl->config->read_timeout = 20000;
         ctrl->config->allow_legacy_renegotiation = MBEDTLS_SSL_LEGACY_ALLOW_RENEGOTIATION;
         ctrl->config->disable_renegotiation = MBEDTLS_SSL_RENEGOTIATION_ENABLED;
+        #endif
+
+        #if defined(MBEDTLS_SSL_PROTO_DTLS)
+            #if MBEDTLS_VERSION_NUMBER >= 0x03000000
+            mbedtls_ssl_conf_handshake_timeout(ctrl->config, 20000, 20000);
+            #else 
+            ctrl->config->hs_timeout_min = 20000;
+            #endif
         #endif
         
         ctrl->tls_long_timer = platform_create_timer(tls_longtimeout, ctrl, NULL);

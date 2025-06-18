@@ -7,10 +7,12 @@ out/
 old/
 build/
 fota/
+version/
 .xmake/
 *.o
 __py_cache__/
 a.bat
 b.bat
+c.bat
 test
 log*.*

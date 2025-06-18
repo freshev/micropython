@@ -5,7 +5,7 @@
   {"Comment": "'attr' in 'ImageMem' must be set with one of these choices('BINPKG/BL/AP/CP/APP/APP2'), which is forbidden to be redefined!"},
   {"Comment": "However, other fields can be redefined to whatever you want, including the name of this config file!"}
  ],
- "CompanyName": "EiGENCOMM",
+ "CompanyName": "https://github.com/freshev/micropython",
  "ProductName": "EC618",
  "PatchBlockSize": 32768,
  "FotaMemSize": 491520,
@@ -18,7 +18,7 @@
   {
    "attr": "AP",
    "addr": 8536064,
-   "size": 3014656
+   "size": 2621440
   },
   {
    "attr": "CP",

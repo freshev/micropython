@@ -37,6 +37,10 @@
 #include "luat_pm.h"
 #include "luat_debug.h"
 #include "luat_adc.h"
+#include "luat_fota.h"
+#include "luat_network_adapter.h"
+#include "httpclient.h"
+#include "miniz.h"
 
 #include "mpconfigport.h"
 #include "modmachine.h"
@@ -46,6 +50,8 @@
 
 // refactoring need
 //{ MP_OBJ_NEW_QSTR(MP_QSTR_RTC), (mp_obj_t)&modmachine_rtc_obj },
+
+extern luat_rtos_task_handle microPyTaskHandle;
 
 typedef enum {
     MP_PWRON_RESET = 1,
@@ -71,10 +77,9 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_wdt_test_obj, machine_wdt_test);
                                                                                 \
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                \
                                                                                 \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },            \
+                                                                                \
     { MP_ROM_QSTR(MP_QSTR_wdt_test), MP_ROM_PTR(&machine_wdt_test_obj) }
-
-// 
-// { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },                         
 
 void modmachine_init0(void) {
     modmachine_wdt_init0();
@@ -173,9 +178,9 @@ int modmachine_endswith(const char *str, const char *suffix) {
     if (lensuffix >  lenstr) return 0;
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
-/*
+
 void modmachine_remove_files(char *suffix) {
-    Dir_t* dir = API_FS_OpenDir("/");
+/*    Dir_t* dir = API_FS_OpenDir("/");
     const Dirent_t* entry = NULL;
     while ((entry = API_FS_ReadDir(dir))) {
         if(modmachine_endswith(entry->d_name, suffix)) {
@@ -186,43 +191,93 @@ void modmachine_remove_files(char *suffix) {
         }
     }
     API_FS_CloseDir(dir);
-}
 */
+}
 
+#define HTTP_RECV_BUF_SIZE      (1501)
+static luat_fota_img_proc_ctx_ptr test_luat_fota_handle;
 
-static uint8_t _fota_result = 0;
-/*static void processFota(const unsigned char *data, int len) {
-    Trace(1,"FOTA total length:%d, data:%s", len, data);
-    if(len) {
-        MEMBLOCK_Trace(1, (uint8_t*)data, (uint16_t)len, 16);
-        if(API_FotaInit(len)) {
-            Trace(1, "FOTA inited");
-            //mp_printf(&mp_plat_print, "FOTA inited\n");
-            modmachine_remove_files(".py");
-            int res_len = API_FotaReceiveData((unsigned char*)data, (int)len);
-            if(res_len != 0) {
-                Trace(1, "FOTA received data %d", res_len);
-                //mp_printf(&mp_plat_print, "FOTA received data %d\n" , res_len);
-                _fota_result = 1;
-            } else {
-                Trace(1, "FOTA NOT received data");
-                //mp_printf(&mp_plat_print, "FOTA NOT received data\n");
-            }
-            API_FotaClean();
-            return;
+int http_client_fota_recv_cb(char* buf, uint32_t len) {
+   int result = 0; // !!!!!!!
+   if(test_luat_fota_handle) {
+        result = luat_fota_write(test_luat_fota_handle, buf, len);
+        if (result == 0) {
+            LUAT_DEBUG_PRINT("fota update success");
+        } else {
+            LUAT_DEBUG_PRINT("fota update error");
+        } 
+   }
+   return result;
+}
+
+STATIC int luatos_fota_http_task(char *url) {
+
+    net_lwip_init();
+    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
+    luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, NULL); 
+   
+    luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
+    // test_luat_fota_handle = luat_fota_init();
+
+    if(!test_luat_fota_handle) {
+        LUAT_DEBUG_PRINT("FOTA init failed");
+        // return 0; // !!!
+    }
+
+    uint8_t retryTimes = 0;
+    char *recvBuf = m_new(char, HTTP_RECV_BUF_SIZE);
+    if(recvBuf == NULL) {
+        LUAT_DEBUG_PRINT("FOTA can not alloc receive buffer");
+        return 0;
+    }
+
+    HTTPResult result = HTTP_INTERNAL;
+    HttpClientContext fota_http_client = {0};
+    int stepLen = 0;
+    int totalLen = 0;
+
+    httpInit(&fota_http_client, http_client_fota_recv_cb);
+    while(retryTimes < 5) {
+        result = httpConnect(&fota_http_client, url);
+        if (result == HTTP_OK) {
+            result = httpGetData(&fota_http_client, url, recvBuf, HTTP_RECV_BUF_SIZE, &stepLen, &totalLen);
+            httpClose(&fota_http_client);            
+            if (stepLen == totalLen) break;
+        } else {
+            LUAT_DEBUG_PRINT("http client connect error");
         }
-    } // else mp_printf(&mp_plat_print, "FOTA len = 0\n");
-    Trace(1,"FOTA failed");
-    //mp_printf(&mp_plat_print, "FOTA failed\n");
-    API_FotaClean();
+        retryTimes++;
+        luat_rtos_task_sleep(3000);
+    }
+    m_del(char, recvBuf, HTTP_RECV_BUF_SIZE);
+
+    if(stepLen == totalLen) {
+        if(fota_http_client.httpResponseCode == 404) {
+            LUAT_DEBUG_PRINT("FOTA image not found (%d)", fota_http_client.httpResponseCode);
+            return 0;
+        }
+        LUAT_DEBUG_PRINT("image_verify ok");
+        if(test_luat_fota_handle != NULL) {
+            int verify = luat_fota_done(test_luat_fota_handle);
+            if(verify != 0) {
+                LUAT_DEBUG_PRINT("image_verify error");
+                return 0;
+            }
+            LUAT_DEBUG_PRINT("image_verify ok");       
+        }
+    } else {
+        LUAT_DEBUG_PRINT("http client data not fully received");
+        return 0;
+    }
+    return 1;
 }
-*/
+
 
 STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
-    _fota_result = 0;
     if (mp_obj_is_str(new_version)) {
         const char* newv = mp_obj_str_get_str(new_version);
         if(strcmp(newv, FW_VERSION) != 0) {
@@ -230,12 +285,13 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
             memset(url, 0, sizeof(url));
             sprintf(url, FOTA_URL, FW_VERSION, newv);
             LUAT_DEBUG_PRINT("FOTA URL %s", url);
-            mp_printf(&mp_plat_print, "FOTA URL %s.\n", url);
-            luat_fota_init();
-            /*if(API_FotaByServer(url, processFota) == 0) {
-               return mp_obj_new_int(_fota_result);
-            } else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection.\n");
-            */
+            mp_printf(&mp_plat_print, "FOTA URL %s\n", url);
+            int res = luatos_fota_http_task(url);
+            if(res) {
+                // modmachine_remove_files(".py");
+                return mp_obj_new_int(1);
+            }
+            else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection and URL.\n");
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
     } else mp_raise_ValueError("FOTA requested version should be string.");
     return mp_obj_new_int(0);

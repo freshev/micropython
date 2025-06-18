@@ -431,12 +431,12 @@ static void net_lwip_callback_to_nw_task(uint8_t adapter_index, uint32_t event_i
     {
         if (event_id != EV_NW_SOCKET_CLOSE_OK)
         {
-            event.Param3 = prvlwip.socket[param1].param;
+            event.Param3 = (uint32_t)prvlwip.socket[param1].param;
             param.tag = prvlwip.socket[param1].tag;
         }
         else
         {
-            event.Param3 = ((luat_network_cb_param_t *)param3)->param;
+            event.Param3 = (uint32_t)((luat_network_cb_param_t *)param3)->param;
             param.tag = ((luat_network_cb_param_t *)param3)->tag;
         }
     }

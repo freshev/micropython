@@ -7,7 +7,7 @@ set_defaultmode("debug")
 local VM_64BIT = nil
 SDK_TOP = "."
 local SDK_PATH
-local USER_PROJECT_NAME = "micropython"
+local USER_PROJECT_NAME = "Air780_micropython"
 USER_PROJECT_DIR  = ""
 local LUAT_SCRIPT_SIZE
 local LUAT_SCRIPT_OTA_SIZE
@@ -59,10 +59,10 @@ option("10 Dump and halt on core exception")
     set_default(false)
     set_showmenu(true)
 option("11 FOTA URL")
-    set_description("Firmware over the air URL")
+    set_description("FOTA URL")
     set_default(false)
     set_showmenu(true)
-    set_default("https://example.com/firmware_%s_to_%s.pack")
+    set_default("https://example.com/Air780_OLDVERSION_to_NEWVERSION.pack")
 
 option("1 RS485_UART1_USE")
     set_description("UART1 connected to RS-485")
@@ -295,7 +295,8 @@ add_cxflags("-g3",
             "-fno-inline",
             "-mslow-flash-data",
             "-fstack-usage",
-            "-Wstack-usage=4096",
+            -- "-Wstack-usage=4096",
+            "-Wstack-usage=8440", -- miniz requirement
 {force=true})
 
 add_cxflags("-Werror=maybe-uninitialized")
@@ -358,18 +359,17 @@ INCLUDES={
                 SDK_TOP .. "/PLAT/middleware/developed/tcpipmgr/app/inc",
                 SDK_TOP .. "/PLAT/middleware/developed/tcpipmgr/common/inc",
                 SDK_TOP .. "/PLAT/os/freertos/inc",
-                -- SDK_TOP .. "/PLAT/middleware/developed/yrcompress",
                 SDK_TOP .. "/PLAT/prebuild/PS/inc",                
-                SDK_TOP .. "/PLAT/middleware/developed/ccio/pub", -- UART
+                SDK_TOP .. "/PLAT/middleware/developed/ccio/pub",
                 SDK_TOP .. "/PLAT/middleware/developed/ccio/device/inc",
                 SDK_TOP .. "/PLAT/middleware/developed/ccio/service/inc",
                 SDK_TOP .. "/PLAT/middleware/developed/ccio/custom/inc",
                 SDK_TOP .. "/PLAT/middleware/developed/fota/pub",
                 SDK_TOP .. "/PLAT/middleware/developed/fota/custom/inc",
-                -- SDK_TOP .. "/thirdparty/httpclient",
+                SDK_TOP .. "/thirdparty/libhttp",
+                SDK_TOP .. "/thirdparty/httpclient",
                 SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include",
                 SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/posix",
-                -- SDK_TOP .. "/PLAT/middleware/thirdparty/lwip/src/include/lwip/apps", -- mdns
                 SDK_TOP .. "/PLAT/os/freertos/inc",
                 SDK_TOP .. "/PLAT/prebuild/PS/inc",
                 SDK_TOP .. "/PLAT/prebuild/PLAT/inc",
@@ -385,13 +385,14 @@ INCLUDES={
                 SDK_TOP .. "/thirdparty/littlefs",
                 SDK_TOP .. "/thirdparty/littlefs/port",
                 SDK_TOP .. "/thirdparty/mbedtls/include",
-                SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",
-                SDK_TOP .. "/thirdparty/mbedtls/configs",                
+                -- SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",
+                SDK_TOP .. "/thirdparty/mbedtls/configs",
                 SDK_TOP .. "/thirdparty/fal/inc",
                 SDK_TOP .. "/thirdparty/flashdb/inc",
                 SDK_TOP .. "/thirdparty/linksdk",
                 SDK_TOP .. "/thirdparty/printf",
                 SDK_TOP .. "/thirdparty/cJSON",
+                -- SDK_TOP .. "/thirdparty/miniz",
                 SDK_TOP .. "/luatos_lwip_socket/include",
          }
 add_includedirs(INCLUDES, {public = true})
@@ -487,7 +488,10 @@ if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
 if get_config("08 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
 if get_config("09 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
 if get_config("10 Dump and halt on core exception") then table.insert(DEFINES, "HALTONEXC") end
-if get_config("11 FOTA URL") then table.insert(DEFINES, "FOTAURL=" .. get_config("11 FOTA URL")) end
+if get_config("11 FOTA URL") then 
+    FOTA_URL = get_config("11 FOTA URL") 
+    table.insert(DEFINES, "FOTA_URL=\"" .. string.gsub(string.gsub(FOTA_URL, "OLDVERSION", "%%s"), "NEWVERSION", "%%s") .. "\"")
+end
 
 if get_config("1 RS485_UART1_USE") then table.insert(DEFINES, "RS485_UART1_USE") end
 if get_config("2 RS485_UART1_PIN")       then table.insert(DEFINES, "RS485_UART1_PIN="       .. get_config("2 RS485_UART1_PIN")) end
@@ -686,7 +690,7 @@ if os.exists("./boards/" .. BOARD) then CFLAGS = CFLAGS .. " -I" .. "./boards/" 
 CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
-SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c"}  
+SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", "miniz.c"}  
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 
@@ -795,6 +799,7 @@ target("driver")
                 SDK_TOP .. "/PLAT/driver/chip/ec618/common/gcc/memcpy-armv7m.S",
                 SDK_TOP .. "/PLAT/driver/hal/**.c",
                 SDK_TOP .. "/PLAT/core/speed/*.c"
+                -- SDK_TOP .. "/thirdparty/miniz/miniz.c"
     )
     
     remove_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/camAT.c",
@@ -857,6 +862,7 @@ target("extmod")
         add_files(name, { cflags = CFLAGS .. " -Wno-clobbered -Wno-stack-usage "}) 
     end
 target_end()
+
 --------------------------------------------------------
 --                    the port target
 --------------------------------------------------------
@@ -865,7 +871,7 @@ target(USER_PROJECT_NAME)
     set_policy("build.across_targets_in_parallel", false)
 
     set_kind("static")
-    set_targetdir(BUILD)
+    set_targetdir(BUILD)    
 
     add_includedirs(INCLUDES, { public = true })
     add_deps("py")
@@ -883,6 +889,7 @@ target(USER_PROJECT_NAME)
     add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/cJSON/**.c",{public = true})
     add_files(SDK_TOP .. "/luatos_lwip_socket/src/**.c",{public = true, cflags = CFLAGS .. " -Wno-override-init"})
+    -- add_files(SDK_TOP .. "/thirdparty/miniz/miniz.c",{public = true})
 
     -- remove_files(SDK_TOP .. "/interface/private_src/luat_full_ota_ec618.c")  -- rewritten to use MPY mbedtls version
 
@@ -1416,6 +1423,7 @@ target_end()
 --                     main target
 --------------------------------------------------------
 target(USER_PROJECT_NAME..".elf")
+    set_default(true)
     add_deps("driver")
     add_deps(USER_PROJECT_NAME)
 
@@ -1430,42 +1438,14 @@ target(USER_PROJECT_NAME..".elf")
     if #DRIVERS_SRC_C > 0 then add_files(DRIVERS_SRC_C, {public = true, cflags = CFLAGS }) end
     if #SRC_THIRDPARTY_C > 0 then add_files(SRC_THIRDPARTY_C, {public = true, cflags = CFLAGS }) end
 
-    add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded -ldriver -lmicropython", {force=true})
+    add_ldflags(LD_BASE_FLAGS .. " -Wl,--whole-archive -Wl,--start-group " .. LIB_BASE .. LIB_USER .. " -Wl,--end-group -Wl,--no-whole-archive -Wl,--no-undefined -Wl,--no-print-map-discarded -ldriver -l" .. USER_PROJECT_NAME, {force=true})    
 
-    on_load(function (target)
-
+    on_load(function(target)
         print("----------------------------------------------------")
         print("Compiling Version " .. FW_VERSION .. " for " ..  BOARD .. " on " .. os.host():gsub("^%l", string.upper))
         print("----------------------------------------------------")
-
-        if USER_PROJECT_NAME == 'luatos' then
-            local conf_data = io.readfile("$(projectdir)/project/luatos/inc/luat_conf_bsp.h")
-            USER_PROJECT_NAME_VERSION = conf_data:match("#define LUAT_BSP_VERSION \"(%w+)\"")
-            VM_64BIT = conf_data:find("\r#define LUAT_CONF_VM_64bit") or conf_data:find("\n#define LUAT_CONF_VM_64bit")
-            local TTS_ONCHIP = conf_data:find("\r#define LUAT_USE_TTS_ONCHIP") or conf_data:find("\n#define LUAT_USE_TTS_ONCHIP")
-            local TLS_DISABLE = conf_data:find("\r#define LUAT_USE_TLS_DISABLE") or conf_data:find("\n#define LUAT_USE_TLS_DISABLE")
-
-            local mem_map_data = io.readfile("$(projectdir)/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h")
-            FLASH_FOTA_REGION_START = tonumber(mem_map_data:match("#define FLASH_FOTA_REGION_START%s+%((%g+)%)"))
-            if (TTS_ONCHIP or os.getenv("LUAT_USE_TTS_ONCHIP") == "1") and not TLS_DISABLE then
-                LUAT_SCRIPT_SIZE = 64
-                LUAT_SCRIPT_OTA_SIZE = 48
-            elseif os.getenv("LUAT_EC618_LITE_MODE") == "1" then
-                LUAT_SCRIPT_SIZE = 448
-                LUAT_SCRIPT_OTA_SIZE = 284
-            else
-                LUAT_SCRIPT_SIZE = tonumber(conf_data:match("\r#define LUAT_SCRIPT_SIZE (%d+)") or conf_data:match("\n#define LUAT_SCRIPT_SIZE (%d+)"))
-                LUAT_SCRIPT_OTA_SIZE = tonumber(conf_data:match("\r#define LUAT_SCRIPT_OTA_SIZE (%d+)") or conf_data:match("\n#define LUAT_SCRIPT_OTA_SIZE (%d+)"))
-            end
-            print(string.format("script zone %d ota %d", LUAT_SCRIPT_SIZE, LUAT_SCRIPT_OTA_SIZE))
-            LUA_SCRIPT_ADDR = FLASH_FOTA_REGION_START - (LUAT_SCRIPT_SIZE + LUAT_SCRIPT_OTA_SIZE) * 1024
-            LUA_SCRIPT_OTA_ADDR = FLASH_FOTA_REGION_START - LUAT_SCRIPT_OTA_SIZE * 1024
-            script_addr = string.format("%X", LUA_SCRIPT_ADDR)
-            full_addr = string.format("%X", LUA_SCRIPT_OTA_ADDR)
-            -- print(FLASH_FOTA_REGION_START,LUAT_SCRIPT_SIZE,LUAT_SCRIPT_OTA_SIZE)
-            -- print(script_addr,full_addr)
-        end
     end)
+
     before_build(function(target)
         if os.getenv("GCC_PATH") then
             GCC_DIR = os.getenv("GCC_PATH").."/"
@@ -1477,11 +1457,9 @@ target(USER_PROJECT_NAME..".elf")
         else
             FLAGS = ""
         end
-        if USER_PROJECT_NAME == "luatos" then
-            FLAGS = FLAGS .. " -D__LUATOS__ -DFLASH_AREA_SIZE=" .. string.format("%dK", 2944 - LUAT_SCRIPT_SIZE - LUAT_SCRIPT_OTA_SIZE)
-        end
         os.exec(GCC_DIR .. "bin/arm-none-eabi-gcc -E " .. FLAGS .. " -I " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc" .. " -P " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.c" ..  " -o " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.ld")        
     end)
+
     after_build(function(target)
         if os.getenv("GCC_PATH") then
             GCC_DIR = os.getenv("GCC_PATH").."/"
@@ -1489,9 +1467,10 @@ target(USER_PROJECT_NAME..".elf")
             GCC_DIR = target:toolchains()[1]:sdkdir().."/"
         end
         OUT_PATH = "./out"
-        if not os.exists(OUT_PATH) then
-            os.mkdir(OUT_PATH)
-        end
+        VERSION_PATH = "./version"
+        if not os.exists(OUT_PATH) then os.mkdir(OUT_PATH) end
+        if not os.exists(VERSION_PATH) then os.mkdir(VERSION_PATH) end
+
         os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
         --io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".list", os.iorun(GCC_DIR .. "bin/arm-none-eabi-objdump -h -S $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
         io.writefile("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".size", os.iorun(GCC_DIR .. "bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf"))
@@ -1520,7 +1499,7 @@ target(USER_PROJECT_NAME..".elf")
                 cmd = SDK_PATH .. "/fcelf " .. cmd
             end
         end
-        cmd = cmd .. " -outfile " .. "./out/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
+        cmd = cmd .. " -outfile " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
         --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
         --You can still use other tools to continue flashing your phone
         print("fcelf CMD --> ", cmd)
@@ -1542,71 +1521,45 @@ target(USER_PROJECT_NAME..".elf")
             return
         end
         import("core.base.json")
-        if USER_PROJECT_NAME == 'luatos' then
-            os.cp("$(projectdir)/project/luatos/pack", OUT_PATH)
-            local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
-            if VM_64BIT then
-                info_table["script"]["bitw"] = 64
-            end
-            if script_addr then
-                info_table["download"]["script_addr"] = script_addr
-                info_table["rom"]["fs"]["script"]["size"] = LUAT_SCRIPT_SIZE
-                io.gsub(OUT_PATH.."/pack/config_ec618_usb.ini", "filepath = .\\script.bin\nburnaddr = 0x(%g+)", "filepath = .\\script.bin\nburnaddr = 0x"..script_addr)
-            end
-            if full_addr then
-                info_table["fota"]["full_addr"] = full_addr
-            end
-            json.savefile(OUT_PATH.."/pack/info.json", info_table)
-            os.cp(OUT_PATH.."/luatos.binpkg", OUT_PATH.."/pack")
-            os.cp(OUT_PATH.."/luatos.elf", OUT_PATH.."/pack")
-            os.cp(OUT_PATH.."/*.map", OUT_PATH.."/pack")
-            os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH.."/pack")
-            os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
-            os.cp("$(projectdir)/project/luatos/inc/luat_conf_bsp.h", OUT_PATH.."/pack")
-            os.exec(path7z.." a -mx9 LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618.7z "..OUT_PATH.."/pack/* -r")
-            local ver = "_FULL"
-            if os.getenv("LUAT_EC618_LITE_MODE") == "1" then
-                ver = ""
-            end
-            if os.getenv("LUAT_USE_TTS") == "1" then
-                ver = "_TTS"
-                if os.getenv("LUAT_USE_TTS_ONCHIP") == "1" then
-                    ver = "_TTS_ONCHIP"
-                end
-            end
-            os.mv("LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618.7z", OUT_PATH.."/LuatOS-SoC_"..USER_PROJECT_NAME_VERSION.."_EC618"..ver..".soc")
-            os.rm(OUT_PATH.."/pack")
-        else 
-            if not os.exists(OUT_PATH.."/pack") then
-                os.mkdir(OUT_PATH.."/pack")
-            end
-            os.cp(OUT_PATH.."/*.binpkg", OUT_PATH.."/pack")
-            os.cp(OUT_PATH.."/*.elf", OUT_PATH.."/pack")
-            os.cp(OUT_PATH.."/*.map", OUT_PATH.."/pack")
-            os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH.."/pack")
-            os.cp(SDK_PATH .. "/project/luatos/pack/info.json", OUT_PATH.."/pack")
-            local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
-            info_table["rom"]["file"] = USER_PROJECT_NAME .. ".binpkg"
-            json.savefile(OUT_PATH.."/pack/info.json", info_table)
-            os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
-            os.exec(path7z.." a -mx9 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
-            os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
-            os.rm(OUT_PATH.."/pack")
+        if not os.exists(OUT_PATH.."/pack") then
+            os.mkdir(OUT_PATH.."/pack")
         end
 
-        --To calculate the differential package size, you need to put the old binpkg in the root directory and name it $project name.binpkg
-        -- os.listdir()
-        -- if os.exists(USER_PROJECT_NAME .. ".binpkg") then
-        --    os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
-        --    os.cp(OUT_PATH.."/"..USER_PROJECT_NAME..".binpkg", "tools/dtools/new.binpkg")
-        --    os.cp(USER_PROJECT_NAME .. ".binpkg", "tools/dtools/old.binpkg")
-        --    os.exec("tools\\dtools\\run.bat BINPKG delta.par " .. USER_PROJECT_NAME .. ".binpkg new.binpkg")
-        -- end
+        os.cp(OUT_PATH.."/*.binpkg", OUT_PATH.."/pack")
+        os.cp(OUT_PATH.."/*.elf", OUT_PATH.."/pack")
+        os.cp(OUT_PATH.."/*.map", OUT_PATH.."/pack")
+        os.cp(SDK_PATH .. "/PLAT/comdb.txt", OUT_PATH.."/pack")
+        os.cp(SDK_PATH .. "/project/luatos/pack/info.json", OUT_PATH.."/pack")
+        local info_table = json.loadfile(OUT_PATH.."/pack/info.json")
+        info_table["rom"]["file"] = USER_PROJECT_NAME .. ".binpkg"
+        json.savefile(OUT_PATH.."/pack/info.json", info_table)
+        os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
+        os.exec(path7z.." a -mx9 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
+        os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
+        os.rm(OUT_PATH.."/pack")
+    end)    
+target_end()
 
-        fota_dir = "./fota"
-        fota_dep_dir = "./fota/dep"
-        if not os.exists(fota_dir) then os.mkdir(fota_dir) end
-        if not os.exists(fota_dep_dir) then os.mkdir(fota_dep_dir) end
+
+target("ota")
+    set_default(false)
+    -- add_deps(USER_PROJECT_NAME..".elf")
+    set_values("FOTA_URL", FOTA_URL)
+
+    on_build(function (target)
+        print("----------------------------------------------------")
+        print("Make OTA pack(s) for " .. FW_VERSION .. " on " .. os.host():gsub("^%l", string.upper))
+        print("----------------------------------------------------")
+
+        
+        OUT_PATH = "./out"
+        OUT_DEP_PATH = "./out/dep"
+        FOTA_PATH = "./fota"
+        VERSION_PATH = "./version"
+        if not os.exists(OUT_PATH) then os.mkdir(OUT_PATH) end        
+        if not os.exists(OUT_DEP_PATH) then os.mkdir(OUT_DEP_PATH) end
+        if not os.exists(FOTA_PATH) then os.mkdir(FOTA_PATH) end
+        if not os.exists(VERSION_PATH) then os.mkdir(VERSION_PATH) end
 
         if is_plat("windows") then
             fcelf = "fcelf.exe"
@@ -1614,9 +1567,9 @@ target(USER_PROJECT_NAME..".elf")
             deltagen = "deltagen.exe"
             ftk = "FotaToolkit.exe"
             ftk_run = "fota.bat"
-            ftk_exec = string.gsub(fota_dir, "./", "") .. "\\" .. ftk_run
-            file = io.open(fota_dir .. "/" .. ftk_run, "w")
-            file:write("cd " .. string.gsub(fota_dir, "./", "") .. "\n")
+            ftk_exec = string.gsub(OUT_PATH, "./", "") .. "\\" .. ftk_run
+            file = io.open(OUT_PATH .. "/" .. ftk_run, "w")
+            file:write("cd " .. string.gsub(OUT_PATH, "./", "") .. "\n")
             file:write(ftk .. " %*\n")
             file:close(file)
         elseif is_plat("macosx") then
@@ -1627,34 +1580,52 @@ target(USER_PROJECT_NAME..".elf")
             deltagen = "bsdiff"
             ftk = "FotaToolkit.exe" -- TODO
             ftk_run = "fota.sh"
-            ftk_exec = string.gsub(fota_dir, "./", "") .. "\\" .. ftk_run
-            file = io.open(fota_dir .. "/" .. ftk_run, "w")
-            file:write("cd " .. fota_dir .. "\n")
+            ftk_exec = string.gsub(OUT_PATH, "./", "") .. "\\" .. ftk_run
+            file = io.open(OUT_PATH .. "/" .. ftk_run, "w")
+            file:write("cd " .. OUT_PATH .. "\n")
             file:write(ftk .. " $@\n")
             file:close(file)
         end
         fcelf_from = SDK_PATH .. "/tools/dtools/dep/" .. fcelf
-        fcelf_to = fota_dep_dir .. "/" .. fcelf
+        fcelf_to = OUT_DEP_PATH .. "/" .. fcelf
         sha256sum_from = SDK_PATH .. "/tools/dtools/dep/" .. sha256sum
-        sha256sum_to = fota_dep_dir .. "/" .. sha256sum
+        sha256sum_to = OUT_DEP_PATH .. "/" .. sha256sum
         deltagen_from = SDK_PATH .. "/tools/dtools/dep/" .. deltagen
-        deltagen_to = fota_dep_dir .. "/" .. deltagen
+        deltagen_to = OUT_DEP_PATH .. "/" .. deltagen
         ftk_from = SDK_PATH .. "/tools/dtools/" .. ftk
-        ftk_to = fota_dir .. "/" .. ftk 
+        ftk_to = OUT_PATH .. "/" .. ftk 
 
         if not os.exists(fcelf_to) then os.cp(fcelf_from, fcelf_to) end
         if not os.exists(sha256sum_to) then os.cp(sha256sum_from, sha256sum_to) end
         if not os.exists(deltagen_to) then os.cp(deltagen_from, deltagen_to) end
         if not os.exists(ftk_to) then os.cp(ftk_from, ftk_to) end
-        -- OUT_PATH = string.gsub(OUT_PATH, "./", "")
+        
+        target_file = path.cygwin_path(string.gsub(VERSION_PATH, "./", "") .. "/" .. USER_PROJECT_NAME .. "_" .. FW_VERSION .. ".binpkg")
+        for _, source_file in ipairs(os.files(VERSION_PATH .. "/*.binpkg")) do
+            base_file = path.cygwin_path(source_file)
+            if (base_file ~= target_file) then
+                ind1 = string.find(base_file, USER_PROJECT_NAME .. "_")
+                ind2 = string.find(base_file, ".binpkg")
+                if (ind1 >= 0 and ind2 >= 0) then
+                    OLDVER = string.sub(base_file, ind1 + string.len(USER_PROJECT_NAME) + 1, ind2 - 1)
+                    if(OLDVER ~= "") then
+                        print("Make fota " .. OLDVER .. " to " .. FW_VERSION ..  " upgrade pack...")
+                        fota_url = target:values("FOTA_URL")
+                        index = fota_url:match'^.*()/'
+                        if(index >= 0 and string.find(fota_url, "OLDVERSION") >= 0 and string.find(fota_url, "NEWVERSION") >= 0) then
+                            fota_file = string.sub(fota_url, index + 1)
+                            fota_file = string.gsub(fota_file, "OLDVERSION", OLDVER)
+                            fota_file = string.gsub(fota_file, "NEWVERSION", FW_VERSION)
+                            print(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
+                            os.exec(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
+                        else
+                            print("Can not parse FOTA URL")
+                        end
+                    end
+                end
+            end
+        end
                 
-        print(ftk_exec .. " -d ../ec618_2.json BINPKG ../" .. OUT_PATH .. "/delta.par ../" .. OUT_PATH .. "/micropython" .. ".binpkg ../" .. OUT_PATH .. "/micropython_v1.1.binpkg")
-        os.exec(ftk_exec .. " -d ../ec618_2.json BINPKG ../" .. OUT_PATH .. "/delta.par ../" .. OUT_PATH .. "/micropython" .. ".binpkg ../" .. OUT_PATH .. "/micropython_v1.1.binpkg")
-
-        -- os.cp("./PLAT/tools/fcelf.exe", "tools/dtools/dep/fcelf.exe")
-        -- os.exec(SDK_PATH .. "/tools/dtools/FotaToolkit.exe -d ec618.json BINPKG out/delta.par " .. "out/micropython" .. ".binpkg out/micropython_v1.1.binpkg")
-        -- FotaToolkit.exe -d config\ec618.json %1 %2 old.binpkg new.binpkg
-
         -- copy to external folder
         if is_plat("linux") then
             if os.exists(OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg") then
@@ -1665,9 +1636,11 @@ target(USER_PROJECT_NAME..".elf")
     end)    
 target_end()
 
+
+
 ------------------------------------------------
 -- to extract from *.binpkg
--- fcelf.exe -E -info imagedata.json -input micropython.binpkg 
+-- fcelf.exe -E -info imagedata.json -input Air780_micropython.binpkg 
 --
 ------------------------------------------------
 

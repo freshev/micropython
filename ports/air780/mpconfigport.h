@@ -7,10 +7,6 @@
 #include "mpconfigboard.h"
 
 #define MICROPY_PY_SYS_PLATFORM "Air780"
-#define FOTA_URL "https://asque.ru/firmware/Device_FW/firmware_debug_%s_to_%s.pack"
-#define MACHINE_HW_WATCHDOG_TIMEOUT (500)
-#define MACHINE_HW_WATCHDOG_PIN (GPIO_PIN7)
-
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -133,8 +129,6 @@
 #define MICROPY_STREAMS_POSIX_API           (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
 #define MICROPY_PY_CRYPTOLIB                (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
 #define MICROPY_PY_HASHLIB_SHA1             (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
-
-
 #define MICROPY_VFS                         (1)
 #define MICROPY_READER_VFS                  (1)
 

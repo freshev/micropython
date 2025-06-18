@@ -52,9 +52,6 @@
 #include "luat_uart.h"
 #include "luat_network_adapter.h"
 #include "plat_config.h"
-
-
-// #include "luat_sms.h"
 #include "mw_nvm_sms.h"
 
 // priority in %
@@ -91,6 +88,11 @@ void* mp_allocate_heap(uint32_t* size) {
              counter++;
         }
     }
+    luat_heap_free(ptr);
+    h_size -=  2 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 32K buffer for MBEDTLS, using malloc/free
+    ptr = luat_heap_malloc(h_size);
+    if (!ptr) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
+
     size[0] = h_size;
     if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
     LUAT_DEBUG_PRINT("finally: %d heap size", h_size);
