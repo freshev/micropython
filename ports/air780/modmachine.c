@@ -40,7 +40,6 @@
 #include "luat_fota.h"
 #include "luat_network_adapter.h"
 #include "httpclient.h"
-#include "miniz.h"
 
 #include "mpconfigport.h"
 #include "modmachine.h"
@@ -195,34 +194,46 @@ void modmachine_remove_files(char *suffix) {
 }
 
 #define HTTP_RECV_BUF_SIZE      (1501)
-static luat_fota_img_proc_ctx_ptr test_luat_fota_handle;
+static luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
 
 int http_client_fota_recv_cb(char* buf, uint32_t len) {
-   int result = 0; // !!!!!!!
+   int result = 1;
    if(test_luat_fota_handle) {
         result = luat_fota_write(test_luat_fota_handle, buf, len);
         if (result == 0) {
-            LUAT_DEBUG_PRINT("fota update success");
+            // LUAT_DEBUG_PRINT("FOTA update success");
         } else {
-            LUAT_DEBUG_PRINT("fota update error");
+            LUAT_DEBUG_PRINT("FOTA update error");
         } 
    }
-   return result;
+   return !result;
 }
+
+/*static void httpMemDebug(const char *topic) {
+    char mess[100];
+    char mess2[10];
+    int total, used, max_used;
+    luat_meminfo_sys(&total, &used, &max_used);
+    mess[0] = '\0';
+    strcat(mess, topic);
+    strcat(mess, ":");
+    itoa(total - used, mess2, 10);
+    strcat(mess, mess2);
+    LUAT_DEBUG_PRINT("%s", mess);
+}*/
+
 
 STATIC int luatos_fota_http_task(char *url) {
 
-    net_lwip_init();
+    // net_lwip_init(); // should be run only once, see modsocket.c
     net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
     network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
     luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, NULL); 
    
-    luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
-    // test_luat_fota_handle = luat_fota_init();
-
+    test_luat_fota_handle = luat_fota_init();
     if(!test_luat_fota_handle) {
         LUAT_DEBUG_PRINT("FOTA init failed");
-        // return 0; // !!!
+        return 0;
     }
 
     uint8_t retryTimes = 0;
@@ -242,11 +253,17 @@ STATIC int luatos_fota_http_task(char *url) {
         result = httpConnect(&fota_http_client, url);
         if (result == HTTP_OK) {
             result = httpGetData(&fota_http_client, url, recvBuf, HTTP_RECV_BUF_SIZE, &stepLen, &totalLen);
-            httpClose(&fota_http_client);            
-            if (stepLen == totalLen) break;
+            switch(result) {
+                case HTTP_OK: break;
+                case HTTP_INFLATE: LUAT_DEBUG_PRINT("FOTA inflate error"); break;
+                case HTTP_CALLBACK: LUAT_DEBUG_PRINT("FOTA callback error"); break;
+                default: LUAT_DEBUG_PRINT("FOTA internal error: %d", result); break;
+            }
         } else {
-            LUAT_DEBUG_PRINT("http client connect error");
+            LUAT_DEBUG_PRINT("FOTA client connect error");
         }
+        httpClose(&fota_http_client);
+        if (stepLen == totalLen) break;
         retryTimes++;
         luat_rtos_task_sleep(3000);
     }
@@ -257,15 +274,13 @@ STATIC int luatos_fota_http_task(char *url) {
             LUAT_DEBUG_PRINT("FOTA image not found (%d)", fota_http_client.httpResponseCode);
             return 0;
         }
-        LUAT_DEBUG_PRINT("image_verify ok");
-        if(test_luat_fota_handle != NULL) {
-            int verify = luat_fota_done(test_luat_fota_handle);
-            if(verify != 0) {
-                LUAT_DEBUG_PRINT("image_verify error");
-                return 0;
-            }
-            LUAT_DEBUG_PRINT("image_verify ok");       
+        
+        int verify = luat_fota_done(test_luat_fota_handle);
+        if(verify != 0) {
+            LUAT_DEBUG_PRINT("image_verify error");
+            return 0;
         }
+        LUAT_DEBUG_PRINT("image_verify ok");       
     } else {
         LUAT_DEBUG_PRINT("http client data not fully received");
         return 0;

@@ -295,8 +295,8 @@ add_cxflags("-g3",
             "-fno-inline",
             "-mslow-flash-data",
             "-fstack-usage",
-            -- "-Wstack-usage=4096",
-            "-Wstack-usage=8440", -- miniz requirement
+            "-Wstack-usage=4096",
+            -- "-Wstack-usage=8440", -- miniz requirement
 {force=true})
 
 add_cxflags("-Werror=maybe-uninitialized")
@@ -690,7 +690,7 @@ if os.exists("./boards/" .. BOARD) then CFLAGS = CFLAGS .. " -I" .. "./boards/" 
 CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
-SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", "miniz.c"}  
+SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c"}  -- , "miniz.c"
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 

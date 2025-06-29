@@ -938,7 +938,7 @@ STATIC mp_obj_t air_socket_initialize() {
     static int initialized = 0;
     uint8_t is_ipv6;
     if (!initialized) {
-        net_lwip_init();
+        net_lwip_init(); // should be run only once
         net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
         network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
         luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket 

@@ -89,7 +89,7 @@ void* mp_allocate_heap(uint32_t* size) {
         }
     }
     luat_heap_free(ptr);
-    h_size -=  2 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 32K buffer for MBEDTLS, using malloc/free
+    h_size -=  4 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 32K buffer for MBEDTLS, using malloc/free
     ptr = luat_heap_malloc(h_size);
     if (!ptr) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
 

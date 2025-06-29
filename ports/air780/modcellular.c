@@ -588,7 +588,7 @@ STATIC mp_obj_t modcellular_reset_wto(int timeout) {
     WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
 
     uint8_t is_ipv6;
-    net_lwip_init();
+    // net_lwip_init(); // should be run only once, see modsocket.c
     net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
     network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
     luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket

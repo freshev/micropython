@@ -640,7 +640,7 @@ extern "C" {
 /* ------------------- Low-level Compression API Definitions */
 
 /* Set TDEFL_LESS_MEMORY to 1 to use less memory (compression will be slightly slower, and raw/dynamic blocks will be output more frequently). */
-#define TDEFL_LESS_MEMORY 0
+#define TDEFL_LESS_MEMORY 1
 
 /* tdefl_init() compression flags logically OR'd together (low 12 bits contain the max. number of probes per dictionary search): */
 /* TDEFL_DEFAULT_MAX_PROBES: The compressor defaults to 128 dictionary probes per dictionary search. 0=Huffman only, 1=Huffman+LZ (fastest/crap compression), 4095=Huffman+LZ (slowest/best compression). */
@@ -919,7 +919,7 @@ typedef enum {
     {                     \
         (r)->m_state = 0; \
     }                     \
-    MZ_MACRO_END
+    while(0)
 #define tinfl_get_adler32(r) (r)->m_check_adler32
 
 /* Main low-level decompressor coroutine function. This is the only function actually needed for decompression. All the other functions are just high-level helpers for improved usability. */
