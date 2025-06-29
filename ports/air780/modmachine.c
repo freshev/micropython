@@ -199,7 +199,9 @@ static luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
 int http_client_fota_recv_cb(char* buf, uint32_t len) {
    int result = 1;
    if(test_luat_fota_handle) {
-        result = luat_fota_write(test_luat_fota_handle, buf, len);
+        // DBG("len = %d:", len);
+        // luat_debug_dump((uint8_t*)buf, MIN(len, 16));
+        result = (len > 0) ? luat_fota_write(test_luat_fota_handle, buf, len) : 0;
         if (result == 0) {
             // LUAT_DEBUG_PRINT("FOTA update success");
         } else {

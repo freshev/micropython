@@ -1614,6 +1614,8 @@ int httpGetData(HttpClientContext* context, char *getUrl, char *buf, uint32_t le
         memset(clientData.headerBuf, 0, clientData.headerBufLen);
         memset(clientData.respBuf, 0, clientData.respBufLen);
         result = httpRecvResponse(context, &clientData);
+        // DBG("result: %d", result);
+        
         if(result == HTTP_OK || result == HTTP_MOREDATA){
             headerLen = strlen(clientData.headerBuf);
             if(headerLen > 0) {
@@ -1622,55 +1624,70 @@ int httpGetData(HttpClientContext* context, char *getUrl, char *buf, uint32_t le
                 }
                 // DBG("total content length=%d", clientData.recvContentLength);
             }
+            
+            if(context->recv_cb) {
 
-            if(clientData.blockContentLen > 0) {
-                if(context->recv_cb) {
-                    if(clientData.deflated) {
-                        // deflate it
-                        if (!clientData.stream.avail_in) {
-                            uint n = MIN(clientData.blockContentLen, clientData.recvRemaining);
-                            clientData.stream.next_in = (uint8_t*)clientData.respBuf;
-                            clientData.stream.avail_in = n;
-                            clientData.recvRemaining -= n;
-                        }
-                        int status = mz_inflate(&clientData.stream, MZ_SYNC_FLUSH);
-                        if (!clientData.stream.avail_out) {
-                            result = HTTP_INFLATE;
-                            break;
-                        }                                                
-                        uint n = CHUNK_SIZE_OUT - clientData.stream.avail_out;
-                        result1 = (*context->recv_cb)(clientData.zOutBuff, n);
-                        clientData.stream.next_out = (uint8_t*)clientData.zOutBuff;
-                        clientData.stream.avail_out = CHUNK_SIZE_OUT;
-                        clientData.inflatedContentLength += n;
-                        
-                        if (status == MZ_STREAM_END) {
-                            // DBG("inflate EOS");
-                        } else if (status != MZ_OK) {
-                            DBG("inflate failed with status %i!", status);
-                            result = HTTP_INFLATE;
-                            break;
-                        }
-                    } else {
-                        result1 = (*context->recv_cb)(clientData.respBuf, clientData.blockContentLen);
+                // DBG("recv %d bytes (%s)", clientData.blockContentLen, clientData.deflated ? "deflated" : "raw");
+                // luat_debug_dump((uint8_t*)clientData.respBuf, MIN(clientData.blockContentLen, 16));
+
+                if(clientData.deflated) {
+                    // deflate it
+                    if (!clientData.stream.avail_in) {
+                        uint n = MIN(clientData.blockContentLen, clientData.recvRemaining);
+                        clientData.stream.next_in = (uint8_t*)clientData.respBuf;
+                        clientData.stream.avail_in = n;
+                        clientData.recvRemaining -= n;
+                        // luat_debug_dump((uint8_t*)clientData.respBuf, 16);
                     }
-                    if (result1 == 0) {
-                        result = HTTP_CALLBACK;
+                    int status = mz_inflate(&clientData.stream, MZ_SYNC_FLUSH);
+                    // DBG("status = %d, avail_in = %d, avail_out = %d", status, clientData.stream.avail_in, clientData.stream.avail_out);
+
+                    uint n = CHUNK_SIZE_OUT - clientData.stream.avail_out;
+                    result1 = (*context->recv_cb)(clientData.zOutBuff, n);
+                    clientData.stream.next_out = (uint8_t*)clientData.zOutBuff;
+                    clientData.stream.avail_out = CHUNK_SIZE_OUT;
+                    clientData.inflatedContentLength += n;
+                    
+                    if (status == MZ_STREAM_END) {
+                        // DBG("inflate EOS");
+                        *stepLen += clientData.blockContentLen;
+                        count += clientData.blockContentLen;
+                        break;
+                    } else if (status != MZ_OK) {
+                        DBG("inflate failed with status %i!", status);
+                        result = HTTP_INFLATE;
                         break;
                     }
+                } else {
+                    result1 = (*context->recv_cb)(clientData.respBuf, clientData.blockContentLen);
+                }
+                if (!result1) {
+                    result = HTTP_CALLBACK;
+                    break;
                 }
             }
+            
             *stepLen += clientData.blockContentLen;
             count += clientData.blockContentLen;
             // DBG("has recv=%d", count);
         }
     } while (result == HTTP_MOREDATA || result == HTTP_CONN);
+
+    if (clientData.deflated) {
+        // deflate last portion
+        int status = mz_inflate(&clientData.stream, MZ_SYNC_FLUSH); // it's NOT reentrant if output buffer is small !
+        // DBG("status = %d, avail_in = %d, avail_out = %d", status, clientData.stream.avail_in, clientData.stream.avail_out);
+        uint32_t n = CHUNK_SIZE_OUT - clientData.stream.avail_out;
+        result1 = (*context->recv_cb)(clientData.zOutBuff, n);
+        if (!result1) result = HTTP_CALLBACK;
+        clientData.inflatedContentLength += n;
+    }
     
     if(mz_inflateEnd(&clientData.stream) != MZ_OK) {
         DBG("inflateEnd failed");
         result = HTTP_INFLATE;
     }
-    if(clientData.zOutBuff) free(clientData.zOutBuff);        
+    if(clientData.zOutBuff) free(clientData.zOutBuff);
 
     // DBG("result=%d", result);
     if (context->httpResponseCode < 200 || context->httpResponseCode > 404) {
@@ -1678,8 +1695,8 @@ int httpGetData(HttpClientContext* context, char *getUrl, char *buf, uint32_t le
     } else if (count == 0 || count != clientData.recvContentLength) {
         DBG("data receive not completed");
     } else {
-        DBG("received %d bytes", clientData.recvContentLength);
-        if(clientData.deflated) DBG("inflated %d bytes", clientData.inflatedContentLength);
+        if(!clientData.deflated)  DBG("received %d bytes", clientData.recvContentLength);
+        else DBG("received %d bytes (inflated %d bytes)", clientData.recvContentLength, clientData.inflatedContentLength);
     }
     free(clientData.headerBuf);
     return result;
@@ -1893,7 +1910,6 @@ int mz_inflate(mz_streamp pStream, int flush) {
         if (status < 0) return MZ_DATA_ERROR;
         else if (status != TINFL_STATUS_DONE) {
             pState->m_last_status = TINFL_STATUS_FAILED;
-            DBG("here1");
             return MZ_BUF_ERROR;
         }
         return MZ_STREAM_END;
@@ -1937,19 +1953,16 @@ int mz_inflate(mz_streamp pStream, int flush) {
         if (status < 0)
             return MZ_DATA_ERROR; // Stream is corrupted (there could be some uncompressed data left in the output dictionary - oh well). 
         else if ((status == TINFL_STATUS_NEEDS_MORE_INPUT) && (!orig_avail_in)) {
-            DBG("here2");
             return MZ_BUF_ERROR; // Signal caller that we can't make forward progress without supplying more input or by setting flush to MZ_FINISH. 
         }
         else if (flush == MZ_FINISH)
         {
             // The output buffer MUST be large to hold the remaining uncompressed data when flush==MZ_FINISH. 
             if (status == TINFL_STATUS_DONE) {
-                DBG("here3");
                 return pState->m_dict_avail ? MZ_BUF_ERROR : MZ_STREAM_END;
             }
             // status here must be TINFL_STATUS_HAS_MORE_OUTPUT, which means there's at least 1 more byte on the way. If there's no more room left in the output buffer then something is wrong. 
             else if (!pStream->avail_out) {
-                DBG("here4");
                 return MZ_BUF_ERROR;
             }
         }

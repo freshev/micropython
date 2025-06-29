@@ -88,10 +88,17 @@ void* mp_allocate_heap(uint32_t* size) {
              counter++;
         }
     }
+
+    
+    // comment it if you do not use FOTA. This gives +48K to memory size
+    #if 1
+    { 
     luat_heap_free(ptr);
-    h_size -=  4 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 32K buffer for MBEDTLS, using malloc/free
+    h_size -=  3 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 48K buffer for MBEDTLS, HTTP deflate/inflate
     ptr = luat_heap_malloc(h_size);
     if (!ptr) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
+    }
+    #endif
 
     size[0] = h_size;
     if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
