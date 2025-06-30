@@ -61,7 +61,7 @@ Translated module documentation at [Docs](docs/)
 
 3. Press `Download Firmware` button at upper right corner.
 
-4. Press `Select the file` button and select `.binpkg` file from `micropython/ports/air780/out/` folder.
+4. Press `Select the file` button and select `.binpkg` file from `micropython/ports/air780/version/` folder.
 
 5. Press `download` button at `Luatools`.
 
@@ -74,7 +74,7 @@ or use `ectool.py`
 
 1. Get `ectool` by `pip3 install -U ectool`.
 
-2. Run `ectool burn -f out/micropython.binpkg`.
+2. Run `ectool burn -f version/Air780_micropython_v1.0.binpkg`.
 
 
 ## FOTA (firmware over the air)
