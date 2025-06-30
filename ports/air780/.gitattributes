@@ -14,8 +14,6 @@
 *.der binary
 *.exe binary
 *.map binary
-*.lod binary
-*.orig binary
 *.zip binary
 *.tar binary
 *.gz binary
@@ -24,14 +22,10 @@
 *.pm binary
 *.pl binary
 *.PLS binary
-*.bat binary
-*.py binary
 *.md binary
 *.rb binary
 *.xmd binary
 *.pdf binary
-*.h binary
-*.c binary
 *.lua binary
 *.rc binary
 *.cer binary
