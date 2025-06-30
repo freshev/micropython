@@ -111,17 +111,17 @@ blink.blink(1)
 ## Functionality
 
 - [x] GPIO: `machine.Pin`
-- [x] ADC: `machine.ADC` (NOT TESTED - have no test module)
+- [x] ADC: `machine.ADC`
 - [x] PWM: `machine.PWM` (NOT TESTED - have no test module)
-- [x] UART: `machine.UART` (HW)
+- [x] UART: `machine.UART` 
 - [ ] SPI: `machine.SPI` (NOT TESTED - have no test module)
 - [ ] I2C: `machine.I2C` (NOT TESTED - have no test module)
-- [x] RTC: `machine.RTC` (NOT TESTED - have no test module)
+- [ ] RTC: `machine.RTC` 
 - [x] 4G networking (IMEI, ICCID, SMS, ...): `cellular`
 - [x] time: `time`
 - [x] File system (littlefs)
 - [x] DNS: `cellular`, `socket`, `ssl`
-- [x] Power: `machine`, `watchdog`
+- [x] Power: `machine`, `watchdog`, `FOTA`
 - [ ] CC1101: `CC1101`
 - [ ] DHT: `DHT`
 
@@ -245,7 +245,7 @@ Provides power-related functions: power, watchdogs.
 * `wdt_test()`: Just wait forever with no watchdog feed().
 
 
-<del>* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured in mpconfigport.h.</del>
+* `FOTA (firmware over the air)`: tries to get new formware version from internet. Exact URL set in `configure`.
 
 <del>
 ### `I2C` ###
@@ -257,289 +257,6 @@ See [micropython docs](https://docs.micropython.org/en/latest/library/machine.I2
 
 SPI interface
 See [micropython docs](https://docs.micropython.org/en/latest/library/machine.SPI.html) for details.
-
-### `CC1101` ###
-CC1101 433MHz module  
-Originally written by Michael [www.elechouse.com](www.elechouse.com)  
-Version: November 12, 2010 for Arduino platform.
-
-#### Methods
-* `cc1101(id=1, cs=0, baudrate=10000000, dma_delay=2, debug=False, debug_hst=False)`: initialize CC1101 module.
-  * `id`: SPI ID. Can be 1 or 2;
-  * `cs`: SPI CS. Can be 0 or 1;
-  * `baudrate`: SPI frequency. Less or equal to 11000000. Default 10000000;
-  * `dma_delay`: delay in us after writing and before reading SPI interface. Default 4us;
-  * `debug`: print debug messages to MPY;
-  * `debug_hst`: print debug messages to A9 diagnostic port;
-  * `other parameters`: see [micropython docs](https://docs.micropython.org/en/latest/library/machine.SPI.html) for details;
-  * Returns CC1101 object.
-
-* `deinit()`: deinit CC1101 module.
-  * Returns None.
-
-* `read(addr)`: internal function. Use `spi_read_reg(...)` instead.  
-  Reads CC1101 register with address addr.
-  * Returns register value (one byte).
-
-* `read_burst(addr, num)`: internal function. Use `spi_read_burst_reg(...)` instead.  
-  Reads num CC1101 registers from address addr.
-  * Returns register values (bytearray).
-
-* `write(addr, val)`: internal function. Use `spi_write_reg(...)` instead.  
-  Writes CC1101 register at address addr with value val.
-  * Returns byte written.
-
-* `write_burst(addr, vals)`: internal function. Use `spi_write_burst_reg(...)` instead.  
-  Writes num CC1101 registers from address addr with values from vals bytearray.
-  * Returns None.
-
-* `strobe(addr)`: access CC1101 register with address `addr`  
-  * Returns access result (one byte).
-
-* `command(addr)`: alias for `strobe(...)`  
-  Access CC1101 register with address `addr`.
-  * Returns access result (one byte).
-
-* `flush()`: flush SPI FIFO buffers.
-  * Returns None.
-
-* `spi_read_status(addr)`: reads CC1101 register status with address `addr`.
-  * Returns status (one byte).
-
-* `spi_read_reg(addr)`: reads CC1101 register value with address `addr`.
-  * Returns register value(one byte).
-
-* `spi_read_burst_reg(addr, num)`: reads `num` CC1101 register values from address `addr`.
-  * Returns register values (bytearray).
-
-* `spi_write_reg(addr, val)`: writes CC1101 register at address `addr` with value `val`.
-  * Returns register value(one byte).
-
-* `spi_write_burst_reg(addr, vals)`: writes CC1101 registers from address `addr` with values from `vals` bytearray.
-  * Returns None.
-
-* `set_cc_mode(mode)`: sets CC1101 mode from predefined settings.  
-  Mode can be 0 or 1. See [CC1101 documentation](docs/CC1101/CC1101.pdf)
-  * Returns None.
-
-* `set_mhz(freq)`: sets CC1101 frequency. Frequency is a float value with ranges from [CC1101 documentation](docs/CC1101/CC1101.pdf).  
-  Internally calculates and sets FREQ2, FREQ1 and FREQ0 registers.
-  * Returns None.
-
-* `get_mhz()`: gets CC1101 frequency.  
-  Internally gets values from FREQ2, FREQ1 and FREQ0 registers and calculates CC1101 current frequency.
-  * Returns frequency (float).
-
-* `set_channel(channel)`: sets CC1101 frequency channel number (byte).
-  * Returns None.
-
-* `get_channel()`: gets CC1101 frequency channel number.
-  * Returns frequency channel number (byte).
-
-* `set_modulation(modulation)`: sets CC1101 modulation.  
-  Modulation parameter is one of:  
-  0: 2-FSK (Binary Frequency Shift Keying)  
-  1: GFSK (Gauss Frequency Shift Keying)  
-  2: ASK (Amplitude Shift Keying)  
-  3: 4-FSK (2bit Binary Frequency Shift Keying)  
-  4: MSK (Minimum Shift Keying)  
-  * Returns None.
-
-* `set_pa(power)`: sets CC1101 output power.  
-  Internally calculates power and set values for PATABLE registers.  
-  Power parameter can be from -30.0 dBm to 10 dBm.
-  * Returns None.
-
-* `set_chsp(value)`: sets CC1101 channel spacing. Value is a float with ranges from [CC1101 documentation](docs/CC1101/CC1101.pdf).  
-  Internally calculates and sets MDMCFG1 and MDMCFG0 registers.
-  * Returns None.
-
-* `set_rx_bw(value)`: sets CC1101 channel bandwidth. Value is a float with ranges from [CC1101 documentation](docs/CC1101/CC1101.pdf).  
-  Internally calculates and sets MDMCFG4 register.
-  * Returns None.
-
-* `set_d_rate(value)`: sets CC1101 channel data rate. Value is a float with ranges from [CC1101 documentation](docs/CC1101/CC1101.pdf).  
-  Internally calculates and sets MDMCFG3 and MDMCFG4 registers.
-  * Returns None.
-
-* `set_deviation(value)`: sets CC1101 channel deviation. Value is a float with ranges from [CC1101 documentation](docs/CC1101/CC1101.pdf).  
-  Internally calculates and sets DEVIATN register.
-  * Returns None.
-
-* `set_tx()`: enables TX mode. Turn CC1101 first to IDLE and than to TX state. Transmit data from TX buffer over the air.
-  * Returns None.
-
-* `set_rx()`: enables RX. Turn CC1101 first to IDLE and than to RX state.
-  * Returns None.
-
-* `set_tx_freq(frequency)`: enables TX. Turns CC1101 first to IDLE state, changes the frequency and than turns to TX state.
-  * Returns None.
-
-* `set_rx_freq(frequency)`: enables RX. Turns CC1101 first to IDLE state, changes the frequency and than turns to RX state.
-  * Returns None.
-
-* `get_rssi()`: gets receive signal strength.
-  * Returns value in dBm (float).
-
-* `get_lqi()`: gets link quality. Higher value indicates a better link quality.
-  * Returns link quality indication (byte).
-
-* `set_sres()`: reset CC1101 module.
-  * Returns None.
-
-* `set_sfs_tx_on()`: enables and calibrates frequency synthesizer
-  * Returns None.
-
-* `set_sx_off()`: turns off crystal oscillator.
-  * Returns None.
-
-* `set_scal()`: calibrates frequency synthesizer and turn it off.  
-  Timeout 100ms after this command.
-  * Returns None.
-
-* `set_srx()`: enables RX. Performs calibration first if coming from IDLE and MCSM0.FS_AUTOCAL=1
-  * Returns None.
-
-* `set_stx()`: enables TX (from IDLE state). Performs calibration first if MCSM0.FS_AUTOCAL=1.
-  * Returns None.
-
-* `set_sidle()`: exit RX / TX, turn off frequency synthesizer and exit Wake-On-Radio mode if applicable.
-  * Returns None.
-
-* `flush_rx()`: flushes the RX FIFO buffer.  
-  Only issue SFRX in IDLE or RXFIFO_OVERFLOW states.
-  * Returns None.
-
-* `flush_tx()`: flushes the TX FIFO buffer.  
-  Only issue SFTX in IDLE or TXFIFO_UNDERFLOW states.
-  * Returns None.
-
-* `go_sleep()`: Sets IDLE state, followed by PowerDown state.
-  * Returns None.
-
-* `send_data(wbuffer, timeout)`: Sends data from `wbuffer` to CC1101 TX buffer and turns to TX state.  
-  Waits for GDO0 strobe (data send finished). Flushes TX buffer after send
-  * Returns None.
-
-* `check_receive_flag()`: Check for incoming data.  
-   If not in RX state, force RX state.
-   * Returns  
-   0: If GDO0 is 0  
-   1: If GDO0 is 1 - wait for incoming packet receive finish and returns.
-
-* `receive_data()`: receive data from CC1101 RX FIFO buffer.  
-  After receive flushes RX buffer, sets IDLE state, followed by RX state
-  * Returns data received (bytes)
-
-* `check_crc()`: checks CRC bit in LQI register
-  * Returns CRC flag
-
-* `set_clb(byte b, byte s, byte e)`: sets calibration data.  
-  Parameter b is from 1 to 4.
-  * Returns None.
-
-* `get_cc1101()`: checks CC1101 availability.
-  * Returns:  
-  0: module unavailable  
-  1: module active
-
-* `get_mode()`: gets current state.
-  * Returns  
-  0: IDLE state  
-  1: TX state  
-  2: RX state
-
-* `set_sync_word(sh, sl)`: sets sync word.  
-  Parameters:  
-  sh: high byte of sync word  
-  sl: low byte of sync word
-  * Returns None.
-
-* `set_addr(addr)`: sets CC1101 address `addr`.
-  * Returns None.
-
-* `set_white_data(data)`: sets white data. See p.15.1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_pkt_format(data)`: sets packet format. See p.15.2 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_crc(flag)`: sets CRC check flag. See p.15 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_length_config(lconf)`: sets length config. See p.15 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_packet_length(length)`: sets packet lenght. See p.15 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_dc_filter_off(flag)`: turns off (or on) digital channel filter bandwidth. See p.13 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_manchester(flag)`: turns on (or off) Manchester encoding. See p.16 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_sync_mode(mode)`: sets CC1101 sync mode. See p.17.1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_fec(flag)`: turns on (or off) `Forward Error Correction`. See p.18.1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_pre(count)`: sets the minimum number of preamble bytes to be transmitted (MDMCFG1).  
-  Parameter `count` from 0(2 preamble bytes) to 7(24 preample bytes)
-  * Returns None.
-
-* `set_pqt(th)`: sets preamble quality estimator threshold. See PKTCTRL1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_crc_af(flag)`: enables (or disables) automatic flush of RX FIFO when CRC in not OK. See PKTCTRL1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_append_status(flag)`: appends two status bytes to payload. See PKTCTRL1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `set_adr_chk(mode)`: controls address check configuration of received packages. See PKTCTRL1 at [CC1101 documentation](docs/CC1101/CC1101.pdf).
-  * Returns None.
-
-* `check_rx_fifo()`: checks RX FIFO buffer for data.
-  * Returns  
-  0: RX buffer has no data  
-  1: RX buffer has data
-
-* `crc8(data, polynomial)`: returns crc8 on `data` with `polynomial`.
-  * Returns crc8 byte
-
-* `ba2hex(ba)`: returns hex string for `ba` bytearray parameter (340 bytes maximum).
-  * Returns hex string
-
-### `dht` ###
-DHT series temperature and humidity sensor module.  
-Originally written by Adafruit Industries [https://www.adafruit.com](https://www.adafruit.com)
-
-#### Attention
-DHT sensors like DHT21, DHT22, AM2301 need external pullup resistor (i.e. 10k ohm) for working properly.
-
-#### Methods
-* `dht(pin=20, type=dht.DHT11)`: initialize DHT module.
-  * `pin`: Pin number;
-  * `type`: Sensor type. One of DHT11, DHT12, DHT21, DHT22 or AM2301(the same as DHT21);
-  * Returns DHT object.
-
-* `get_type()`: sensor type, defined in constructor.
-  * Returns sensor type as integer: 11 - for DHT11, 12 - for DHT12, etc.
-
-* `read_temperature(S=True, force=True)`: read sensor temperature.
-  * `S`: Scale.  
-     - True = Fahrenheit  
-     - False = Celcius;
-  * `force`: force read data from sensor;
-  * Returns temperature as float or `nan` if reading failed.
-
-* `read_humidity(force=True)`: read sensor humidity.
-  * `force`: force read data from sensor;
-  * Returns humidity as float or `nan` if reading failed.
-
-* `deinit()`: deinit sensor. Free pin for other application.
 </del>
 
 ### umqtt ###
@@ -552,12 +269,12 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 ## Notes ##
 
-* The size of micropython heap is roughly 512 Kb. 250k can be realistically allocated right after hard reset.
+* The size of micropython heap is roughly 512 Kb. 206K(+32K) can be realistically allocated right after hard reset.
 * Firmware removes *.txt files in SOC file system by SMS 'rmconfig' (configurable).
 * Firmware removes *.py files in SOC file system by SMS 'rmcode' (configurable).
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable).
 * Firmware resets the module by SMS 'reset' (configurable).
-* You can config module with auto respawned (after delete) `main.py` script from `examples` folder (configurable).
+* You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
 * Default `main.py` contains `SMS Sender` script.
 
 

@@ -170,6 +170,8 @@ NORETURN STATIC void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
 // ------
 //  FOTA
 // ------
+
+#ifdef FOTA_REMOVE_PY
 int modmachine_endswith(const char *str, const char *suffix) {
     if (!str || !suffix) return 0;
     size_t lenstr = strlen(str);
@@ -179,28 +181,33 @@ int modmachine_endswith(const char *str, const char *suffix) {
 }
 
 void modmachine_remove_files(char *suffix) {
-/*    Dir_t* dir = API_FS_OpenDir("/");
-    const Dirent_t* entry = NULL;
-    while ((entry = API_FS_ReadDir(dir))) {
-        if(modmachine_endswith(entry->d_name, suffix)) {
-            mp_printf(&mp_plat_print, "Remove %s ... ", entry->d_name);
-            int res = API_FS_Delete(entry->d_name);
+    luat_fs_dirent_t *fs_entry = (luat_fs_dirent_t*)luat_heap_malloc(sizeof(luat_fs_dirent_t));
+    memset(fs_entry, 0, sizeof(luat_fs_dirent_t));
+    int res = 1;
+    int start = 2; // skip "." and ".." folders
+
+    while(res > 0) {
+        res = luat_fs_lsdir("", fs_entry, start, 1); // skip fs_index files, read 1 fs_entry                
+        // LUAT_DEBUG_PRINT("res = %d, d_type = %d, d_name = %s", res, fs_entry->d_type, fs_entry->d_name);
+        if(modmachine_endswith(fs_entry->d_name, suffix)) {
+            mp_printf(&mp_plat_print, "Remove %s ... ", fs_entry->d_name);
+            int res = luat_fs_remove(fs_entry->d_name);
             if(res == 0) mp_printf(&mp_plat_print, "success\n");
             else mp_printf(&mp_plat_print, "failed\n");
-        }
+        } else start++;
     }
-    API_FS_CloseDir(dir);
-*/
+    luat_heap_free(fs_entry);
 }
+#endif
 
+
+#ifdef FOTA_USE
 #define HTTP_RECV_BUF_SIZE      (1501)
 static luat_fota_img_proc_ctx_ptr test_luat_fota_handle = NULL;
 
 int http_client_fota_recv_cb(char* buf, uint32_t len) {
    int result = 1;
    if(test_luat_fota_handle) {
-        // DBG("len = %d:", len);
-        // luat_debug_dump((uint8_t*)buf, MIN(len, 16));
         result = (len > 0) ? luat_fota_write(test_luat_fota_handle, buf, len) : 0;
         if (result == 0) {
             // LUAT_DEBUG_PRINT("FOTA update success");
@@ -210,20 +217,6 @@ int http_client_fota_recv_cb(char* buf, uint32_t len) {
    }
    return !result;
 }
-
-/*static void httpMemDebug(const char *topic) {
-    char mess[100];
-    char mess2[10];
-    int total, used, max_used;
-    luat_meminfo_sys(&total, &used, &max_used);
-    mess[0] = '\0';
-    strcat(mess, topic);
-    strcat(mess, ":");
-    itoa(total - used, mess2, 10);
-    strcat(mess, mess2);
-    LUAT_DEBUG_PRINT("%s", mess);
-}*/
-
 
 STATIC int luatos_fota_http_task(char *url) {
 
@@ -279,22 +272,23 @@ STATIC int luatos_fota_http_task(char *url) {
         
         int verify = luat_fota_done(test_luat_fota_handle);
         if(verify != 0) {
-            LUAT_DEBUG_PRINT("image_verify error");
+            LUAT_DEBUG_PRINT("FOTA image verify error");
             return 0;
         }
-        LUAT_DEBUG_PRINT("image_verify ok");       
+        LUAT_DEBUG_PRINT("FOTA image verify ok");       
     } else {
-        LUAT_DEBUG_PRINT("http client data not fully received");
+        LUAT_DEBUG_PRINT("FOTA data not fully received");
         return 0;
     }
     return 1;
 }
-
+#endif
 
 STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
+#ifdef FOTA_USE
     if (mp_obj_is_str(new_version)) {
         const char* newv = mp_obj_str_get_str(new_version);
         if(strcmp(newv, FW_VERSION) != 0) {
@@ -305,12 +299,18 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
             mp_printf(&mp_plat_print, "FOTA URL %s\n", url);
             int res = luatos_fota_http_task(url);
             if(res) {
-                // modmachine_remove_files(".py");
+#ifdef FOTA_REMOVE_PY
+                modmachine_remove_files(".py");
+#endif
                 return mp_obj_new_int(1);
             }
             else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection and URL.\n");
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
     } else mp_raise_ValueError("FOTA requested version should be string.");
     return mp_obj_new_int(0);
+#else
+    mp_printf(&mp_plat_print, "FOTA disabled.\n");
+    return mp_obj_new_int(0);
+#endif
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_ota_obj, modmachine_ota);

@@ -8,7 +8,7 @@ import cellular
 
 def gprs_on(led=None, debug=0):
     res = 0    
-    stat = cellular.get_network_status(); filesys.log('NWS(1): %s' % hex(stat))
+    # stat = cellular.get_network_status(); filesys.log('NWS(1): %s' % hex(stat))
     #if debug: filesys.log('NWS(1): %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
     flag = 0
     while(cellular.get_network_status() == 0):
@@ -28,7 +28,7 @@ def gprs_on(led=None, debug=0):
     else: 
         res = 1
         if debug: filesys.log('ok')
-    stat = cellular.get_network_status(); filesys.log('NWS(2): %s' % hex(stat))
+    # stat = cellular.get_network_status(); filesys.log('NWS(2): %s' % hex(stat))
     #if debug: filesys.log('NWS(2): %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
     return res
 

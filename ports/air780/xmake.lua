@@ -58,11 +58,6 @@ option("10 Dump and halt on core exception")
     set_description("Dump and halt on core exception")
     set_default(false)
     set_showmenu(true)
-option("11 FOTA URL")
-    set_description("FOTA URL")
-    set_default(false)
-    set_showmenu(true)
-    set_default("https://example.com/Air780_OLDVERSION_to_NEWVERSION.pack")
 
 option("1 RS485_UART1_USE")
     set_description("UART1 connected to RS-485")
@@ -86,8 +81,7 @@ option("4 RS485_UART1_PIN_LEVEL")
     set_values(0, 1)
 option("5 RS485_UART1_WAIT_TX")
     set_description("Wait TX done (synchronious TX)")
-    set_category("RS-485/UART1")
-    set_default(true);
+    set_category("RS-485/UART1")    set_default(true);
 
 
 option("1 RS485_UART2_USE")
@@ -114,6 +108,20 @@ option("5 RS485_UART2_WAIT_TX")
     set_description("Wait TX done (synchronious TX)")
     set_category("RS-485/UART2")
     set_default(true);
+
+option("1 Use FOTA routines")
+    set_description("Use FOTA routines (minus 32K from micropython RAM)")
+    set_category("FOTA")
+    set_default(false)    
+option("2 FOTA URL")
+    set_category("FOTA")
+    set_description("URL")
+    set_default(false)
+    set_default("https://example.com/Air780_OLDVERSION_to_NEWVERSION.pack")
+option("3 Remove python files on upgrade")
+    set_category("FOTA")
+    set_description("Remove all python files on upgrade")
+    set_default(false)    
 
 
 package("gnu_rm")    
@@ -488,10 +496,14 @@ if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
 if get_config("08 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
 if get_config("09 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
 if get_config("10 Dump and halt on core exception") then table.insert(DEFINES, "HALTONEXC") end
-if get_config("11 FOTA URL") then 
-    FOTA_URL = get_config("11 FOTA URL") 
+
+if get_config("1 Use FOTA routines") then table.insert(DEFINES, "FOTA_USE") end
+if get_config("2 FOTA URL") then 
+    FOTA_URL = get_config("2 FOTA URL") 
     table.insert(DEFINES, "FOTA_URL=\"" .. string.gsub(string.gsub(FOTA_URL, "OLDVERSION", "%%s"), "NEWVERSION", "%%s") .. "\"")
 end
+if get_config("3 Remove python files on upgrade") then table.insert(DEFINES, "FOTA_REMOVE_PY") end
+
 
 if get_config("1 RS485_UART1_USE") then table.insert(DEFINES, "RS485_UART1_USE") end
 if get_config("2 RS485_UART1_PIN")       then table.insert(DEFINES, "RS485_UART1_PIN="       .. get_config("2 RS485_UART1_PIN")) end
