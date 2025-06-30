@@ -26,7 +26,7 @@ Translated module documentation at [Docs](docs/)
    configure # --root
    xmake # --root
    ```
-4. Firmware `micropython.binpkg` file is in `micropython/ports/air780/out/` folder.
+4. Firmware `Air780_micropython_VERSION.binpkg` file is in `micropython/ports/air780/version/` folder.
 
 5. Notes:  
   Version number configured runing `configure`  
@@ -46,7 +46,7 @@ Translated module documentation at [Docs](docs/)
    configure.bat
    make.bat
    ```
-3. Firmware `micropython.binpkg` file is in `micropython/ports/air780/out/` folder.
+3. Firmware `Air780_micropython_VERSION` file is in `micropython/ports/air780/version/` folder.
 
 4. Notes:  
   Version number configured runing `configure.bat`  
@@ -75,6 +75,21 @@ or use `ectool.py`
 1. Get `ectool` by `pip3 install -U ectool`.
 
 2. Run `ectool burn -f out/micropython.binpkg`.
+
+
+## FOTA (firmware over the air)
+
+1. Make changes in source files (*.c or modules/*.py).
+
+2. Change version and FOTA URL via `configure`.
+
+3. Run xmake -b ota.
+
+4. Upgrade pack `Air780_OLDVERSION_to_NEWVERSION` file is in `micropython/ports/air780/fota/` folder.
+
+5. Deploy upgrade pack to internet.
+
+6. Under python REPL run `machine.OTA('NEWVERSION')`.
 
 
 ## Connect
