@@ -9,7 +9,7 @@ Translated module documentation at [Docs](docs/)
 
 ## Build
 
-### Ubuntu (known issues with `configure`)
+### Ubuntu
 1. Install xmake
    ```
    ./docs/get_xmake.sh
