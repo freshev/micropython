@@ -83,7 +83,7 @@ or use `ectool.py`
 
 2. Change version and FOTA URL via `configure`.
 
-3. Run xmake -b ota.
+3. Run `xmake -b ota`.
 
 4. Upgrade pack `Air780_OLDVERSION_to_NEWVERSION` file is in `micropython/ports/air780/fota/` folder.
 
@@ -158,8 +158,8 @@ Featured:
 4. [`machine`](#machine): hardware and power control
 5. [`I2C`](#I2C): I2C hardware implementation
 6. [`SPI`](#SPI): SPI hardware implementation
-7. [`CC1101`](#CC1101): CC1101 module support over SPI
-8. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors
+<del>7. [`CC1101`](#CC1101): CC1101 module support over SPI</del>
+<del>8. [`dht`](#dht): DHT module for DHT11, DHT12, DHT21, DHT22, AM2301 temperature & humidity sensors</del>
 9. [`umqtt`](#umqtt): umqtt support via frozen module
 10. [`urequests`](#urequests): urequests support via frozen module
 
@@ -272,6 +272,7 @@ See [micropython docs](https://docs.micropython.org/en/latest/library/machine.I2
 
 SPI interface
 See [micropython docs](https://docs.micropython.org/en/latest/library/machine.SPI.html) for details.
+
 </del>
 
 ### umqtt ###
