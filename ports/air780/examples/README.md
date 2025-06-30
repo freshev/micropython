@@ -17,7 +17,16 @@ Keywords: **watchdog, hardware, reset**
 
 Modules: `machine`, `time`
 
-[example_21_dht.py](example_20_gps.py)
+[example_10_FOTA.py](example_05_watchdog.py)
+
+Firmware over the air upgrade
+
+Keywords: **FOTA, firmware upgrade**
+
+Modules: `machine`
+
+
+[example_21_dht.py](example_21_gps.py)
 
 Displays temperature using DHT temperature sensor.
 
