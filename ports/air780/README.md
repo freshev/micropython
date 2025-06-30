@@ -11,10 +11,8 @@ Translated module documentation at [Docs](docs/)
 
 ### Ubuntu (known issues with `configure`)
 1. Install xmake
-   ```bash
-   sudo add-apt-repository ppa:xmake-io/xmake
-   sudo apt update
-   sudo apt install xmake
+   ```
+   ./docs/get_xmake.sh
    ```
 2. Clone this repo:
    ```bash
@@ -24,7 +22,7 @@ Translated module documentation at [Docs](docs/)
    ```bash
    cd micropython/ports/air780
    configure # --root
-   xmake # --root
+   ./make # --root
    ```
 4. Firmware `Air780_micropython_VERSION.binpkg` file is in `micropython/ports/air780/version/` folder.
 
@@ -32,7 +30,6 @@ Translated module documentation at [Docs](docs/)
   Version number configured runing `configure`  
   Use simple `xmake` to build current version.  
   If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
-  `configure` command can report error `error: ncurses not found, please install it first.`. It's xmake internal error.  
 
 
 ### Windows
