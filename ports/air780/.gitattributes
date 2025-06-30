@@ -26,7 +26,6 @@
 *.rb binary
 *.xmd binary
 *.pdf binary
-*.lua binary
 *.rc binary
 *.cer binary
 *.svn-base binary
