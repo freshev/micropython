@@ -279,7 +279,6 @@ void modcellular_init0(void) {
     //delete_config_file("cerrcinfo.nvm");
     //delete_config_file("cesmpdpauthconfig.nvm");
     //delete_config_file("cesmpdpconfig.nvm");
-    //delete_config_file("main.py");
     //delete_config_file("mwconfig.nvm");
     //delete_config_file("mwinfo.nvm");
     delete_config_file("mwsms.nvm");

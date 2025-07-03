@@ -19,7 +19,7 @@ option("01 Board type")
     set_default(true)
     set_description("Board type")
     set_default("Air780_GENERIC")
-    set_values("Air780_GENERIC", "XMAKE_TEST_BOARD")
+    set_values("Air780_GENERIC", "Air780_EG", "XMAKE_TEST_BOARD")
 option("02 Firmware version")
     set_description("Firmware version")
     set_default("v1.0")
@@ -304,7 +304,6 @@ add_cxflags("-g3",
             "-mslow-flash-data",
             "-fstack-usage",
             "-Wstack-usage=4096",
-            -- "-Wstack-usage=8440", -- miniz requirement
 {force=true})
 
 add_cxflags("-Werror=maybe-uninitialized")
@@ -393,15 +392,14 @@ INCLUDES={
                 SDK_TOP .. "/thirdparty/littlefs",
                 SDK_TOP .. "/thirdparty/littlefs/port",
                 SDK_TOP .. "/thirdparty/mbedtls/include",
-                -- SDK_TOP .. "/thirdparty/mbedtls/include/mbedtls",
                 SDK_TOP .. "/thirdparty/mbedtls/configs",
                 SDK_TOP .. "/thirdparty/fal/inc",
                 SDK_TOP .. "/thirdparty/flashdb/inc",
                 SDK_TOP .. "/thirdparty/linksdk",
                 SDK_TOP .. "/thirdparty/printf",
                 SDK_TOP .. "/thirdparty/cJSON",
-                -- SDK_TOP .. "/thirdparty/miniz",
                 SDK_TOP .. "/luatos_lwip_socket/include",
+                SDK_TOP .. "/thirdparty/minmea",
          }
 add_includedirs(INCLUDES, {public = true})
 
@@ -702,7 +700,7 @@ if os.exists("./boards/" .. BOARD) then CFLAGS = CFLAGS .. " -I" .. "./boards/" 
 CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
-SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c"}  -- , "miniz.c"
+SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", "modgps.c"}  
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 
@@ -901,7 +899,7 @@ target(USER_PROJECT_NAME)
     add_files(SDK_TOP .. "/thirdparty/littlefs/**.c",{public = true})
     add_files(SDK_TOP .. "/thirdparty/cJSON/**.c",{public = true})
     add_files(SDK_TOP .. "/luatos_lwip_socket/src/**.c",{public = true, cflags = CFLAGS .. " -Wno-override-init"})
-    -- add_files(SDK_TOP .. "/thirdparty/miniz/miniz.c",{public = true})
+    add_files(SDK_TOP .. "/thirdparty/minmea/minmea.c",{public = true})
 
     -- remove_files(SDK_TOP .. "/interface/private_src/luat_full_ota_ec618.c")  -- rewritten to use MPY mbedtls version
 
