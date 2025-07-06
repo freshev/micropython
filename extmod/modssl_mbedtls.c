@@ -26,8 +26,6 @@
  * THE SOFTWARE.
  */
 
-#include "luat_debug.h"
-
 #include "py/mpconfig.h"
 #if MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS
 

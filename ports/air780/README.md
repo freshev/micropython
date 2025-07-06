@@ -27,7 +27,7 @@ Translated module documentation at [Docs](docs/)
 4. Firmware `Air780_micropython_VERSION.binpkg` file is in `micropython/ports/air780/version/` folder.
 
 5. Notes:  
-  Version number configured runing `configure`  
+  Version number configured via `configure`  
   Use simple `xmake` to build current version.  
   If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
 
@@ -46,7 +46,7 @@ Translated module documentation at [Docs](docs/)
 3. Firmware `Air780_micropython_VERSION` file is in `micropython/ports/air780/version/` folder.
 
 4. Notes:  
-  Version number configured runing `configure.bat`  
+  Version number configured via `configure.bat`  
   Use simple `make` to build current version.  
   If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
 

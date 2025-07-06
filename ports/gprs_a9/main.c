@@ -68,9 +68,6 @@
 #define MICROPYTHON_HEAP_MAX_SIZE    (1024 * 2048)
 #define MICROPYTHON_HEAP_MIN_SIZE    (2048)
 
-#define WD_TIMEOUT                   (500)
-#define WD_PIN                       (GPIO_PIN7)
-
 STATIC void* heap;
 HANDLE mainTaskHandle  = NULL;
 HANDLE microPyTaskHandle = NULL;
@@ -139,7 +136,9 @@ soft_reset:
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
+#ifdef MAINRUN
         pyexec_file_if_exists("main.py");
+#endif
     }
 
     while (1) {

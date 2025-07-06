@@ -399,6 +399,7 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
     char *tfiles = ".txt";
     char *vfiles = ".version";
 
+#ifdef SMSCONFIG
     if(strcmp((char*)content, "rmcode") == 0) {
       mp_printf(&mp_plat_print, "Remove versions...\n");
       modcellular_remove_files(vfiles);
@@ -416,10 +417,6 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
       modcellular_remove_files(pfiles);
       modcellular_remove_files(tfiles);
       modcellular_remove_files(vfiles);
-      to_reset = true;
-    }
-    if(strcmp((char*)content, "reset") == 0) {
-      mp_printf(&mp_plat_print, "Reset device...\n");
       to_reset = true;
     }
     if(strncmp((char*)content, "set ", 4) == 0) {
@@ -443,8 +440,19 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
           } else mp_printf(&mp_plat_print, "Incorrect format (SS)\n");
       } else mp_printf(&mp_plat_print, "Incorrect format (FS)\n");
     }
+#endif
+
+#ifdef SMSRESET
+    if(strcmp((char*)content, "reset") == 0) {
+        mp_printf(&mp_plat_print, "Reset device...\n");
+        to_reset = true;
+    }
+#endif
+
+
     if(to_reset) {
 
+#ifdef SMSRESETACK
         // SMS sender phone number in form \0"+XXXXXXXXXXXX",...
         uint32_t i;
         for (i = 1; i < strlen((char*)(header + 1)); i++) {
@@ -467,7 +475,7 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
                 sms_send_flag = 0;
             }
         }
-
+#endif
         // restart module
         mp_printf(&mp_plat_print, "Restarting module...\n");
         PM_Restart();

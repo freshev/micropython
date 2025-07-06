@@ -29,7 +29,7 @@
    Upgrade OTA files `.pack` is in `micropython/ports/gprs_a9/fota/` folder.
 
 6. Notes:  
-  Version number configured in mpconfigport.h.  
+  Version number configured via `configure`.  
   Use simple `make` to build current version.  
   Use `make ota` to build all upgrade packs from old version to current version in `fota` folder.  
   To remove some version delete unused `.lod` files from `version` folder and unused `.pack` and `.lod` files from `fota` folder.
@@ -49,7 +49,7 @@
    Upgrade OTA files `.pack` is in `micropython/ports/gprs_a9/fota/` folder.
 
 4. Notes:  
-  Version number configured in mpconfigport.h.  
+  Version number configured via `configure`.  
   `make ota` disabled in Windows build (Feel free to contribute).
 
 ## Burn (Windows only)
@@ -264,7 +264,7 @@ Provides power-related functions: power, watchdogs.
 * `get_input_voltage()` (float, float): the input voltage (mV) and the battery level (percents);
 * `power_on_cause()` (int): the power-on flag, one of `POWER_ON_CAUSE_*`.  **TODO**: never saw anything except `POWER_ON_CAUSE_CHARGE` returned, needs investigation;
 * `on_power_key(callback: Callable)`: sets a callback `function(is_power_key_down: bool)` on power key events.
-* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured in mpconfigport.h.
+* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured via `configure->FOTA`.
 
 ### `I2C` ###
 
@@ -573,10 +573,10 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 * The size of micropython heap is roughly 512 Kb. 400k can be realistically allocated right after hard reset.
 * The external memory card is [mounted under `/t`](https://ai-thinker-open.github.io/GPRS_C_SDK_DOC/en/c-sdk/function-api/file-system.html).
-* Firmware removes *.txt files in SOC file system by SMS 'rmconfig'
-* Firmware removes *.py files in SOC file system by SMS 'rmcode'
-* Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall'
-* Firmware resets the A9G by SMS 'reset'
+* Firmware removes *.txt files in SOC file system by SMS 'rmconfig' (configurable)
+* Firmware removes *.py files in SOC file system by SMS 'rmcode' (configurable)
+* Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable)
+* Firmware resets the A9G by SMS 'reset' (configurable)
 
 ## Features in CSDK added ##
 * Added CSDK patch to reboot module on voice call. To disable this feature comment corresponding lines in ./libcsdk-patches/patch-lod.py

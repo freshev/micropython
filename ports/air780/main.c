@@ -90,8 +90,7 @@ void* mp_allocate_heap(uint32_t* size) {
     }
 
     
-    // comment it if you do not use FOTA. This gives +32K to memory size
-    #if 1
+    #ifdef FOTA_USE
     { 
     luat_heap_free(ptr);
     h_size -=  2 * MBEDTLS_SSL_MAX_CONTENT_LEN; // leave 32K buffer for MBEDTLS, HTTP deflate/inflate
@@ -143,7 +142,7 @@ soft_reset:
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
-#if MAINRUN
+#ifdef MAINRUN
         pyexec_file_if_exists("main.py");
 #endif
     }

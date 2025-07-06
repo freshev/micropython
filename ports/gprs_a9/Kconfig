@@ -1,0 +1,68 @@
+config FW_VERSION
+    string "Firmware version"
+    default "v1.0"
+    help 
+    	Firmware version
+
+config MAIN_STUB_RESPAWN 
+	bool "Respawned on delete main.py"
+	default y
+	help
+		Respawned on delete main.py
+
+config MAIN_STUB_AUTORUN
+	bool "Auto run main.py on load"
+	default y
+	help
+		Auto run main.py on load
+
+config DHT_MODULE
+    bool "Include DHT module"
+    default y
+    help
+        If this option is enabled, DHT module is included into the board modules.
+
+config CC1101_MODULE
+    bool "Include C1101 module"
+    default y
+    help
+        If this option is enabled, CC1101 module is included into the board modules.
+
+config SMSRESET
+	bool "Reset on SMS 'reset'"
+	default y
+	help
+	    Reset module on incoming SMS 'reset'
+
+config SMSRESETACK
+	bool "Send acknowledge SMS 'Done' on reset"
+	default y
+	help
+		Send acknowledge SMS 'Done' on reset
+
+config SMSCONFIG
+	bool "Set module configiration by SMS" 
+	default y
+	help
+		Set module configiration by SMS
+
+
+
+menu "FOTA"
+	config FOTA_USE
+		bool "Use FOTA routines"
+		default y
+		help
+        	Use FOTA routines
+    config FOTA_URL
+        string "FOTA URL"
+        default "https://example.com/firmware_debug_OLDVERSION_to_NEWVERSION.pack"
+        help
+			URL for FOTA
+
+	config FOTA_REMOVE_PY
+	    bool "Remove python files on upgrade"
+	    default y
+		help
+        	Remove python files on upgrade
+endmenu

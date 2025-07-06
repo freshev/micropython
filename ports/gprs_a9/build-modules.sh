@@ -20,6 +20,7 @@ function insert_boot {
 }
 
 #make boot.py
+#TODO use CONFIG_MAIN_STUB_RESPAWN from $1
 rm ${BOOT}
 echo "import os" >> ${BOOT}
 echo "import binascii" >> ${BOOT}

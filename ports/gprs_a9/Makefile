@@ -22,6 +22,11 @@ WWW_PATH := /var/opt/asque/firmware/Device_FW
 # use this flag to compress firmware files
 #ZIP_COMPRESS := 0
 ZIP_COMPRESS := 1
+CONFIG = .config
+ifneq (,$(wildcard ${CONFIG}))
+	include ${CONFIG}
+endif
+
 
 include ${CSDK_PATH}/platform/csdk/memd.def
 include ${CSDK_PATH}/platform/chip/defs/8955_base.def
@@ -94,13 +99,53 @@ FULL_LIBRARY_PATH := -L${CSDK_PATH}/hex/libcsdk
 MYLIBFILES := 
 FULL_LIBRARY_EXT := -lcsdk_${CFG_RELEASE}
 
-
 LDPPFLAGS += \
         -DUSER_ROM_BASE=${FLASH_BASE}+${USER_ROM_BASE} \
         -DUSER_ROM_SIZE=${USER_ROM_SIZE} \
         -DUSER_RAM_BASE=${EXT_RAM_BASE}+${USER_RAM_BASE} \
         -DUSER_RAM_SIZE=${USER_RAM_SIZE} \
         -DDUSE_BINUTILS_2_19=1
+
+ifdef CONFIG_FW_VERSION
+    KBUILD_CFLAGS += -DFW_VERSION=\"$(CONFIG_FW_VERSION)\"
+endif
+ifdef CONFIG_MAIN_STUB_AUTORUN
+    KBUILD_CFLAGS += -DMAINRUN=1
+endif
+
+ifeq ($(CONFIG_DHT_MODULE),y)
+	KBUILD_CFLAGS += -DCONFIG_DHT_MODULE=1
+endif
+ifeq ($(CONFIG_CC1101_MODULE),y)
+	KBUILD_CFLAGS += -DCONFIG_CC1101_MODULE=1
+endif
+
+ifeq ($(CONFIG_SMSCONFIG),y)
+	KBUILD_CFLAGS += -DSMSCONFIG=1
+endif
+
+ifeq ($(CONFIG_SMSRESET),y)
+	KBUILD_CFLAGS += -DSMSRESET=1
+endif
+ifeq ($(CONFIG_SMSRESETACK),y)
+	KBUILD_CFLAGS += -DSMSRESETACK=1
+endif
+
+ifeq ($(CONFIG_FOTA_USE),y)
+    KBUILD_CFLAGS += -DFOTA_USE=1
+endif
+ifdef CONFIG_FOTA_URL
+    TEMPURL1 = $(CONFIG_FOTA_URL)
+    TEMPURL2 = $(subst OLDVERSION,%s,$(TEMPURL1))
+    TEMPURL3 = $(subst NEWVERSION,%s,$(TEMPURL2))
+    KBUILD_CFLAGS += -DFOTA_URL=\"$(TEMP_URL3)\"
+endif
+ifdef CONFIG_FOTA_REMOVE_PY
+	KBUILD_CFLAGS += -DFOTA_REMOVE_PY=1
+endif
+
+
+
 LD_SRC  := ${CSDK_PATH}/platform/compilation/cust.ld
 LD_FILE := ${BUILD_PATH_ABS}/cust.ld
 OFORMAT := --oformat=elf32-littlemips
@@ -147,6 +192,7 @@ CFLAGS = $(INC) -Wshadow \
 
 CFLAGS += $(CFLAGS_MOD)
 CFLAGS += $(AXTLS_DEFS_EXTRA)
+CFLAGS += $(KBUILD_CFLAGS)
 
 ASFLAGS = --warn -EL -march=xcpu -mtune=xcpu
 AS := $(CROSS_COMPILE)as $(ASFLAGS)
@@ -201,9 +247,12 @@ SRC_QSTR += $(SRC_C) $(SHARED_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
-all: version modules lod www
+all: configure version modules lod www
 
-version:
+configure:
+	@test -f ${CONFIG} || (echo "------> Run configure first <------" ; exit 1)
+
+version: 
 	@echo '---------------------'
 	@echo '     Version ' $(VERSION)
 	@echo '---------------------'
@@ -246,7 +295,7 @@ ota:
 
 modules:
 	@if [ ${ZIP_COMPRESS} = 1 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
-		echo $(shell ./build-modules.sh); \
+		echo $(shell ./build-modules.sh $(CONFIG_MAIN_STUB_RESPAWN)); \
 		echo "Build modules OK"; \
 	fi
 

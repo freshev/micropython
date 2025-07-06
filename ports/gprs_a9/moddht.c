@@ -37,6 +37,8 @@
 #include "modmachine.h"
 #include "mphalport.h"
 
+#ifdef CONFIG_DHT_MODULE
+
 #define DHT_MIN_INTERVAL 2000
 #define DHT_TIMEOUT UINT32_MAX
 #define DHT_RETRY_INIT 5
@@ -458,3 +460,5 @@ const mp_obj_module_t dht_module = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_dht, dht_module);
+
+#endif

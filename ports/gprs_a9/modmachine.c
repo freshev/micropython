@@ -263,13 +263,15 @@ static void processFota(const unsigned char *data, int len) {
         MEMBLOCK_Trace(1, (uint8_t*)data, (uint16_t)len, 16);
         if(API_FotaInit(len)) {
             Trace(1, "FOTA inited");
-            //mp_printf(&mp_plat_print, "FOTA inited\n");
-            modmachine_remove_files(".py");
+            //mp_printf(&mp_plat_print, "FOTA inited\n");            
             int res_len = API_FotaReceiveData((unsigned char*)data, (int)len);
             if(res_len != 0) {
                 Trace(1, "FOTA received data %d", res_len);
                 //mp_printf(&mp_plat_print, "FOTA received data %d\n" , res_len);
                 _fota_result = 1;
+#ifdef FOTA_REMOVE_PY
+                modmachine_remove_files(".py");
+#endif
             } else {
                 Trace(1, "FOTA NOT received data");
                 //mp_printf(&mp_plat_print, "FOTA NOT received data\n");
@@ -287,6 +289,7 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
+#ifdef FOTA_USE
     _fota_result = 0;
     if (mp_obj_is_str(new_version)) {
         const char* newv = mp_obj_str_get_str(new_version);
@@ -302,5 +305,9 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
     } else mp_raise_ValueError("FOTA requested version should be string.");
     return mp_obj_new_int(0);
+#else
+    mp_printf(&mp_plat_print, "FOTA disabled.\n");
+    return mp_obj_new_int(0);
+#endif
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_ota_obj, modmachine_ota);

@@ -42,6 +42,8 @@
 #include "extmod/modmachine.h"
 //#include "mphalport.h"
 
+#ifdef CONFIG_CC1101_MODULE
+
 #define   WRITE_BURST       0x40 // write burst mask
 #define   READ_SINGLE       0x80 // read single mask
 #define   READ_BURST        0xC0 // read burst mask
@@ -1802,3 +1804,5 @@ const mp_obj_module_t cc1101_module = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_cc1101, cc1101_module);
+
+#endif

@@ -226,10 +226,10 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     // #endif
 
     if (args[ARG_txbuf].u_int >= 0) {
-        self->txbuf = args[ARG_txbuf].u_int;
+        // self->txbuf = args[ARG_txbuf].u_int;
     }
     if (args[ARG_rxbuf].u_int >= 0) {
-        self->rxbuf = args[ARG_rxbuf].u_int;
+        // self->rxbuf = args[ARG_rxbuf].u_int;
         uint16_t len = args[ARG_rxbuf].u_int + 1; // account for usable items in ringbuf
         uint8_t *buf;
         int uart = self->uart_id;
