@@ -13,11 +13,11 @@ RESPAWN="${RESPAWN//\"/}"
 #echo "ZIP_COMPRESS: ${ZIP_COMPRESS}" 
 #echo "RESPAWN: ${RESPAWN}" 
 
-if [ "$URL" !=  "\"\"" ]; then
+if [ "$URL" !=  "" ]; then
 	if [ "$ZIP_COMPRESS" == "y" ]; then
 		curl --silent --compressed $URL > ./examples/main.py
 	else
-	    curl --silent $URL > ./examples/main.py
+		curl --silent $URL > ./examples/main.py
 	fi
 fi
 
