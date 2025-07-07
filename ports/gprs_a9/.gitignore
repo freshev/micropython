@@ -10,4 +10,5 @@ modules/uota.py
 modules/boot.py
 examples/main.py
 a.bat
+.config
 *.old
