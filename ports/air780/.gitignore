@@ -1,6 +1,7 @@
 # Other files and folders
 .settings/
 .vscode/
+.xmake/
 
 # Executables
 out/
