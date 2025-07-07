@@ -11,4 +11,4 @@ modules/boot.py
 examples/main.py
 a.bat
 .config
-*.old
+.config.old
