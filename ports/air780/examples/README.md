@@ -99,7 +99,7 @@ Keywords: **MQTT, GPS, track**
 Modules: `cellular`, `umqtt` (external), `gps`, `upip`
 
 
-[main.py](main.py)
+[example_99_sms_server.py](example_99_sms_server.py)
 
 SMS Sender Server software.
 

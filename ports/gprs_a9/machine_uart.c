@@ -125,7 +125,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
+    
     // set tx/rx pins
     if (args[ARG_tx].u_obj != MP_OBJ_NULL && args[ARG_rx].u_obj != MP_OBJ_NULL) {
         mp_hal_pin_obj_t tx = mp_hal_get_pin_obj(args[ARG_tx].u_obj);
@@ -140,7 +140,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     }
 
     UART_Config_t *config = uart_dev + self->uart_id;
-
+    
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         switch (args[ARG_baudrate].u_int) {
@@ -171,20 +171,20 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         }
     }
     self->baudrate = config->baudRate;
-
+    
     // set data bits
     switch (args[ARG_bits].u_int) {
         case 7:
         case 8:
             config->dataBits = (UART_Data_Bits_t) args[ARG_bits].u_int;
-        // case 0:
-        //     break;
+        case 0:
+             break;
         default:
             mp_raise_ValueError("invalid data bits");
             break;
     }
     self->bits = config->dataBits;
-
+    
     // set parity
     if (args[ARG_parity].u_obj != MP_OBJ_NULL) {
         if (args[ARG_parity].u_obj == mp_const_none) {
@@ -199,7 +199,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         }
     }
     self->parity = config->parity;
-
+    
     // set stop bits
     switch (args[ARG_stop].u_int) {
         case 1:
@@ -208,8 +208,8 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         case 2:
             config->stopBits = UART_STOP_BITS_2;
             break;
-        // case 0:
-        //     break;
+        case 0:
+            break;
         default:
             mp_raise_ValueError("invalid stop bits");
             break;
@@ -225,6 +225,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
     // }
     // #endif
 
+    
     if (args[ARG_txbuf].u_int >= 0) {
         // self->txbuf = args[ARG_txbuf].u_int;
     }

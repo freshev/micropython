@@ -316,6 +316,6 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable).
 * Firmware resets the module by SMS 'reset' (configurable).
 * You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
-* Default `main.py` contains `SMS Sender` script.
+
 
 

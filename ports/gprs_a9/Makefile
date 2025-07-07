@@ -16,12 +16,10 @@ endif
 export LD_LIBRARY_PATH := $(CSDTK_PATH)/lib:$(CSDTK_PATH)/mingw32/usr/lib
 export PATH := $(PATH):$(CSDTK_PATH)/bin
 
-VERSION = $(shell grep "FW_VERSION" mpconfigport.h | cut -d'"' -f2)
+
 # use this folder to deploy firmware files
 WWW_PATH := /var/opt/asque/firmware/Device_FW
 # use this flag to compress firmware files
-#ZIP_COMPRESS := 0
-ZIP_COMPRESS := 1
 CONFIG = .config
 ifneq (,$(wildcard ${CONFIG}))
 	include ${CONFIG}
@@ -41,7 +39,7 @@ else
 	CFG_RELEASE = debug
 endif
 
-$(info Compile Version $(VERSION) $(CFG_RELEASE) on $(PLATFORM))
+$(info Compile Version $(CONFIG_FW_VERSION) $(CFG_RELEASE) on $(PLATFORM))
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
@@ -77,8 +75,8 @@ FOTA_PATH := ${PATH_CURR}/fota
 VERSION_PATH := ${PATH_CURR}/version
 LODBASE := $(BIN_PATH)/${FIRMWARE_NAME}_
 LOD_FILE := ${LODBASE}flash.lod
-WITH_PLT_LOD_FILE := ${VERSION_PATH}/${FIRMWARE_NAME}_full_${VERSION}.lod
-WITH_PLT_OTA_FILE := ${FOTA_PATH}/${FIRMWARE_NAME}_fota_${VERSION}.lod
+WITH_PLT_LOD_FILE := ${VERSION_PATH}/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod
+WITH_PLT_OTA_FILE := ${FOTA_PATH}/${FIRMWARE_NAME}_fota_${CONFIG_FW_VERSION}.lod
 MAP_FILE := $(BIN_PATH)/${FIRMWARE_NAME}_final.map
 STRIP_SYMBOL_FILE := ${CSDK_PATH}/platform/compilation/platform_symbols_to_strip
 PLATFORM_ELF_FOLDER_PATH := ${CSDK_PATH}/platform/csdk/${CFG_RELEASE}
@@ -254,7 +252,7 @@ configure:
 
 version: 
 	@echo '---------------------'
-	@echo '     Version ' $(VERSION)
+	@echo '     Version ' $(CONFIG_FW_VERSION)
 	@echo '---------------------'
 
 lod: ${HEX}
@@ -268,13 +266,13 @@ lod: ${HEX}
 	@echo "Build LOD OK"
 
 www:	
-	@if [ ${ZIP_COMPRESS} = 1 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating files..."; \
-		/usr/bin/zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}_full_${VERSION}.lod; \
+		/usr/bin/zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
 		/usr/bin/zlib-flate -compress < $(BIN) > $(WWW_PATH)/${FIRMWARE_NAME}.elf; \
 		/usr/bin/zlib-flate -compress < $(MAP_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}.map; \
 	fi
-	@if [ ${ZIP_COMPRESS} = 0 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
 		echo "Copy files..."; \
 		$(CP) $(WITH_PLT_LOD_FILE) $(WWW_PATH); \
 		$(CP) $(BIN) $(WWW_PATH); \
@@ -284,20 +282,18 @@ www:
 ota:
 	@echo $(shell ./build-fota.sh)
 	@echo "Build FOTA OK"
-	@if [ ${ZIP_COMPRESS} = 1 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating version..."; \
-		echo ${VERSION} | /usr/bin/zlib-flate -compress > ${WWW_PATH}/version; \
+		echo ${CONFIG_FW_VERSION} | /usr/bin/zlib-flate -compress > ${WWW_PATH}/version; \
 	fi
-	@if [ ${ZIP_COMPRESS} = 0 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
 		echo "Copy version..."; \
-		echo ${VERSION} > ${WWW_PATH}/version;	\
+		echo ${CONFIG_FW_VERSION} > ${WWW_PATH}/version;	\
 	fi
 
 modules:
-	@if [ ${ZIP_COMPRESS} = 1 -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
-		echo $(shell ./build-modules.sh $(CONFIG_MAIN_STUB_RESPAWN)); \
-		echo "Build modules OK"; \
-	fi
+	$(shell ./build-modules.sh \"${CONFIG_MAIN_STUB_URL}\" \"${CONFIG_ZIP_COMPRESS}\" \"${CONFIG_MAIN_STUB_RESPAWN}\")
+	echo "Build modules OK"
 
 ${BIN}: $(OBJ)
 	@echo "$(shell ./build-libcsdk.sh $(VERSION_PATH))"

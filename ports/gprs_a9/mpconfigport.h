@@ -4,7 +4,6 @@
 #ifndef __MPCONFIGPORT_H
 #define __MPCONFIGPORT_H
 
-//#define FW_VERSION "v1.3" // moved to KConfig
 #define MICROPY_HW_BOARD_NAME   "A9/A9G module"
 #define MICROPY_HW_MCU_NAME     "RDA8955"
 #define MICROPY_PY_SYS_PLATFORM "gprs_a9"

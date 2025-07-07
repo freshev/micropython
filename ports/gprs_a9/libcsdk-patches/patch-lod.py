@@ -19,6 +19,7 @@ with open(map_file, 'r') as mf:
     for line in mf:
         if "ChangeWDPinStateInBoot" in line: proc_addr = line.strip().split()[0].replace("0xffffffff","")
 if proc_addr == "": print("\tChangeWDPinStateInBoot address %s not found"); sys.exit(1)
+
 print ("\tChangeWDPinStateInBoot address = %s" % proc_addr)
 if len(proc_addr) != 8: print("\tChangeWDPinStateInBoot BAD address"); sys.exit(1)
 rev_proc_addr = proc_addr[6:8] + proc_addr[4:6] + proc_addr[2:4] + proc_addr[0:2]
