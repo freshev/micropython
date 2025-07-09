@@ -8,7 +8,6 @@
 #define MICROPY_HW_MCU_NAME     "RDA8955"
 #define MICROPY_PY_SYS_PLATFORM "gprs_a9"
 
-// #define FOTA_URL "https://example.com/firmware_debug_OLDVERSION_to_NEWVERSION.pack" // moved to KConfig
 #define MACHINE_HW_WATCHDOG_TIMEOUT (500)
 #define MACHINE_HW_WATCHDOG_PIN (GPIO_PIN7)
 

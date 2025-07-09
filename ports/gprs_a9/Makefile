@@ -136,7 +136,7 @@ ifdef CONFIG_FOTA_URL
     TEMPURL1 = $(CONFIG_FOTA_URL)
     TEMPURL2 = $(subst OLDVERSION,%s,$(TEMPURL1))
     TEMPURL3 = $(subst NEWVERSION,%s,$(TEMPURL2))
-    KBUILD_CFLAGS += -DFOTA_URL=\"$(TEMP_URL3)\"
+    KBUILD_CFLAGS += -DFOTA_URL=\"$(TEMPURL3)\"
 endif
 ifdef CONFIG_FOTA_REMOVE_PY
 	KBUILD_CFLAGS += -DFOTA_REMOVE_PY=1
@@ -293,7 +293,8 @@ ota:
 
 modules:
 	$(shell ./build-modules.sh \"${CONFIG_MAIN_STUB_URL}\" \"${CONFIG_ZIP_COMPRESS}\" \"${CONFIG_MAIN_STUB_RESPAWN}\")
-	echo "Build modules OK"
+	#$(ECHO) "${KBUILD_CFLAGS}"
+	$(ECHO) "Build modules OK"
 
 ${BIN}: $(OBJ)
 	@echo "$(shell ./build-libcsdk.sh $(VERSION_PATH))"
