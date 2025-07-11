@@ -77,6 +77,9 @@ void modcellular_notify_incoming_ussd(API_Event_t* event);
 #define TIMEOUT_REG 10000
 #define TIMEOUT_STATIONS 2000
 #define TIMEOUT_USSD_RESPONSE 5000
+#define MAX_SMS_DECODED_LEN 641
 
 #define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
+
+
 

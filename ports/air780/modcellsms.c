@@ -1911,3 +1911,4 @@ STATIC mp_obj_t modcellular_sms_get_storage_size(void) {
 }
 
 MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_get_storage_size_obj, modcellular_sms_get_storage_size);
+

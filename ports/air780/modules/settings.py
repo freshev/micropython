@@ -8,8 +8,8 @@ import cellular
 
 def gprs_on(led=None, debug=0):
     res = 0    
-    # stat = cellular.get_network_status(); filesys.log('NWS(1): %s' % hex(stat))
-    #if debug: filesys.log('NWS(1): %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
+    #stat = cellular.get_network_status(); filesys.log('NWS: %s' % hex(stat))
+    #if debug: filesys.log('NWS: %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
     flag = 0
     while(cellular.get_network_status() == 0):
         if led != None: led.value(not led.value())
@@ -28,15 +28,13 @@ def gprs_on(led=None, debug=0):
     else: 
         res = 1
         if debug: filesys.log('ok')
-    # stat = cellular.get_network_status(); filesys.log('NWS(2): %s' % hex(stat))
-    #if debug: filesys.log('NWS(2): %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
+    #stat = cellular.get_network_status(); filesys.log('NWS: %s' % hex(stat))
+    #if debug: filesys.log('NWS: %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
     return res
 
 def gprs_off(debug=0):
     cellular.gprs(0)
     if debug: filesys.log('GPRS off')
-    #filesys.log('GPRS off')
-    #stat = cellular.get_network_status(); filesys.log('NWS: %s' % hex(stat))
 
 def watchdog(led = None):    
     if led != None: led.value(1)

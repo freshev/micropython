@@ -84,6 +84,14 @@ patch_list = {
     #0x08032F3C: ("Set WD pin power ON (part2)", bytearray.fromhex('00000100'), bytearray.fromhex('07000200')), # -pin=7, type=2
     #0x08032F40: ("Set WD pin power ON (part3)", bytearray.fromhex('00000000'), bytearray.fromhex('01000000')), # powerOnState = ON
 
+    # set param1 with data coding scheme in SDK's SMS_ListMessage_rsp to get DCS as param1 while processing API_EVENT_ID_SMS_LIST_MESSAGE (modcellular_notify_sms_list)
+    0x08106E58: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (skip Trace)", bytearray.fromhex('3D6740F0'), bytearray.fromhex('0E101197')),
+    0x08106E5C: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (set param1)", bytearray.fromhex('D0A1A0F4'), bytearray.fromhex('E09F20F0')),
+    0x08106E60: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (set param1)", bytearray.fromhex('1CB5B018'), bytearray.fromhex('F9A7E1DC')),
+    0x08106E64: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (set param1)", bytearray.fromhex('743F016C'), bytearray.fromhex('89110065')),
+    0x08107174: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (branch new)", bytearray.fromhex('2104006F'), bytearray.fromhex('21047116')),
+    0x08107178: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (set zeros )", bytearray.fromhex('E1DCE2DC'), bytearray.fromhex('006FE2DC')),
+
 }
 keys_l = sorted(patch_list.keys())
 

@@ -12,7 +12,6 @@
 
 #include "stdio.h"
 #include "errno.h"
-#include "luat_debug.h"
 
 #if 0
 /******************************************************* ************************* 
@@ -304,7 +303,6 @@ static size_t enc_unicode_to_utf8(char **_inbuf, size_t *inbytesleft, char **_ou
     for(iPos = 0, oPos = 0; iPos+1 < iLen;)
     {
         unicodeVal = ((endian==1) ? ((unsigned char)src[iPos]*256+(unsigned char)src[iPos+1]) : ((unsigned char)src[iPos+1]*256+(unsigned char)src[iPos]));
-        //LUAT_DEBUG_PRINT("test1:%d,%X,%X,%X",endian,unicodeVal,src[iPos],src[iPos+1]);
 
     	 if(unicodeVal <= 0x7F)
     	 {
