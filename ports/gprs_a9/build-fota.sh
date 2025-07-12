@@ -1,14 +1,15 @@
 #!/bin/bash
 set -e
 
-PLATFORM=$(uname)
-if [[ "${PLATFORM}" != "Linux" ]]; then
-	exit
-fi
+#PLATFORM=$(uname)
+#if [[ "${PLATFORM}" != "Linux" ]]; then
+#	exit
+#fi
 
 
 WWW_PATH=/var/opt/asque/firmware/Device_FW
-VERSION=`grep "FW_VERSION" mpconfigport.h | cut -d'"' -f2`
+#VERSION=`grep "FW_VERSION" mpconfigport.h | cut -d'"' -f2`
+VERSION=$1
 
 
 CFG_RELEASE=debug
@@ -45,7 +46,7 @@ if [[ "${FOLDER_NAME}" != "gprs_a9" ]]; then
 fi
 
 echo -e "Generate fota version " ${VERSION} " ...\n"
-${LODCOMBINE_TOOL} gen_ota --platform ${PLATFORM_LOD_FILE} --lod ${WITH_PLT_LOD_FILE} --out ${WITH_PLT_OTA_FILE}
+python ${LODCOMBINE_TOOL} gen_ota --platform ${PLATFORM_LOD_FILE} --lod ${WITH_PLT_LOD_FILE} --out ${WITH_PLT_OTA_FILE}
 
 for f in ${VERSION_PATH}/*.lod;
 do
