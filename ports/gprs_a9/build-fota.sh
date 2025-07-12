@@ -44,12 +44,6 @@ if [[ "${FOLDER_NAME}" != "gprs_a9" ]]; then
     exit 1
 fi
 
-echo -e "Generate fota version " ${VERSION} " ...\n"
-echo -e "1: ${LODCOMBINE_TOOL}"
-echo -e "2: ${PLATFORM_LOD_FILE}"
-echo -e "3: ${WITH_PLT_LOD_FILE}"
-echo -e "4: ${WITH_PLT_OTA_FILE}"
-echo "--------------------"
 python ${LODCOMBINE_TOOL} gen_ota --platform ${PLATFORM_LOD_FILE} --lod ${WITH_PLT_LOD_FILE} --out ${WITH_PLT_OTA_FILE}
 
 for f in ${VERSION_PATH}/*.lod;
