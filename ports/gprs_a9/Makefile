@@ -280,7 +280,7 @@ www:
 	@echo "Build WWW OK"
 
 ota:
-	@echo $(shell ./build-fota.sh ${CONFIG_FW_VERSION})
+	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\")
 	@echo "Build FOTA OK"
 	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a "${PLATFORM}" = "Linux" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating version..."; \
