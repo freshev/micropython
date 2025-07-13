@@ -259,12 +259,11 @@ Provides power-related functions: power, watchdogs.
 #### Methods
 
 * `reset()`: hard-resets the module;
-* `off()`: powers the module down. **TODO**: By fact, hard-resets the module, at least when USB-powered. Figure out what's wrong;
-* `idle()`: tunes the clock rate down and turns off peripherials;
-* `get_input_voltage()` (float, float): the input voltage (mV) and the battery level (percents);
-* `power_on_cause()` (int): the power-on flag, one of `POWER_ON_CAUSE_*`.  **TODO**: never saw anything except `POWER_ON_CAUSE_CHARGE` returned, needs investigation;
+* `reset_cause()`: cause of machine last reset;
+* `idle()`: handle any micropython events;
+* `power_on_cause()` (int): the power-on flag, one of `POWER_ON_CAUSE_*`.
 * `on_power_key(callback: Callable)`: sets a callback `function(is_power_key_down: bool)` on power key events.
-* `OTA(new_version)`: tries to get new formware version `new_version` from internet. Exact URL configured via `configure->FOTA`.
+* `OTA(new_version, query='')`: tries to get new formware version `new_version` from internet. Exact URL configured via `configure->FOTA`.
 
 ### `I2C` ###
 

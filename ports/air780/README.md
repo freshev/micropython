@@ -231,6 +231,10 @@ See [micropython docs](https://docs.micropython.org/en/latest/library/ssl.html) 
 ### `machine`
 
 Provides power-related functions: power, watchdogs.
+* `reset()`: hard-resets the module;
+* `reset_cause()`: cause of machine last reset;
+* `idle()`: handle any micropython events;
+* `OTA(new_version, query='')`: tries to get new formware version `new_version` from internet. Exact URL configured via `configure->FOTA`.
 
 #### Constants
 

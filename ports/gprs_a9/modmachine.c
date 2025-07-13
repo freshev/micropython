@@ -55,6 +55,7 @@ uint8_t machine_hw_watchdog_pin_level = GPIO_LEVEL_LOW;
 
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                             \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_on_power_key), (mp_obj_t)&modmachine_on_power_key_obj },		 \
     { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },                         \
                                                                                              \
     { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_KEY),       MP_ROM_INT(POWER_ON_CAUSE_KEY) },       \
@@ -201,6 +202,18 @@ STATIC void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
 STATIC mp_obj_t mp_machine_get_freq(void) {
     return 0; // TODO
 }
+
+STATIC mp_obj_t modmachine_on_power_key(mp_obj_t callable) {
+    // ========================================
+    // Sets a callback on power key press.
+    // Args:
+    //     callback (Callable): a callback to
+    //     execute on power key press.
+    // ========================================
+    power_key_callback = callable;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_on_power_key_obj, modmachine_on_power_key);
 
 STATIC void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
     // ========================================
