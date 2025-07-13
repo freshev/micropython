@@ -18,7 +18,8 @@ export PATH := $(PATH):$(CSDTK_PATH)/bin
 
 
 # use this folder to deploy firmware files
-WWW_PATH := /var/opt/asque/firmware/Device_FW
+#WWW_PATH := /var/opt/asque/firmware/Device_FW
+WWW_PATH := Z:/
 
 CONFIG = .config
 ifneq (,$(wildcard ${CONFIG}))
@@ -268,9 +269,9 @@ lod: ${HEX}
 www:	
 	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating files..."; \
-		/usr/bin/zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
-		/usr/bin/zlib-flate -compress < $(BIN) > $(WWW_PATH)/${FIRMWARE_NAME}.elf; \
-		/usr/bin/zlib-flate -compress < $(MAP_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}.map; \
+		zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
+		zlib-flate -compress < $(BIN) > $(WWW_PATH)/${FIRMWARE_NAME}.elf; \
+		zlib-flate -compress < $(MAP_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}.map; \
 	fi
 	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a -d "${WWW_PATH}" ] ; then \
 		echo "Copy files..."; \
@@ -281,16 +282,16 @@ www:
 
 ota:
 	$(info Be patient !...)
-	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_ZIP_COMPRESS}\" \"${WWW_PATH}\")
-	@echo "Build FOTA OK"
+	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_ZIP_COMPRESS}\" \"${WWW_PATH}\")	
 	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating version..."; \
-		echo ${CONFIG_FW_VERSION} | /usr/bin/zlib-flate -compress > ${WWW_PATH}/version; \
+		echo ${CONFIG_FW_VERSION} | zlib-flate -compress > ${WWW_PATH}/version; \
 	fi
 	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a -d "${WWW_PATH}" ] ; then \
 		echo "Copy version..."; \
 		echo ${CONFIG_FW_VERSION} > ${WWW_PATH}/version;	\
 	fi
+	@echo "Build FOTA OK"
 
 modules:
 	$(shell ./build-modules.sh \"${CONFIG_MAIN_STUB_URL}\" \"${CONFIG_ZIP_COMPRESS}\" \"${CONFIG_MAIN_STUB_RESPAWN}\")
