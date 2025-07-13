@@ -89,10 +89,10 @@ def ota_update(host, project, filenames, query, update=0, use_version_prefix=1, 
 
             import urequests
             try:
-                if project == 'Device' and os.uname().sysname == 'gprs_a9':
+                if project == 'Device' and os.uname().sysname != 'Telit':
                     rv = request_version(host, 'Device_FW', query, to_uncompress, timeout, debug)
                     if rv != os.uname().release:
-                        res = machine.OTA(rv)
+                        res = machine.OTA(rv, '?query=%s' % query)
                         if res == 1:
                             filesys.log('FOTA ok')
                             for i in range(1, 60): wd.feed(); time.sleep(60)

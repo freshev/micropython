@@ -1155,22 +1155,28 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         }
 
         uint8_t ret;
-        ret = Network_StartDeactive(1);
-        WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not detactivated: try resetting"));
+        if(network_status & NTW_ACT_BIT) {
+            ret = Network_StartDeactive(1);
+            WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not detactivated: try resetting"));
+        }
 
-        ret = Network_StartDetach();
-        WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not detached: try resetting"));
+        if (network_status & NTW_ATT_BIT) {
+            ret = Network_StartDetach();
+            WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not detached: try resetting"));
+        }
 
-        ret = Network_StartAttach();
-        WAIT_UNTIL((network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+        if (!(network_status & NTW_ATT_BIT)) ret = Network_StartAttach();
+        WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
 
-        Network_PDP_Context_t context;
-        memcpy(context.apn, c_apn, MIN(strlen(c_apn) + 1, sizeof(context.apn)));
-        memcpy(context.userName, c_user, MIN(strlen(c_user) + 1, sizeof(context.userName)));
-        memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
+        if (!(network_status & NTW_ACT_BIT)) {
+        	Network_PDP_Context_t context;
+        	memcpy(context.apn, c_apn, MIN(strlen(c_apn) + 1, sizeof(context.apn)));
+        	memcpy(context.userName, c_user, MIN(strlen(c_user) + 1, sizeof(context.userName)));
+        	memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
 
-        ret = Network_StartActive(context);
-        WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not activated: try resetting"));
+        	ret = Network_StartActive(context);
+        	WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not activated: try resetting"));
+        }
     } else if (n_args != 0) {
         mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
     }

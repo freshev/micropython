@@ -285,18 +285,29 @@ static void processFota(const unsigned char *data, int len) {
     API_FotaClean();
 }
 
-STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
+STATIC mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
+    enum { ARG_newversion, ARG_query };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_newversion, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+        { MP_QSTR_query, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_obj_t new_version = args[ARG_newversion].u_obj;
+    mp_obj_t query = args[ARG_query].u_obj;    
+
 #ifdef FOTA_USE
     _fota_result = 0;
-    if (mp_obj_is_str(new_version)) {
+    if (new_version != NULL && mp_obj_is_str(new_version)) {
         const char* newv = mp_obj_str_get_str(new_version);
         if(strcmp(newv, FW_VERSION) != 0) {
-            char url[512];
+            char url[150];
             memset(url, 0, sizeof(url));
             sprintf(url, FOTA_URL, FW_VERSION, newv);
+            if(query != NULL && mp_obj_is_str(query)) strcat(url, mp_obj_str_get_str(query));
             Trace(1,"FOTA URL %s", url);
             mp_printf(&mp_plat_print, "FOTA URL %s.\n", url);
             if(API_FotaByServer(url, processFota) == 0) {
@@ -310,4 +321,5 @@ STATIC mp_obj_t modmachine_ota(mp_obj_t new_version) {
     return mp_obj_new_int(0);
 #endif
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_ota_obj, modmachine_ota);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(modmachine_ota_obj, 1, modmachine_ota);
+
