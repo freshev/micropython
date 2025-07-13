@@ -8,6 +8,7 @@ local VM_64BIT = nil
 SDK_TOP = "."
 local SDK_PATH
 local USER_PROJECT_NAME = "Air780_micropython"
+local WWW_PATH = "/var/opt/asque/firmware/Device_FW"
 USER_PROJECT_DIR  = ""
 local LUAT_SCRIPT_SIZE
 local LUAT_SCRIPT_OTA_SIZE
@@ -20,9 +21,15 @@ option("01 Board type")
     set_description("Board type")
     set_default("Air780_GENERIC")
     set_values("Air780_GENERIC", "Air780_EG", "XMAKE_TEST_BOARD")
-option("02 Firmware version")
+option("020 Firmware version")
     set_description("Firmware version")
     set_default("v1.0")
+option("021 MAIN_STUB_URL")
+    set_description("URL to get main.py from")
+    set_default("")
+option("022 ZIP_COMPRESS")
+    set_description("Get main.py from URL in compressed form")
+    set_default(true)
 option("03 REPL port")
     set_description("REPL port")
     set_default("REPL over USB")
@@ -460,15 +467,24 @@ local HW_UART_REPL=0x20 -- LUAT_VUART_ID_0
 local RTE_UART2 = 1
 local RTE_I2C1 = 1
 local RTE_SPI0 = 1
+local MAIN_STUB_URL = ""
+local ZIP_COMPRESS = false
 
 if get_config("01 Board type") ~= nil then
     if os.isdir("boards/" .. get_config("01 Board type")) then BOARD = get_config("01 Board type") end
 end
 
-if get_config("02 Firmware version") ~= nil then
-    USER_PROJECT_NAME_VERSION = get_config("02 Firmware version")
+if get_config("020 Firmware version") ~= nil then
+    USER_PROJECT_NAME_VERSION = get_config("020 Firmware version")
     FW_VERSION = USER_PROJECT_NAME_VERSION
 end
+if get_config("021 MAIN_STUB_URL") ~= nil then
+    MAIN_STUB_URL = get_config("021 MAIN_STUB_URL")
+end
+if get_config("022 ZIP_COMPRESS") ~= nil then
+    ZIP_COMPRESS = get_config("022 ZIP_COMPRESS")
+end
+
 if get_config("03 REPL port") == "REPL over USB" then HW_UART_REPL=0x20 end
 if get_config("03 REPL port") == "UART1" then HW_UART_REPL=1 end
 if get_config("03 REPL port") == "UART2" then HW_UART_REPL=2 end
@@ -1394,6 +1410,22 @@ end
 --                     main stub target
 --------------------------------------------------------
 target("mainstub")
+    before_build(function (target)
+        local mainfn = "main.py"
+        if not os.exists("./examples/" .. mainfn) then
+            if MAIN_STUB_URL ~= "" then
+                try { function()
+                    if ZIP_COMPRESS == true then
+                        os.exec("curl --silent --compressed " .. MAIN_STUB_URL .. " -o ./examples/" .. mainfn)
+                    else
+                        os.exec("curl --silent " .. MAIN_STUB_URL .. " -o ./examples/" .. mainfn)
+                    end
+                end,
+                catch { function (e) print("Failed to get " .. mainfn .. " from " .. MAIN_STUB_URL) end }  
+                }
+            end
+        end
+    end)
     on_build(function (target)
         local mainfn = "main.py"
         local bootfn = "boot.py"
@@ -1464,7 +1496,7 @@ target(USER_PROJECT_NAME..".elf")
         else
             FLAGS = ""
         end
-        os.exec(GCC_DIR .. "bin/arm-none-eabi-gcc -E " .. FLAGS .. " -I " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc" .. " -P " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.c" ..  " -o " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.ld")        
+        os.exec(GCC_DIR .. "bin/arm-none-eabi-gcc -E " .. FLAGS .. " -I " .. SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc" .. " -P " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.c" ..  " -o " .. SDK_PATH .. "/PLAT/core/ld/ec618_0h00_flash.ld")
     end)
 
     after_build(function(target)
@@ -1509,7 +1541,6 @@ target(USER_PROJECT_NAME..".elf")
         cmd = cmd .. " -outfile " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
         --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
         --You can still use other tools to continue flashing your phone
-        print("fcelf CMD --> ", cmd)
         os.exec(cmd)
         ---------------------------------------------------------
 
@@ -1544,6 +1575,15 @@ target(USER_PROJECT_NAME..".elf")
         os.exec(path7z.." a -mx9 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
         os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
         os.rm(OUT_PATH.."/pack")
+
+        print("!@@@@@@@@@@@@")
+
+        if os.exists(WWW_PATH) then
+            if ZIP_COMPRESS == true then
+                print("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
+                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
+            end
+        end
     end)    
 target_end()
 
@@ -1636,6 +1676,7 @@ target("ota")
         -- copy to external folder
         if is_plat("linux") then
             if os.exists(OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg") then
+                print("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
                 os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
             end
         end
