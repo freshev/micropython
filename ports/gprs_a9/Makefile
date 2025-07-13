@@ -18,8 +18,7 @@ export PATH := $(PATH):$(CSDTK_PATH)/bin
 
 
 # use this folder to deploy firmware files
-#WWW_PATH := /var/opt/asque/firmware/Device_FW
-WWW_PATH := Z:/
+WWW_PATH := /var/opt/asque/firmware/Device_FW
 
 CONFIG = .config
 ifneq (,$(wildcard ${CONFIG}))
