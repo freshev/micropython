@@ -8,7 +8,7 @@ local VM_64BIT = nil
 SDK_TOP = "."
 local SDK_PATH
 local USER_PROJECT_NAME = "Air780_micropython"
-local WWW_PATH = "/var/opt/asque/firmware/Device_FW"
+local WWW_PATH = "/var/opt/asque/firmware/Air780_FW"
 USER_PROJECT_DIR  = ""
 local LUAT_SCRIPT_SIZE
 local LUAT_SCRIPT_OTA_SIZE
@@ -1576,12 +1576,11 @@ target(USER_PROJECT_NAME..".elf")
         os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
         os.rm(OUT_PATH.."/pack")
 
-        print("!@@@@@@@@@@@@")
-
         if os.exists(WWW_PATH) then
             if ZIP_COMPRESS == true then
-                print("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
-                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
+                os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+            else
+                os.exec("cp " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
             end
         end
     end)    
@@ -1625,15 +1624,17 @@ target("ota")
             fcelf = "fcelf"
             sha256sum = "sha256sum"
             deltagen = "bsdiff"
-            ftk = "FotaToolkit.exe" -- TODO
+            ftk = "FotaToolkit" -- TODO make FotaToolkit under Linux. Now it is an error stub script
             ftk_run = "fota.sh"
-            ftk_exec = string.gsub(OUT_PATH, "./", "") .. "\\" .. ftk_run
+            ftk_exec = "./" .. string.gsub(OUT_PATH, "./", "") .. "/" .. ftk_run
             file = io.open(OUT_PATH .. "/" .. ftk_run, "w")
+            file:write("#!/bin/bash\n")
             file:write("cd " .. OUT_PATH .. "\n")
-            file:write(ftk .. " $@\n")
+            file:write("./" .. ftk .. " $@\n")
             file:close(file)
+            os.exec("chmod +x " .. OUT_PATH .. "/" .. ftk_run)
         end
-        fcelf_from = SDK_PATH .. "/tools/dtools/dep/" .. fcelf
+        fcelf_from = SDK_PATH .. "/" .. fcelf
         fcelf_to = OUT_DEP_PATH .. "/" .. fcelf
         sha256sum_from = SDK_PATH .. "/tools/dtools/dep/" .. sha256sum
         sha256sum_to = OUT_DEP_PATH .. "/" .. sha256sum
@@ -1663,7 +1664,7 @@ target("ota")
                             fota_file = string.sub(fota_url, index + 1)
                             fota_file = string.gsub(fota_file, "OLDVERSION", OLDVER)
                             fota_file = string.gsub(fota_file, "NEWVERSION", FW_VERSION)
-                            print(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
+                            -- print(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
                             os.exec(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
                         else
                             print("Can not parse FOTA URL")
@@ -1672,16 +1673,14 @@ target("ota")
                 end
             end
         end
-                
-        -- copy to external folder
-        if is_plat("linux") then
-            if os.exists(OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg") then
-                print("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
-                os.exec("./binexport.sh " .. OUT_PATH .. "/" .. USER_PROJECT_NAME .. ".binpkg" .. " " .. " /var/opt/asque/firmware/DEVICE_FW/" .. BOARD .. ".binpkg")
+        if os.exists(WWW_PATH) then
+            if ZIP_COMPRESS == true then
+                os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+            else
+                os.exec("cp " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
             end
         end
-
-    end)    
+    end)
 target_end()
 
 
