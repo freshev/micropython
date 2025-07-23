@@ -1541,6 +1541,7 @@ target(USER_PROJECT_NAME..".elf")
         cmd = cmd .. " -outfile " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
         --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
         --You can still use other tools to continue flashing your phone
+        print(cmd)
         os.exec(cmd)
         ---------------------------------------------------------
 

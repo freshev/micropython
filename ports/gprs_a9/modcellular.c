@@ -1137,11 +1137,6 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             }
             WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
         }
-
-        if (network_status & NTW_ATT_BIT)
-            if (Network_StartDetach())
-                WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, break);
-
     } else if (n_args == 3 || n_args == 4) {
         const char* c_apn = mp_obj_str_get_str(args[0]);
         const char* c_user = mp_obj_str_get_str(args[1]);
@@ -1155,18 +1150,7 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         }
 
         uint8_t ret;
-        if(network_status & NTW_ACT_BIT) {
-            ret = Network_StartDeactive(1);
-            WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not detactivated: try resetting"));
-        }
-
-        if (network_status & NTW_ATT_BIT) {
-            ret = Network_StartDetach();
-            WAIT_UNTIL(!(network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not detached: try resetting"));
-        }
-
-        if (!(network_status & NTW_ATT_BIT)) ret = Network_StartAttach();
-        WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+       	WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
 
         if (!(network_status & NTW_ACT_BIT)) {
         	Network_PDP_Context_t context;
