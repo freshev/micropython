@@ -108,7 +108,7 @@ track of the code size of the core runtime and VM.
 
 In addition, the following ports are provided in this repository:
  - [A9/A9G](ports/gprs_a9) -- Ai-Thinker A9/A9G (2G only) SoC.
- - [Air780e](ports/air780) -- Hezhou 4G Cat.1 Air780e (EC618) SoC.
+ - [Air780e/g](ports/air780) -- Hezhou 4G Cat.1 Air780e (EC618) SoC.
  - [esp32](ports/esp32) -- Espressif ESP32 SoC (including ESP32S2, ESP32S3, ESP32C3).
  - [esp8266](ports/esp8266) -- Espressif ESP8266 SoC.
 
@@ -155,7 +155,7 @@ Main contrubutions:
 * Added Windows x64 support (compilation and firmware flashing)
 * Cut unused libs and binaries from Linux and Windows SDK-s
 * Added new features (and of course bugs). See [A9/A9G](ports/gprs_a9)
-* Added new port for Hezhou 4G Cat.1 Air780e (EC618) SoC. See [Air780e](ports/air780) for more details
+* Added new port for Hezhou 4G Cat.1 Air780e (EC618) SoC. See [Air780](ports/air780) for more details
 
 Others:
 * Add ESP-32-CAM module support (with I2C slave mode) to [esp32 port](ports/esp32)
