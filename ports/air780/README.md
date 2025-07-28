@@ -284,6 +284,10 @@ This is only available in the A9G module where GPS is a separate chip connected 
 
 * `on()`: turns the GPS on;
 * `off()`: turns the GPS off;
+* `get_description()`: GPS module description;
+* `get_serial()`: GPS module part number;
+* `get_hardware_version()`: GPS module hardware version;
+* `get_firmware_version()`: GPS module firmware version;
 * `get_location()` (longitude: float, latitude: float): retrieves the current GPS location;
 * `get_last_location()` (longitude: float, latitude: float): retrieves the last known GPS location without polling the GPS module;
 * `get_satellites()` (tracked: int, visible: int): the numbers of satellites in operation;
@@ -320,6 +324,4 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable).
 * Firmware resets the module by SMS 'reset' (configurable).
 * You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
-
-
-
+* My Air780EG module often does not boot correctly due to insufficient power from USB.

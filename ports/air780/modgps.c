@@ -62,6 +62,10 @@ typedef struct{
 
 static GPS_Info_t gpsInfo = {0};
 static bool gpsIsOpen = false;
+static char GPS_Hardware[30] = {0}; 
+static char GPS_Firmware[30] = {0}; 
+static char GPS_Description[30] = {0}; 
+static char GPS_Serial[15] = {0}; 
 
 // Note: 780EG internal gnss chip is connected to serial port 2
 #define UART_ID 2
@@ -99,6 +103,7 @@ bool GPS_Init() {
     luat_gpio_open(&cfg);
 
     gpsIsOpen = true; 
+    return 1;
 }
 
 void GPS_Close() {
@@ -127,7 +132,7 @@ bool GPS_IsOpen() {
  *                $GNRMC,084257.000,A,2234.7758,N,11354.9654,E,0.032,306.43,140618,,,D*46
  *                $GNVTG,306.43,T,,M,0.032,N,0.059,K,D*29
  */
-bool ParseOneNmea(uint8_t* nmea, uint8_t flag) {
+bool parse_nmea(uint8_t* nmea, uint8_t flag) {
     static uint8_t flag_old = 0xff;
     static uint8_t gsv_count = 0;
     static uint8_t gsa_count = 0;
@@ -143,38 +148,45 @@ bool ParseOneNmea(uint8_t* nmea, uint8_t flag) {
 
     switch (minmea_sentence_id(line, false)) {
         case MINMEA_SENTENCE_RMC:
-            if (!minmea_parse_rmc(&gpsInfo.rmc, line)) LUAT_DEBUG_PRINT("RMC%s", np);
+            if (!minmea_parse_rmc(&gpsInfo.rmc, line)) mp_warning(NULL, "RMC%s\n", np);
             break;
         case MINMEA_SENTENCE_GGA: 
-            if (!minmea_parse_gga(&gpsInfo.gga, line)) LUAT_DEBUG_PRINT ("GGA%s", np);
+            if (!minmea_parse_gga(&gpsInfo.gga, line)) mp_warning(NULL, "GGA%s\n", np);
             break;
         case MINMEA_SENTENCE_GST: 
-            if (!minmea_parse_gst(&gpsInfo.gst, line)) LUAT_DEBUG_PRINT ("GST%s", np);
+            if (!minmea_parse_gst(&gpsInfo.gst, line)) mp_warning(NULL, "GST%s\n", np);
             break;
-
         case MINMEA_SENTENCE_GSV: 
             if(gsv_count < GPS_PARSE_MAX_GSV_NUMBER) {
-                if (!minmea_parse_gsv(&gpsInfo.gsv[gsv_count++], line)) LUAT_DEBUG_PRINT ("GSV%s", np);
+                if (!minmea_parse_gsv(&gpsInfo.gsv[gsv_count++], line)) mp_warning(NULL, "GSV%s\n", np);
             }
             break;
         case MINMEA_SENTENCE_VTG: 
-            if (!minmea_parse_vtg(&gpsInfo.vtg, line)) LUAT_DEBUG_PRINT ("VTG%s", np);
+            if (!minmea_parse_vtg(&gpsInfo.vtg, line)) mp_warning(NULL, "VTG%s\n", np);
             break;
         case MINMEA_SENTENCE_ZDA: 
-            if (!minmea_parse_zda(&gpsInfo.zda, line)) LUAT_DEBUG_PRINT ("ZDA%s", np);
+            if (!minmea_parse_zda(&gpsInfo.zda, line)) mp_warning(NULL, "ZDA%s\n", np);
             break;
         case MINMEA_SENTENCE_GSA:
             if(gsa_count < GPS_PARSE_MAX_GSA_NUMBER){
-                if (!minmea_parse_gsa(&gpsInfo.gsa[gsa_count++], line)) LUAT_DEBUG_PRINT ("GSA%s", np);
+                if (!minmea_parse_gsa(&gpsInfo.gsa[gsa_count++], line)) mp_warning(NULL, "GSA%s\n", np);
             }
             break;
         case MINMEA_SENTENCE_GLL:
-            if (!minmea_parse_gll(&gpsInfo.gll, line)) LUAT_DEBUG_PRINT ("GLL%s", np);
+            if (!minmea_parse_gll(&gpsInfo.gll, line)) mp_warning(NULL, "GLL%s\n", np);
             break;
         case MINMEA_INVALID:
         default:
-            LUAT_DEBUG_PRINT("$xxxxx sentence is not parsed:%s\n", line);
-            return false;
+            if(strstr((const char*)nmea, "UC6228CI")) { strcpy(GPS_Description, (const char*)nmea); } 		//  "UC6228CI lite G1B1 COM1"       Description
+            else if(strstr((const char*)nmea, "PN ")) { strcpy(GPS_Serial, (const char*)nmea + 3); } 		//  "PN 2400513000279" 				Part number
+            else if(strstr((const char*)nmea, "HWVer ")) { strcpy(GPS_Hardware, (const char*)nmea + 6); } 	//  "HWVer 2.0"						Hardware version
+            else if(strstr((const char*)nmea, "FWVer ")) { strcpy(GPS_Firmware, (const char*)nmea + 6); } 	//  "FWVer R3.2.10..."				Firmware version
+            else if(strstr((const char*)nmea, "Copyright")) {} 	//  "Copyright (c) ..."				Copyright
+            else if(strstr((const char*)nmea, "All rights reserved.")) {} 	
+            else {
+            	mp_warning(NULL, "%s: %s\n", (np + 1), line);
+            	return false;
+            }
     }
     return true;
 }
@@ -183,29 +195,28 @@ bool ParseOneNmea(uint8_t* nmea, uint8_t flag) {
 void luat_uart_recv_callback(int uart_id, uint32_t data_len) {
     char *data_buff = malloc(data_len + 1);
     memset(data_buff, 0, data_len + 1);
-    luat_uart_read(uart_id, data_buff, data_len);
-
+    luat_uart_read(uart_id, data_buff, data_len);    
+    
     static uint8_t flag  = 0;
-    uint8_t tmpStore;
-
-    while(data_buff) {
-        uint8_t* index1 = (uint8_t*)strstr(data_buff,"$");
-        if(index1)         {
-            uint8_t* index2 = (uint8_t*)strstr((char*)index1,"\r\n");
-            if(index2) {
-                tmpStore = index2[2];
-                index2[2] = '\0';
-                data_buff += index2 - index1 + 2;
-                ParseOneNmea(index1, flag);
-                index2[2] = tmpStore;
+    size_t prev = 0;
+    static char nmea_tmp_buff[86] = {0}; // nmea has a maximum length of 82, including newline characters
+    for (size_t offset = 0; offset < data_len; offset++) {
+        // \r == 0x0D  \n == 0x0A
+        if (data_buff[offset] == 0x0A) {
+            // The shortest one also needs to be OK\r\n
+            // should\r\n
+            // too long
+            if (offset - prev < 3 || data_buff[offset - 1] != 0x0D || offset - prev > 82) {
+                prev = offset + 1;
+                continue;
             }
-            else //$GNGGA,084257.000
-                break;
+            memcpy(nmea_tmp_buff, data_buff + prev, offset - prev - 1);
+            nmea_tmp_buff[offset - prev - 1] = 0x00;
+            parse_nmea((const char *)nmea_tmp_buff, flag);
+            prev = offset + 1;
         }
-        else break;
         flag++;
     }
-
     if(data_buff != NULL) free(data_buff);
 }
 
@@ -213,6 +224,26 @@ void luat_uart_recv_callback(int uart_id, uint32_t data_len) {
 // -------
 // Methods
 // -------
+STATIC mp_obj_t modgps_get_description(void) {
+    return mp_obj_new_str(GPS_Description, strlen(GPS_Description));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_description_obj, modgps_get_description);
+
+STATIC mp_obj_t modgps_get_serial(void) {
+    return mp_obj_new_str(GPS_Serial, strlen(GPS_Serial));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_serial_obj, modgps_get_serial);
+
+STATIC mp_obj_t modgps_get_firmware_version(void) {
+    return mp_obj_new_str(GPS_Firmware, strlen(GPS_Firmware));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_firmware_version_obj, modgps_get_firmware_version);
+
+STATIC mp_obj_t modgps_get_hardware_version(void) {
+    return mp_obj_new_str(GPS_Hardware, strlen(GPS_Hardware));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_hardware_version_obj, modgps_get_hardware_version);
+
 
 STATIC mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
     // ========================================
@@ -234,7 +265,7 @@ STATIC mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
     } else {
        mp_raise_RuntimeError("Failed to activate GPS");
     }
-    return mp_const_none;
+    return MP_OBJ_NEW_SMALL_INT(1);
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modgps_on_obj, 0, 1, modgps_on);
@@ -490,10 +521,12 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_nmea_data_obj, modgps_nmea_data);
 
 STATIC const mp_map_elem_t mp_module_gps_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_gps) },
-
     { MP_OBJ_NEW_QSTR(MP_QSTR_on), (mp_obj_t)&modgps_on_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_off), (mp_obj_t)&modgps_off_obj },
-    // { MP_OBJ_NEW_QSTR(MP_QSTR_get_firmware_version), (mp_obj_t)&modgps_get_firmware_version_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_description), (mp_obj_t)&modgps_get_description_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_serial), (mp_obj_t)&modgps_get_serial_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_firmware_version), (mp_obj_t)&modgps_get_firmware_version_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_hardware_version), (mp_obj_t)&modgps_get_hardware_version_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_location), (mp_obj_t)&modgps_get_location_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_last_location), (mp_obj_t)&modgps_get_last_location_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_satellites), (mp_obj_t)&modgps_get_satellites_obj },

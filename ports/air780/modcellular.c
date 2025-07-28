@@ -298,7 +298,7 @@ void modcellular_init0(void) {
     delete_config_file("AMNV_CT28_000");
     delete_config_file("AMNV_CT46_000");
     delete_config_file("AMNV_CT48_000");
-    delete_config_file("GPS");
+    // delete_config_file("GPS"); // this hangs Air780EG module
 
     // Reset statuses
     network_exception = NTW_NO_EXC;
