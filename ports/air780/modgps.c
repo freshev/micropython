@@ -69,7 +69,7 @@ static char GPS_Serial[15] = {0};
 
 // Note: 780EG internal gnss chip is connected to serial port 2
 #define UART_ID 2
-#define DEFAULT_GPS_TIMEOUT 5
+#define DEFAULT_GPS_TIMEOUT 60
 #define REQUIRES_GPS_ON do { if (!GPS_IsOpen()) {mp_raise_OSError(MP_EPERM); return mp_const_none;}} while(0)
 
 
