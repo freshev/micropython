@@ -1635,7 +1635,7 @@ target("ota")
             file:close(file)
             os.exec("chmod +x " .. OUT_PATH .. "/" .. ftk_run)
         end
-        fcelf_from = SDK_PATH .. "/" .. fcelf
+        fcelf_from = SDK_PATH .. "/tools/dtools/dep/" .. fcelf
         fcelf_to = OUT_DEP_PATH .. "/" .. fcelf
         sha256sum_from = SDK_PATH .. "/tools/dtools/dep/" .. sha256sum
         sha256sum_to = OUT_DEP_PATH .. "/" .. sha256sum
