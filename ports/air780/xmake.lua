@@ -1624,8 +1624,8 @@ target("ota")
         else
             fcelf = "fcelf"
             sha256sum = "sha256sum"
-            deltagen = "bsdiff"
-            ftk = "FotaToolkit" -- TODO make FotaToolkit under Linux. Now it is an error stub script
+            deltagen = "deltagen"
+            ftk = "FotaToolkit" 
             ftk_run = "fota.sh"
             ftk_exec = "./" .. string.gsub(OUT_PATH, "./", "") .. "/" .. ftk_run
             file = io.open(OUT_PATH .. "/" .. ftk_run, "w")
