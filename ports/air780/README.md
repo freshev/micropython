@@ -325,3 +325,4 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware resets the module by SMS 'reset' (configurable).
 * You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
 * My Air780EG module often does not boot correctly due to insufficient power from USB.
+* To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written
