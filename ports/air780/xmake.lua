@@ -849,7 +849,7 @@ target("driver")
                 SDK_TOP .. "/PLAT/core/speed/*.c"
                 -- SDK_TOP .. "/thirdparty/miniz/miniz.c"
     )
-    
+
     remove_files(SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/camAT.c",
                 SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/exstorage/*.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
@@ -1011,7 +1011,7 @@ target(HEADER_BUILD .. "/qstr.split")
     set_enabled(PROCESS_QSTR)
     -- $(HEADER_BUILD)/qstr.split: $(HEADER_BUILD)/qstr.i.last
     add_deps(HEADER_BUILD .. "/qstr.i.last")
-    
+
     -- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split qstr $< $(HEADER_BUILD)/qstr _
     -- $(Q)$(TOUCH) $@
     set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split qstr " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/qstr " .. HEADER_BUILD .. "/qstr.i.last")
@@ -1111,7 +1111,7 @@ target(HEADER_BUILD .. "/compressed.split")
     -- $(Q)$(PYTHON) $(PY_SRC)/makeqstrdefs.py split compress $< $(HEADER_BUILD)/compress _
     -- $(Q)$(TOUCH) $@
     set_values("exec", "sh -c '" .. PYTHON .. " " .. PY_SRC .. "/makeqstrdefs.py split compress " .. HEADER_BUILD .. "/qstr.i.last " .. HEADER_BUILD .. "/compress " .. HEADER_BUILD .. "/qstr.i.last")
-    
+
     on_build(function (target)
         print("GEN ", target:name())
         os.exec(target:values("exec") .. "'")
@@ -1166,7 +1166,7 @@ target(BUILD .. "/frozen_content.c")
     set_values("test", MPY_LIB_DIR .. "/README.md")
     set_values("err", HELP_MPY_LIB_SUBMODULE)
     set_values("execp1", "sh -c '" .. MAKE_MANIFEST .. " -o ")
-    
+
     cmd = " " .. MANIFEST_VARIABLES .. " -b \"" .. BUILD .. "\" "
     if MPY_CROSS_FLAGS ~= "" then
         cmd = cmd .. "-f\"" .. MPY_CROSS_FLAGS .. "\""
@@ -1197,7 +1197,7 @@ task("submodules")
         TOP = "../.."
         GIT_SUBMODULES = "lib/micropython-lib"
         print("Updating submodules: " .. GIT_SUBMODULES)
-        
+
         -- $(Q)git submodule sync $(addprefix $(TOP)/,$(GIT_SUBMODULES))
         -- $(Q)git submodule update --init $(addprefix $(TOP)/,$(GIT_SUBMODULES))
         SUB_DUR = TOP .. "/" .. GIT_SUBMODULES
@@ -1256,7 +1256,7 @@ target(HEADER_BUILD .. "/qstrdefs.generated.h")
     set_values("CFLAGS", CFLAGS)
     set_values("PYTHON", PYTHON)
     set_values("PY_SRC", PY_SRC)
-    
+
     on_build(function (target)      
         print("GEN ", target:name())
         GCC_DIR = target:toolchains()[1]:sdkdir().."/"
@@ -1493,7 +1493,7 @@ target(USER_PROJECT_NAME..".elf")
 
     set_kind("binary")
     set_targetdir(BUILD .. "/"..USER_PROJECT_NAME)
-    
+
     add_files(SRC_C, {public = true, cflags = CFLAGS })
     if #SRC_S > 0 then add_files(SRC_S, {public = true, cflags = CFLAGS }) end
     if #SHARED_SRC_C > 0 then add_files(SHARED_SRC_C, {public = true, cflags = CFLAGS }) end
@@ -1542,7 +1542,7 @@ target(USER_PROJECT_NAME..".elf")
         os.exec(GCC_DIR .. "bin/arm-none-eabi-objcopy -O binary $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin")
         os.exec(GCC_DIR .."bin/arm-none-eabi-size $(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".elf")
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/"..USER_PROJECT_NAME..".bin", "$(buildir)/"..USER_PROJECT_NAME.."/ap.bin")
-        
+
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.bin", OUT_PATH)
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.map", OUT_PATH)
         os.cp("$(buildir)/"..USER_PROJECT_NAME.."/*.elf", OUT_PATH)
@@ -1611,7 +1611,7 @@ target(USER_PROJECT_NAME..".elf")
                 elseif is_plat("macosx") then
                 	-- TODO
                 else 
-                    os.exec("./binexport.sh" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                    os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
                 end
             else
                 print("----------------------------------------------------")
@@ -1682,7 +1682,7 @@ target("ota")
         if not os.exists(sha256sum_to) then os.cp(sha256sum_from, sha256sum_to) end
         if not os.exists(deltagen_to) then os.cp(deltagen_from, deltagen_to) end
         if not os.exists(ftk_to) then os.cp(ftk_from, ftk_to) end
-        
+
         fota_file = ""
         target_file = path.cygwin_path(string.gsub(VERSION_PATH, "./", "") .. "/" .. USER_PROJECT_NAME .. "_" .. FW_VERSION .. ".binpkg")
         for _, source_file in ipairs(os.files(VERSION_PATH .. "/*.binpkg")) do
@@ -1729,12 +1729,3 @@ target("ota")
         end
     end)
 target_end()
-
-
-
-------------------------------------------------
--- to extract from *.binpkg
--- fcelf.exe -E -info imagedata.json -input Air780_micropython.binpkg 
---
-------------------------------------------------
-
