@@ -8,7 +8,6 @@ local VM_64BIT = nil
 SDK_TOP = "."
 local SDK_PATH
 local USER_PROJECT_NAME = "Air780_micropython"
-local WWW_PATH = "/var/opt/asque/firmware/Air780_FW"
 USER_PROJECT_DIR  = ""
 local LUAT_SCRIPT_SIZE
 local LUAT_SCRIPT_OTA_SIZE
@@ -126,6 +125,23 @@ option("3 Remove python files on upgrade")
     set_category("FOTA")
     set_description("Remove all python files on upgrade")
     set_default(false)    
+
+option("1 Deploy binpkg")
+    set_category("Deploy")
+    set_description("Deploy binpkg to folder")
+    set_default("")
+option("2 Deploy binpkg")
+    set_category("Deploy")
+    set_description("Deploy binpkg in compressed form")
+    set_default(true)
+option("3 Deploy pack")
+    set_category("Deploy")
+    set_description("Deploy FOTA pack to folder")
+    set_default("")
+option("4 Deploy pack")
+    set_category("Deploy")
+    set_description("Deploy FOTA pack in compressed form")
+    set_default(false)
 
 
 package("gnu_rm")    
@@ -469,6 +485,10 @@ local RTE_I2C1 = 1
 local RTE_SPI0 = 1
 local MAIN_STUB_URL = ""
 local ZIP_COMPRESS = false
+local DEPLOY_BINPKG_FOLDER = ""
+local DEPLOY_BINPKG_COMPRESS = true
+local DEPLOY_PACK_FOLDER = ""
+local DEPLOY_PACK_COMPRESS = false
 
 if get_config("01 Board type") ~= nil then
     if os.isdir("boards/" .. get_config("01 Board type")) then BOARD = get_config("01 Board type") end
@@ -527,6 +547,11 @@ if get_config("2 RS485_UART2_PIN")       then table.insert(DEFINES, "RS485_UART2
 if get_config("3 RS485_UART2_DELAY")     then table.insert(DEFINES, "RS485_UART2_DELAY="     .. get_config("3 RS485_UART2_DELAY")) end
 if get_config("4 RS485_UART2_PIN_LEVEL") then table.insert(DEFINES, "RS485_UART2_PIN_LEVEL=" .. get_config("4 RS485_UART2_PIN_LEVEL")) end
 if get_config("5 RS485_UART2_WAIT_TX")   then table.insert(DEFINES, "RS485_UART2_WAIT_TX") end
+
+if get_config("1 Deploy binpkg") ~= nil then DEPLOY_BINPKG_FOLDER = get_config("1 Deploy binpkg") end
+if get_config("2 Deploy binpkg") ~= nil then DEPLOY_BINPKG_COMPRESS = get_config("2 Deploy binpkg") end
+if get_config("3 Deploy pack") ~= nil then DEPLOY_PACK_FOLDER = get_config("3 Deploy pack") end
+if get_config("4 Deploy pack") ~= nil then DEPLOY_PACK_COMPRESS = get_config("4 Deploy pack") end
 
 --------------------------------------------------------
 --------------- MICROPYTHON PART START -----------------
@@ -1539,9 +1564,9 @@ target(USER_PROJECT_NAME..".elf")
             end
         end
         cmd = cmd .. " -outfile " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" .. USER_PROJECT_NAME_VERSION .. ".binpkg"
-        --If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
-        --You can still use other tools to continue flashing your phone
-        print(cmd)
+        -- If your platform does not have fcelf, you can comment out the following line and no binpkg will be generated.
+        -- You can still use other tools to continue flashing your phone
+        -- print(cmd)
         os.exec(cmd)
         ---------------------------------------------------------
 
@@ -1573,15 +1598,25 @@ target(USER_PROJECT_NAME..".elf")
         info_table["rom"]["file"] = USER_PROJECT_NAME .. ".binpkg"
         json.savefile(OUT_PATH.."/pack/info.json", info_table)
         os.cp(SDK_PATH .. "/PLAT/device/target/board/ec618_0h00/common/inc/mem_map.h", OUT_PATH .. "/pack")
-        os.exec(path7z.." a -mx9 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
+        os.exec(path7z.." a -mx9 -bd -bso0 "..USER_PROJECT_NAME.."_ec618.7z "..OUT_PATH.."/pack/* -r")
         os.mv(USER_PROJECT_NAME.."_ec618.7z", OUT_PATH.."/"..USER_PROJECT_NAME.."_ec618.soc")
         os.rm(OUT_PATH.."/pack")
 
-        if os.exists(WWW_PATH) then
-            if ZIP_COMPRESS == true then
-                os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+        if DEPLOY_BINPKG_FOLDER ~= "" and os.exists(DEPLOY_BINPKG_FOLDER) then
+            if DEPLOY_BINPKG_COMPRESS == true then
+                print("----------------------------------------------------")
+                print("Deploy BINPKG to " .. DEPLOY_BINPKG_FOLDER .. " (compressed)")
+                if is_plat("windows") then 
+                	os.exec(".\\binexport.bat " .. VERSION_PATH .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                elseif is_plat("macosx") then
+                	-- TODO
+                else 
+                    os.exec("./binexport.sh" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                end
             else
-                os.exec("cp " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                print("----------------------------------------------------")
+                print("Deploy BINPKG to " .. DEPLOY_BINPKG_FOLDER)
+                os.cp(VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg ", DEPLOY_BINPKG_FOLDER .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
             end
         end
     end)    
@@ -1597,7 +1632,6 @@ target("ota")
         print("----------------------------------------------------")
         print("Make OTA pack(s) for " .. FW_VERSION .. " on " .. os.host():gsub("^%l", string.upper))
         print("----------------------------------------------------")
-
         
         OUT_PATH = "./out"
         OUT_DEP_PATH = "./out/dep"
@@ -1649,6 +1683,7 @@ target("ota")
         if not os.exists(deltagen_to) then os.cp(deltagen_from, deltagen_to) end
         if not os.exists(ftk_to) then os.cp(ftk_from, ftk_to) end
         
+        fota_file = ""
         target_file = path.cygwin_path(string.gsub(VERSION_PATH, "./", "") .. "/" .. USER_PROJECT_NAME .. "_" .. FW_VERSION .. ".binpkg")
         for _, source_file in ipairs(os.files(VERSION_PATH .. "/*.binpkg")) do
             base_file = path.cygwin_path(source_file)
@@ -1674,11 +1709,22 @@ target("ota")
                 end
             end
         end
-        if os.exists(WWW_PATH) then
-            if ZIP_COMPRESS == true then
-                os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+
+        if fota_file ~= "" and DEPLOY_PACK_FOLDER ~= "" and os.exists(DEPLOY_PACK_FOLDER) then
+            if DEPLOY_PACK_COMPRESS == true then
+                print("----------------------------------------------------")
+                print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER .. " (compressed)")                
+                if is_plat("windows") then 
+                	os.exec(".\\binexport.bat " .. FOTA_PATH .. "\\" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "\\" .. fota_file)
+                elseif is_plat("macosx") then
+                	-- TODO
+                else 
+                    os.exec("./binexport.sh " .. FOTA_PATH .. "/" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "/" .. fota_file)
+                end
             else
-                os.exec("cp " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. WWW_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                print("----------------------------------------------------")
+                print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER)
+                os.cp(FOTA_PATH .. "/" .. fota_file,  DEPLOY_PACK_FOLDER .. "/" .. fota_file)
             end
         end
     end)
