@@ -327,3 +327,4 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * My Air780EG module often does not boot correctly due to insufficient power from USB.
 * To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written
 * You can deploy BINPKG and FOTA pack files to another folder in compressed or uncompressed form (configurable)
+
