@@ -7,7 +7,7 @@
 ### Ubuntu
 1. Install dependencies:
    ```bash
-   sudo apt-get install build-essential gcc-multilib g++-multilib libzip-dev zlib1g lib32z1
+   sudo apt-get install build-essential gcc-multilib g++-multilib libzip-dev zlib1g lib32z1 kconfig-frontends
    ```
 2. Clone this repo:
    ```bash
@@ -576,6 +576,7 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware removes *.py files in SOC file system by SMS 'rmcode' (configurable)
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable)
 * Firmware resets the A9G by SMS 'reset' (configurable)
+* broken PYTHON on Ubuntu can be repaired by `sudo apt-get install --reinstall $(dpkg -S '/usr/lib/python3*' | cut -d ':' -f1 | cut -d ',' -f1 | sort | uniq | tr '\n' ' ')`
 
 ## Features in CSDK added ##
 * Added CSDK patch to reboot module on voice call. To disable this feature comment corresponding lines in ./libcsdk-patches/patch-lod.py
@@ -590,4 +591,3 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 ## Bugs known ##
 * SMS with UCS2 encoding is not fully supported (TODO: add support for UCS2 encoding using `iconv` library)
-
