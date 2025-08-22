@@ -128,8 +128,8 @@
 
 // A port must provide these types, but they are otherwise opaque.
 /*
-typedef struct _machine_adc_obj_t machine_adc_obj_t;
 typedef struct _machine_adc_block_obj_t machine_adc_block_obj_t;
+typedef struct _machine_adc_obj_t machine_adc_obj_t;
 typedef struct _machine_i2c_target_obj_t machine_i2c_target_obj_t;
 typedef struct _machine_i2s_obj_t machine_i2s_obj_t;
 typedef struct _machine_pwm_obj_t machine_pwm_obj_t;

@@ -32,14 +32,14 @@
 #include "py/mphal.h"
 #include "extmod/modmachine.h"
 
+// The port provides implementations of the above in this file.
+#include MICROPY_PY_MACHINE_ADC_BLOCK_INCLUDEFILE
+
 // The port must provide implementations of these low-level ADCBlock functions.
 static void mp_machine_adc_block_print(const mp_print_t *print, machine_adc_block_obj_t *self);
 static machine_adc_block_obj_t *mp_machine_adc_block_get(mp_int_t unit);
 static void mp_machine_adc_block_bits_set(machine_adc_block_obj_t *self, mp_int_t bits);
 static machine_adc_obj_t *mp_machine_adc_block_connect(machine_adc_block_obj_t *self, mp_int_t channel_id, mp_hal_pin_obj_t pin, mp_map_t *kw_args);
-
-// The port provides implementations of the above in this file.
-#include MICROPY_PY_MACHINE_ADC_BLOCK_INCLUDEFILE
 
 static void machine_adc_block_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_adc_block_obj_t *self = MP_OBJ_TO_PTR(self_in);

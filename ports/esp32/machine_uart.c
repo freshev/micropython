@@ -221,6 +221,15 @@ static void mp_machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_
     mp_printf(print, ")");
 }
 
+static void mp_machine_uart_deinit(machine_uart_obj_t *self) {
+    if (self->uart_event_task != NULL) {
+        vTaskDelete(self->uart_event_task);
+        self->uart_event_task = NULL;
+    }
+    check_esp_err(uart_driver_delete(self->uart_num));
+    self->uart_queue = NULL;
+}
+
 static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_baudrate, ARG_bits, ARG_parity, ARG_stop, ARG_tx, ARG_rx, ARG_rts, ARG_cts, ARG_txbuf, ARG_rxbuf, ARG_timeout, ARG_timeout_char, ARG_invert, ARG_flow };
     static const mp_arg_t allowed_args[] = {
@@ -488,14 +497,6 @@ static mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
     return MP_OBJ_FROM_PTR(self);
 }
 
-static void mp_machine_uart_deinit(machine_uart_obj_t *self) {
-    if (self->uart_event_task != NULL) {
-        vTaskDelete(self->uart_event_task);
-        self->uart_event_task = NULL;
-    }
-    check_esp_err(uart_driver_delete(self->uart_num));
-    self->uart_queue = NULL;
-}
 
 static mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
     size_t rxbufsize;

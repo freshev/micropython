@@ -118,14 +118,14 @@ static void copy_appbuf_to_ringbuf_non_blocking(machine_i2s_obj_t *self);
 
 #endif // MICROPY_PY_MACHINE_I2S_RING_BUF
 
+// The port provides implementations of the above in this file.
+#include MICROPY_PY_MACHINE_I2S_INCLUDEFILE
+
 // The port must provide implementations of these low-level I2S functions.
 static void mp_machine_i2s_init_helper(machine_i2s_obj_t *self, mp_arg_val_t *args);
 static machine_i2s_obj_t *mp_machine_i2s_make_new_instance(mp_int_t i2s_id);
 static void mp_machine_i2s_deinit(machine_i2s_obj_t *self);
 static void mp_machine_i2s_irq_update(machine_i2s_obj_t *self);
-
-// The port provides implementations of the above in this file.
-#include MICROPY_PY_MACHINE_I2S_INCLUDEFILE
 
 #if MICROPY_PY_MACHINE_I2S_RING_BUF
 
