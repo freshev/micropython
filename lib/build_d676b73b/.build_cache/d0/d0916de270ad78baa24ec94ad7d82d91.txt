@@ -1,0 +1,6 @@
+{
+    outdata = "__cpp__F34183E60B074A4088442EEF661D2B70.c\
+",
+    errdata = "_B3FAE03131E84BCF980C567ED51E281A.c\
+"
+}

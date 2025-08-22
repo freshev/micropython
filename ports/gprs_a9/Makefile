@@ -283,6 +283,7 @@ www:
 
 ota:
 	$(info Be patient !...)
+	$(Q)${MKDIR} -p ${FOTA_PATH}
 	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_ZIP_COMPRESS}\" \"${WWW_PATH}\")	
 	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a -d "${WWW_PATH}" ] ; then \
 		echo "Deflating version..."; \
@@ -299,6 +300,7 @@ modules:
 	$(ECHO) "Build modules OK"
 
 ${BIN}: $(OBJ)
+	$(Q)${MKDIR} -p ${VERSION_PATH}
 	@echo "$(shell ./build-libcsdk.sh $(VERSION_PATH))"
 	$(ECHO) "LINK $@"
 	$(Q)test -f ${LD_FILE} && chmod +w ${LD_FILE} || echo ""
