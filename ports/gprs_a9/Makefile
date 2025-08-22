@@ -19,7 +19,6 @@ export PATH := $(PATH):$(CSDTK_PATH)/bin
 
 
 # use this folder to deploy firmware files
-WWW_PATH := /var/opt/asque/firmware/Device_FW
 
 CONFIG = .config
 ifneq (,$(wildcard ${CONFIG}))
@@ -247,7 +246,7 @@ SRC_QSTR += $(SRC_C) $(SHARED_SRC_C)
 # Append any auto-generated sources that are needed by sources listed in SRC_QSTR
 SRC_QSTR_AUTO_DEPS +=
 
-all: configure version modules lod www
+all: configure version modules lod deploy
 
 configure:
 	@test -f ${CONFIG} || (echo "------> Run configure first <------" ; exit 1)
@@ -267,33 +266,33 @@ lod: ${HEX}
 	fi
 	@echo "Build LOD OK"
 
-www:	
-	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a -d "${WWW_PATH}" ] ; then \
+deploy:	
+	@if [ ${CONFIG_DEPLOY_LOD_COMPRESS} = "y" -a -d "${CONFIG_DEPLOY_LOD_FOLDER}" ] ; then \
 		echo "Deflating files..."; \
-		zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
-		zlib-flate -compress < $(BIN) > $(WWW_PATH)/${FIRMWARE_NAME}.elf; \
-		zlib-flate -compress < $(MAP_FILE) > $(WWW_PATH)/${FIRMWARE_NAME}.map; \
+		zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
+		zlib-flate -compress < $(BIN) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}.elf; \
+		zlib-flate -compress < $(MAP_FILE) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}.map; \
 	fi
-	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_DEPLOY_LOD_COMPRESS} != "y" -a -d "${CONFIG_DEPLOY_LOD_FOLDER}" ] ; then \
 		echo "Copy files..."; \
-		$(CP) $(WITH_PLT_LOD_FILE) $(WWW_PATH); \
-		$(CP) $(BIN) $(WWW_PATH); \
+		$(CP) $(WITH_PLT_LOD_FILE) $(CONFIG_DEPLOY_LOD_FOLDER); \
+		$(CP) $(BIN) $(CONFIG_DEPLOY_LOD_FOLDER); \
 	fi
-	@echo "Build WWW OK"
+	@echo "Deploy OK"
 
 ota:
 	$(info Be patient !...)
 	$(Q)${MKDIR} -p ${FOTA_PATH}
-	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_ZIP_COMPRESS}\" \"${WWW_PATH}\")	
-	@if [ ${CONFIG_ZIP_COMPRESS} = "y" -a -d "${WWW_PATH}" ] ; then \
+	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_DEPLOY_FOTA_COMPRESS}\" \"${CONFIG_DEPLOY_FOTA_FOLDER}\")	
+	@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} = "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
 		echo "Deflating version..."; \
-		echo ${CONFIG_FW_VERSION} | zlib-flate -compress > ${WWW_PATH}/version; \
+		echo ${CONFIG_FW_VERSION} | zlib-flate -compress > ${CONFIG_DEPLOY_FOTA_FOLDER}/version; \
 	fi
-	@if [ ${CONFIG_ZIP_COMPRESS} != "y" -a -d "${WWW_PATH}" ] ; then \
+	@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} != "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
 		echo "Copy version..."; \
-		echo ${CONFIG_FW_VERSION} > ${WWW_PATH}/version;	\
+		echo ${CONFIG_FW_VERSION} > ${CONFIG_DEPLOY_FOTA_FOLDER}/version;	\
 	fi
-	@echo "Build FOTA OK"
+	@echo "Deploy FOTA OK"
 
 modules:
 	$(shell ./build-modules.sh \"${CONFIG_MAIN_STUB_URL}\" \"${CONFIG_ZIP_COMPRESS}\" \"${CONFIG_MAIN_STUB_RESPAWN}\")

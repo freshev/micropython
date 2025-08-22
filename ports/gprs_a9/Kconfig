@@ -58,6 +58,29 @@ config SMSCONFIG
 	help
 		Set module configiration by SMS
 
+menu "Deploy"
+	config DEPLOY_LOD_FOLDER
+	    string "Deploy LOD to folder"
+        default ""
+		help
+        	Deploy LOD file to folder
+    config DEPLOY_LOD_COMPRESS
+		bool "Deploy LOD in compressed form"
+		default y
+        help
+			Deploy LOD file in compressed form
+	config DEPLOY_FOTA_FOLDER
+	    string "Deploy FOTA pack to folder"
+        default ""
+		help
+        	Deploy FOTA pack to folder
+    config DEPLOY_FOTA_COMPRESS
+		bool "Deploy FOTA pack in compressed form"
+		default n
+        help
+			Deploy FOTA pack file in compressed form
+endmenu
+
 menu "FOTA"
 	config FOTA_USE
 		bool "Use FOTA routines"
