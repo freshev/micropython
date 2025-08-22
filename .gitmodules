@@ -71,3 +71,6 @@
 [submodule "lib/alif-security-toolkit"]
 	path = lib/alif-security-toolkit
 	url = https://github.com/micropython/alif-security-toolkit.git
+[submodule "lib/axtls"]
+	path = lib/axtls
+	url = https://github.com/micropython/axtls.git
