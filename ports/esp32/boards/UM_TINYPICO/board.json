@@ -1,7 +1,10 @@
 {
     "deploy": [
-        "deploy.md"
+        "../deploy.md"
     ],
+    "deploy_options": {
+        "flash_offset": "0x1000"
+    },
     "docs": "",
     "features": [
         "BLE",
@@ -22,8 +25,5 @@
     "product": "TinyPICO",
     "thumbnail": "",
     "url": "https://www.tinypico.com/",
-    "variants": {
-        "IDF3": "Compiled with IDF 3.x"
-    },
     "vendor": "Unexpected Maker"
 }

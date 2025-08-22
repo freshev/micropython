@@ -312,7 +312,7 @@ Broadcaster Role (Advertiser)
     in all broadcasts, and *resp_data* is send in reply to an active scan.
 
     **Note:** if *adv_data* (or *resp_data*) is ``None``, then the data passed
-    to the previous call to ``gap_advertise`` will be re-used. This allows a
+    to the previous call to ``gap_advertise`` will be reused. This allows a
     broadcaster to resume advertising with just ``gap_advertise(interval_us)``.
     To clear the advertising payload pass an empty ``bytes``, i.e. ``b''``.
 
@@ -665,7 +665,7 @@ L2CAP connection-oriented-channels
 
     Connect to a listening peer on the specified *psm* with local MTU set to *mtu*.
 
-    On successful connection, the the ``_IRQ_L2CAP_CONNECT`` event will be
+    On successful connection, the ``_IRQ_L2CAP_CONNECT`` event will be
     raised, allowing the client to obtain the CID and the local and remote (peer) MTU.
 
     An unsuccessful connection will raise the ``_IRQ_L2CAP_DISCONNECT`` event
@@ -722,7 +722,7 @@ Pairing and bonding
     and ``_IRQ_SET_SECRET`` events.
 
     **Note:** This is currently only supported when using the NimBLE stack on
-    STM32 and Unix (not ESP32).
+    ESP32, STM32 and Unix.
 
 .. method:: BLE.gap_pair(conn_handle, /)
 
@@ -764,4 +764,5 @@ Constructor
     The **value** can be either:
 
     - A 16-bit integer. e.g. ``0x2908``.
+    - An object with the buffer protocol and that is 2, 4 or 16 bytes long, e.g. ``b'\x08\x29'``.
     - A 128-bit UUID string. e.g. ``'6E400001-B5A3-F393-E0A9-E50E24DCCA9E'``.

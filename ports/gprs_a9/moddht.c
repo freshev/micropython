@@ -67,11 +67,11 @@ typedef struct _dht_obj_t {
 static int dht_inited[30] = {0};
 static int dht_pins[30] = {0};
 
-STATIC int moddht_microsecondsToClockCycles(int us) {
+static int moddht_microsecondsToClockCycles(int us) {
     return us * CLOCKS_PER_MSEC;
 }
 
-STATIC void moddht_begin(dht_obj_t *self, uint8_t usec) {
+static void moddht_begin(dht_obj_t *self, uint8_t usec) {
     if(dht_inited[self->_pin] == 0) {
         // set up the pins!
         mp_hal_pin_input(self->_pin);
@@ -92,7 +92,7 @@ STATIC void moddht_begin(dht_obj_t *self, uint8_t usec) {
 // used to compare the relative time of two pulses).  If more than a millisecond
 // ellapses without the level changing then the call fails with a 0 response.
 //   https://github.com/arduino/Arduino/blob/master/hardware/arduino/avr/cores/arduino/wiring_pulse.c
-STATIC uint32_t moddht_expectPulse(dht_obj_t *self, uint8_t level_in) {
+static uint32_t moddht_expectPulse(dht_obj_t *self, uint8_t level_in) {
     uint32_t count = 0;
     GPIO_LEVEL level;
     while (true) {
@@ -109,7 +109,7 @@ STATIC uint32_t moddht_expectPulse(dht_obj_t *self, uint8_t level_in) {
     return count;
 }
 
-STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
+static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // Check if sensor was read less than two seconds ago and return early
     // to use last reading.
     uint64_t currenttime = mp_hal_ticks_ms_64();
@@ -272,7 +272,7 @@ STATIC uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     return self->_lastresult;
 }
 
-STATIC float moddht_convertCtoF(float c) { return c * 1.8 + 32; }
+static float moddht_convertCtoF(float c) { return c * 1.8 + 32; }
 
 // ------------
 // DHT Print
@@ -319,7 +319,7 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
+static mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_t force_in) {
     // ========================================
     // Read temperature.
     // Args:
@@ -366,10 +366,10 @@ STATIC mp_obj_t moddht_read_temperature(mp_obj_t self_in, mp_obj_t S_in, mp_obj_
     return mp_obj_new_float(f);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(moddht_read_temperature_obj, moddht_read_temperature);
+static MP_DEFINE_CONST_FUN_OBJ_3(moddht_read_temperature_obj, moddht_read_temperature);
 
 
-STATIC mp_obj_t moddht_read_humidity(mp_obj_t self_in, mp_obj_t force_in) {
+static mp_obj_t moddht_read_humidity(mp_obj_t self_in, mp_obj_t force_in) {
     // ========================================
     // Read hunidity.
     // Args:
@@ -396,15 +396,15 @@ STATIC mp_obj_t moddht_read_humidity(mp_obj_t self_in, mp_obj_t force_in) {
     }
     return mp_obj_new_float(f);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(moddht_read_humidity_obj, moddht_read_humidity);
+static MP_DEFINE_CONST_FUN_OBJ_2(moddht_read_humidity_obj, moddht_read_humidity);
 
-STATIC mp_obj_t moddht_get_type(mp_obj_t self_in) {
+static mp_obj_t moddht_get_type(mp_obj_t self_in) {
     dht_obj_t * self = self_in;
     return mp_obj_new_int(self->_type);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_get_type_obj, &moddht_get_type);
+static MP_DEFINE_CONST_FUN_OBJ_1(moddht_get_type_obj, &moddht_get_type);
 
-STATIC mp_obj_t moddht_deinit(mp_obj_t self_in) {
+static mp_obj_t moddht_deinit(mp_obj_t self_in) {
     dht_obj_t *self = MP_OBJ_TO_PTR(self_in);
     dht_inited[self->_pin] = 0;
     dht_pins[self->_pin] = 0;
@@ -412,21 +412,21 @@ STATIC mp_obj_t moddht_deinit(mp_obj_t self_in) {
     //mp_warning(MP_WARN_CAT(RuntimeWarning), "DHT object deleted");
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(moddht_deinit_obj, &moddht_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(moddht_deinit_obj, &moddht_deinit);
 
 
 
 // -------
 // Locals
 // -------
-STATIC const mp_rom_map_elem_t dht_locals_dict_table[] = {
+static const mp_rom_map_elem_t dht_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_read_temperature), MP_ROM_PTR(&moddht_read_temperature_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_humidity), MP_ROM_PTR(&moddht_read_humidity_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_type), MP_ROM_PTR(&moddht_get_type_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&moddht_deinit_obj) }
 };
 
-STATIC MP_DEFINE_CONST_DICT(dht_locals_dict, dht_locals_dict_table);
+static MP_DEFINE_CONST_DICT(dht_locals_dict, dht_locals_dict_table);
 
 
 MP_DEFINE_CONST_OBJ_TYPE(
@@ -442,7 +442,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 // -------
 // Modules
 // -------
-STATIC const mp_map_elem_t mp_module_dht_globals_table[] = {
+static const mp_map_elem_t mp_module_dht_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_dht) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_dht), (mp_obj_t)MP_ROM_PTR(&dht_type) },
     { MP_ROM_QSTR(MP_QSTR_DHT11), MP_ROM_INT(DHT11) },
@@ -452,7 +452,7 @@ STATIC const mp_map_elem_t mp_module_dht_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_AM2301), MP_ROM_INT(AM2301) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_dht_globals, mp_module_dht_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_dht_globals, mp_module_dht_globals_table);
 
 const mp_obj_module_t dht_module = {
     .base = { &mp_type_module },

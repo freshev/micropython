@@ -106,7 +106,7 @@ void modmachine_pin_deinit0(void) {
 // IRQ handler 
 // to avoid module freeze when trigger == IRQ_LOW_LEVEL or IRQ_HIGH_LEVEL, call "luat_gpio_ctrl" with "LUAT_GPIO_NO_IRQ" parameter
 // After that reinstall IRQ_LOW_LEVEL or IRQ_HIGH_LEVEL, calling Pin.irq(...)
-STATIC int mp_machine_pin_isr_handler(int pin, void *arg) {
+static int mp_machine_pin_isr_handler(int pin, void *arg) {
 
     machine_pin_obj_t pin_obj = machine_pin_obj_table[pin];
     uint8_t trigger = pin_obj.irq.trigger;
@@ -126,7 +126,7 @@ STATIC int mp_machine_pin_isr_handler(int pin, void *arg) {
     return 0;
 }
 
-STATIC const machine_pin_obj_t *machine_pin_find(mp_obj_t pin_in) { 
+static const machine_pin_obj_t *machine_pin_find(mp_obj_t pin_in) { 
     if (mp_obj_is_type(pin_in, &machine_pin_type)) {
         return pin_in;
     }
@@ -149,13 +149,13 @@ mp_hal_pin_obj_t machine_pin_get_id(mp_obj_t pin_in) {
     return PIN_OBJ_PTR_INDEX(self);
 }
 
-STATIC void mp_machine_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void mp_machine_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_pin_obj_t *self = self_in;
     mp_printf(print, "Pin(%u)", PIN_OBJ_PTR_INDEX(self));
 }
 
 // pin.init(mode=None, pull=-1, *, value, drive, hold)
-STATIC mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_mode, ARG_pull, ARG_value, ARG_drive, ARG_hold };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_mode, MP_ARG_OBJ, {.u_obj = mp_const_none}},
@@ -233,7 +233,7 @@ mp_obj_t mp_machine_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_
 }
 
 // fast method for getting/setting pin value
-STATIC mp_obj_t mp_machine_pin_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t mp_machine_pin_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
     machine_pin_obj_t *self = self_in;
     mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(self);
@@ -248,35 +248,35 @@ STATIC mp_obj_t mp_machine_pin_call(mp_obj_t self_in, size_t n_args, size_t n_kw
 }
 
 // pin.init(mode, pull)
-STATIC mp_obj_t mp_machine_pin_obj_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
+static mp_obj_t mp_machine_pin_obj_init(size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
     return mp_machine_pin_obj_init_helper(args[0], n_args - 1, args + 1, kw_args);
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(machine_pin_init_obj, 1, mp_machine_pin_obj_init);
 
 // pin.value([value])
-STATIC mp_obj_t mp_machine_pin_value(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t mp_machine_pin_value(size_t n_args, const mp_obj_t *args) {
     return mp_machine_pin_call(args[0], n_args - 1, 0, args + 1);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_pin_value_obj, 1, 2, mp_machine_pin_value);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_pin_value_obj, 1, 2, mp_machine_pin_value);
 
 // pin.off()
-STATIC mp_obj_t mp_machine_pin_off(mp_obj_t self_in) {
+static mp_obj_t mp_machine_pin_off(mp_obj_t self_in) {
     machine_pin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     luat_gpio_set(PIN_OBJ_PTR_INDEX(self), 0);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pin_off_obj, mp_machine_pin_off);
+static MP_DEFINE_CONST_FUN_OBJ_1(machine_pin_off_obj, mp_machine_pin_off);
 
 // pin.on()
-STATIC mp_obj_t mp_machine_pin_on(mp_obj_t self_in) {
+static mp_obj_t mp_machine_pin_on(mp_obj_t self_in) {
     machine_pin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     luat_gpio_set(PIN_OBJ_PTR_INDEX(self), 1);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_pin_on_obj, mp_machine_pin_on);
+static MP_DEFINE_CONST_FUN_OBJ_1(machine_pin_on_obj, mp_machine_pin_on);
 
 // pin.irq(handler = None, trigger = IRQ_FALLING | IRQ_RISING | IRQ_LOW_LEVEL | IRQ_HIGH_LEVEL)
-STATIC mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_handler, ARG_trigger, ARG_wake };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_handler, MP_ARG_OBJ, {.u_obj = mp_const_none} },
@@ -349,9 +349,9 @@ STATIC mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_m
     // return the irq object
     return MP_OBJ_FROM_PTR(&self->irq);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(machine_pin_irq_obj, 1, mp_machine_pin_irq);
+static MP_DEFINE_CONST_FUN_OBJ_KW(machine_pin_irq_obj, 1, mp_machine_pin_irq);
 
-STATIC const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
+static const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
     // instance methods
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&machine_pin_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_value), MP_ROM_PTR(&machine_pin_value_obj) },
@@ -373,7 +373,7 @@ STATIC const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IRQ_HIGH_LEVEL), MP_ROM_INT(LUAT_GPIO_HIGH_IRQ) },
 };
 
-STATIC mp_uint_t pin_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+static mp_uint_t pin_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     (void)errcode;
     machine_pin_obj_t *self = self_in;
     mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(self);
@@ -390,9 +390,9 @@ STATIC mp_uint_t pin_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, i
     return -1;
 }
 
-STATIC MP_DEFINE_CONST_DICT(machine_pin_locals_dict, machine_pin_locals_dict_table);
+static MP_DEFINE_CONST_DICT(machine_pin_locals_dict, machine_pin_locals_dict_table);
 
-STATIC const mp_pin_p_t pin_pin_p = {
+static const mp_pin_p_t pin_pin_p = {
     .ioctl = pin_ioctl,
 };
 
@@ -410,7 +410,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 /******************************************************************************/
 // Pin IRQ object
 
-STATIC mp_obj_t mp_machine_pin_irq_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t mp_machine_pin_irq_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     machine_pin_irq_obj_t *self = self_in;
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
     
@@ -420,7 +420,7 @@ STATIC mp_obj_t mp_machine_pin_irq_call(mp_obj_t self_in, size_t n_args, size_t 
     return mp_const_none;
 }
 
-STATIC mp_obj_t mp_machine_pin_irq_trigger(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t mp_machine_pin_irq_trigger(size_t n_args, const mp_obj_t *args) {
     machine_pin_irq_obj_t *self = args[0];
     mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(PIN_OBJ_PTR_FROM_IRQ_OBJ_PTR(self));
     uint32_t old_trig = machine_pin_obj_table[index].irq.trigger;
@@ -443,12 +443,12 @@ STATIC mp_obj_t mp_machine_pin_irq_trigger(size_t n_args, const mp_obj_t *args) 
     // return original trigger value
     return MP_OBJ_NEW_SMALL_INT(old_trig);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_machine_pin_irq_trigger_obj, 1, 2, mp_machine_pin_irq_trigger);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_machine_pin_irq_trigger_obj, 1, 2, mp_machine_pin_irq_trigger);
 
-STATIC const mp_rom_map_elem_t machine_pin_irq_locals_dict_table[] = {
+static const mp_rom_map_elem_t machine_pin_irq_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_trigger), MP_ROM_PTR(&mp_machine_pin_irq_trigger_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_pin_irq_locals_dict, machine_pin_irq_locals_dict_table);
+static MP_DEFINE_CONST_DICT(machine_pin_irq_locals_dict, machine_pin_irq_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     machine_pin_irq_type,

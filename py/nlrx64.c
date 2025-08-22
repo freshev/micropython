@@ -100,7 +100,7 @@ unsigned int nlr_push(nlr_buf_t *nlr) {
     #endif
 }
 
-NORETURN void nlr_jump(void *val) {
+MP_NORETURN void nlr_jump(void *val) {
     MP_NLR_JUMP_HEAD(val, top)
 
     __asm volatile (
@@ -123,7 +123,7 @@ NORETURN void nlr_jump(void *val) {
         "ret                        \n" // return
         :                           // output operands
         : "r" (top)                 // input operands
-        :                           // clobbered registers
+        : "memory"                  // clobbered registers
         );
 
     MP_UNREACHABLE

@@ -295,7 +295,7 @@ extern const mp_obj_type_t mp_type_bluetooth_uuid;
 int mp_bluetooth_init(void);
 
 // Disables the Bluetooth stack. Is a no-op when not enabled.
-void mp_bluetooth_deinit(void);
+int mp_bluetooth_deinit(void);
 
 // Returns true when the Bluetooth stack is active.
 bool mp_bluetooth_is_active(void);
@@ -498,11 +498,11 @@ typedef struct {
 
 typedef mp_map_t *mp_gatts_db_t;
 
-STATIC inline void mp_bluetooth_gatts_db_create(mp_gatts_db_t *db) {
+static inline void mp_bluetooth_gatts_db_create(mp_gatts_db_t *db) {
     *db = m_new(mp_map_t, 1);
 }
 
-STATIC inline void mp_bluetooth_gatts_db_reset(mp_gatts_db_t db) {
+static inline void mp_bluetooth_gatts_db_reset(mp_gatts_db_t db) {
     mp_map_init(db, 0);
 }
 

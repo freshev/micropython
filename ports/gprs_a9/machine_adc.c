@@ -32,7 +32,6 @@
 
 #include "py/runtime.h"
 #include "py/mphal.h"
-
 #include "api_hal_adc.h"
 
 // The ADC class doesn't have any constants for this port.
@@ -45,16 +44,16 @@ typedef struct _machine_adc_obj_t {
 
 extern const mp_obj_type_t machine_adc_type;
 
-STATIC machine_adc_obj_t machine_adc_0 = {{&machine_adc_type}, ADC_CHANNEL_0};
-STATIC machine_adc_obj_t machine_adc_1 = {{&machine_adc_type}, ADC_CHANNEL_1};
+static machine_adc_obj_t machine_adc_0 = {{&machine_adc_type}, ADC_CHANNEL_0};
+static machine_adc_obj_t machine_adc_1 = {{&machine_adc_type}, ADC_CHANNEL_1};
 
 
-STATIC void mp_machine_adc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void mp_machine_adc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_adc_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "ADC(%d)", self->channel);
 }
 
-STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type,    size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type,    size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 2, false);
 
     mp_int_t chn = mp_obj_get_int(args[0]);
@@ -82,7 +81,7 @@ STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type,    size_t n_a
     return result;
 }
 
-STATIC mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
+static mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
     uint16_t value, value_mV;
     if (!ADC_Read(self->channel, &value, &value_mV)) {
         mp_raise_msg(&mp_type_RuntimeError, "Failed to read ADC");

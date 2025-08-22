@@ -63,7 +63,7 @@ typedef struct _pwm_chan_t {
 } pwm_chan_t;
 
 // List of PWM channels
-STATIC pwm_chan_t pwm_channels[PWM_CHANNEL_MAX];
+static pwm_chan_t pwm_channels[PWM_CHANNEL_MAX];
     
 
 typedef struct _pwm_gpio_t {
@@ -74,7 +74,7 @@ typedef struct _pwm_gpio_t {
 
 // List of PWM GPIOs
 // See https://docs.openluat.com/air780e/luatos/app/driver/pwm/
-STATIC pwm_gpio_t machine_pwm_gpio_table[] = {
+static pwm_gpio_t machine_pwm_gpio_table[] = {
     {0, HAL_GPIO_0, -1},    // no channel
     {1, HAL_GPIO_1, 0},     // channel = 10
     {2, HAL_GPIO_2, 1},     // channel = 11
@@ -167,7 +167,7 @@ int pwm_find_channel(int pin) {
 }
 
 
-STATIC void set_duty_internal(machine_pwm_obj_t *self) {
+static void set_duty_internal(machine_pwm_obj_t *self) {
     LUAT_DEBUG_PRINT("duty_in = %d", self->duty);
     if (self->duty == 0) {
         self->duty = 1;
@@ -178,13 +178,13 @@ STATIC void set_duty_internal(machine_pwm_obj_t *self) {
     luat_pwm_update_dutycycle(self->channel, self->duty);
 }
 
-STATIC void pwm_is_active(machine_pwm_obj_t *self) {
+static void pwm_is_active(machine_pwm_obj_t *self) {
     if (self->active == false) {
         mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("PWM inactive"));
     }
 }
 
-STATIC int ns_to_duty(machine_pwm_obj_t *self, int ns) {
+static int ns_to_duty(machine_pwm_obj_t *self, int ns) {
     int64_t duty = ((int64_t)ns * LUAT_DUTY_MAX * self->freq) / 1000000000LL ;
     if ((ns > 0) && (duty == 0)) {
         duty = 1;
@@ -194,29 +194,29 @@ STATIC int ns_to_duty(machine_pwm_obj_t *self, int ns) {
     return duty;
 }
 
-STATIC int duty_to_ns(machine_pwm_obj_t *self, int duty) {
+static int duty_to_ns(machine_pwm_obj_t *self, int duty) {
     int64_t ns = ((int64_t)duty * 1000000000LL + self->freq * LUAT_DUTY_MAX / 2) / ((int64_t)self->freq * LUAT_DUTY_MAX);
     return ns;
 }
 
 
 
-STATIC uint32_t get_duty_u16(machine_pwm_obj_t *self) {
+static uint32_t get_duty_u16(machine_pwm_obj_t *self) {
     pwm_is_active(self);
     return (self->duty << 6) * MP_DUTY_MAX / LUAT_DUTY_MAX;
 }
 
-STATIC uint32_t get_duty_u10(machine_pwm_obj_t *self) {
+static uint32_t get_duty_u10(machine_pwm_obj_t *self) {
     pwm_is_active(self);
     return self->duty * MP_DUTY_MAX / LUAT_DUTY_MAX; 
 }
 
-STATIC uint32_t get_duty_ns(machine_pwm_obj_t *self) {
+static uint32_t get_duty_ns(machine_pwm_obj_t *self) {
     pwm_is_active(self);
     return duty_to_ns(self, self->duty);
 }
 
-STATIC void set_duty_u16(machine_pwm_obj_t *self, int duty) {
+static void set_duty_u16(machine_pwm_obj_t *self, int duty) {
     pwm_is_active(self);
     if ((duty < 0) || (duty > MP_DUTY_MAX << 6)) {
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("duty_u16 must be from 0 to %d"), MP_DUTY_MAX << 6);
@@ -225,7 +225,7 @@ STATIC void set_duty_u16(machine_pwm_obj_t *self, int duty) {
     set_duty_internal(self);
 }
 
-STATIC void set_duty_u10(machine_pwm_obj_t *self, int duty) {
+static void set_duty_u10(machine_pwm_obj_t *self, int duty) {
     pwm_is_active(self);
     if ((duty < 0) || (duty > MP_DUTY_MAX)) {
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("duty must be from 0 to %u"), MP_DUTY_MAX);
@@ -234,7 +234,7 @@ STATIC void set_duty_u10(machine_pwm_obj_t *self, int duty) {
     set_duty_internal(self);
 }
 
-STATIC void set_duty_ns(machine_pwm_obj_t *self, int ns) {
+static void set_duty_ns(machine_pwm_obj_t *self, int ns) {
     pwm_is_active(self);
     if ((ns < 0) || (ns > duty_to_ns(self, LUAT_DUTY_MAX))) {
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("duty_ns must be from 0 to %d ns"), duty_to_ns(self, LUAT_DUTY_MAX));
@@ -248,13 +248,13 @@ STATIC void set_duty_ns(machine_pwm_obj_t *self, int ns) {
 /******************************************************************************/
 // MicroPython bindings for PWM
 
-STATIC void mp_machine_pwm_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void mp_machine_pwm_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_pwm_obj_t *self = MP_OBJ_TO_PTR(self_in);    
     mp_printf(print, "PWM(active=%d, channel=%d, pin=%u, freq=%u, duty=%d)", self->active, self->channel, self->pin, self->freq, self->duty * MP_DUTY_MAX / LUAT_DUTY_MAX);
 }
 
 // This called from pwm.deinit() method
-STATIC void mp_machine_pwm_deinit(machine_pwm_obj_t *self) {
+static void mp_machine_pwm_deinit(machine_pwm_obj_t *self) {
     modmachine_pwm_deinit(self->channel);
     self->active = false;
     self->channel = -1;
@@ -262,7 +262,7 @@ STATIC void mp_machine_pwm_deinit(machine_pwm_obj_t *self) {
 }
 
 // This called from pwm.init() method
-STATIC void mp_machine_pwm_init_helper(machine_pwm_obj_t *self,
+static void mp_machine_pwm_init_helper(machine_pwm_obj_t *self,
     size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_freq, ARG_duty };
     static const mp_arg_t allowed_args[] = {
@@ -310,7 +310,7 @@ STATIC void mp_machine_pwm_init_helper(machine_pwm_obj_t *self,
 }
 
 // This called from PWM() constructor
-STATIC mp_obj_t mp_machine_pwm_make_new(const mp_obj_type_t *type,
+static mp_obj_t mp_machine_pwm_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 2, true);
     uint8_t pin_id = machine_pin_get_id(args[0]);
@@ -332,12 +332,12 @@ STATIC mp_obj_t mp_machine_pwm_make_new(const mp_obj_type_t *type,
 
 // Set and get methods of PWM class
 
-STATIC mp_obj_t mp_machine_pwm_freq_get(machine_pwm_obj_t *self) {
+static mp_obj_t mp_machine_pwm_freq_get(machine_pwm_obj_t *self) {
     pwm_is_active(self);
     return MP_OBJ_NEW_SMALL_INT(self->freq);
 }
 
-STATIC void mp_machine_pwm_freq_set(machine_pwm_obj_t *self, mp_int_t freq) {
+static void mp_machine_pwm_freq_set(machine_pwm_obj_t *self, mp_int_t freq) {
     pwm_is_active(self);
     luat_pwm_close(self->channel); 
     int res = luat_pwm_open(self->channel, self->freq, self->duty * LUAT_DUTY_MAX / MP_DUTY_MAX, 0); 
@@ -345,27 +345,27 @@ STATIC void mp_machine_pwm_freq_set(machine_pwm_obj_t *self, mp_int_t freq) {
     self->freq = freq;
 }
 
-STATIC mp_obj_t mp_machine_pwm_duty_get(machine_pwm_obj_t *self) {
+static mp_obj_t mp_machine_pwm_duty_get(machine_pwm_obj_t *self) {
     return MP_OBJ_NEW_SMALL_INT(get_duty_u10(self));
 }
 
-STATIC void mp_machine_pwm_duty_set(machine_pwm_obj_t *self, mp_int_t duty) {
+static void mp_machine_pwm_duty_set(machine_pwm_obj_t *self, mp_int_t duty) {
     set_duty_u10(self, duty);
 }
 
-STATIC mp_obj_t mp_machine_pwm_duty_get_u16(machine_pwm_obj_t *self) {
+static mp_obj_t mp_machine_pwm_duty_get_u16(machine_pwm_obj_t *self) {
     return MP_OBJ_NEW_SMALL_INT(get_duty_u16(self));
 }
 
-STATIC void mp_machine_pwm_duty_set_u16(machine_pwm_obj_t *self, mp_int_t duty_u16) {
+static void mp_machine_pwm_duty_set_u16(machine_pwm_obj_t *self, mp_int_t duty_u16) {
     set_duty_u16(self, duty_u16);
 }
 
-STATIC mp_obj_t mp_machine_pwm_duty_get_ns(machine_pwm_obj_t *self) {
+static mp_obj_t mp_machine_pwm_duty_get_ns(machine_pwm_obj_t *self) {
     return MP_OBJ_NEW_SMALL_INT(get_duty_ns(self));
 }
 
-STATIC void mp_machine_pwm_duty_set_ns(machine_pwm_obj_t *self, mp_int_t duty_ns) {
+static void mp_machine_pwm_duty_set_ns(machine_pwm_obj_t *self, mp_int_t duty_ns) {
     set_duty_ns(self, duty_ns);
 }
 

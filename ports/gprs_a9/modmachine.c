@@ -93,12 +93,12 @@ uint8_t machine_hw_watchdog_pin_level = GPIO_LEVEL_LOW;
     { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_1S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_1S) },            \
     { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_2S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_2S) },            \
 
-STATIC void mp_machine_idle(void) {
+static void mp_machine_idle(void) {
     //OS_Sleep(1);
     mp_event_handle_nowait(); // handle any events after possibly a long wait (eg feed WDT)
 }
 
-STATIC mp_obj_t power_key_callback = mp_const_none;
+static mp_obj_t power_key_callback = mp_const_none;
 
 void modmachine_init0(void) {
     PM_SetSysMinFreq(PM_SYS_FREQ_312M);
@@ -135,14 +135,14 @@ void modmachine_notify_power_key_up(API_Event_t* event) {
 // Methods
 // -------
 
-STATIC mp_obj_t mp_machine_unique_id(void) {
+static mp_obj_t mp_machine_unique_id(void) {
     // ========================================
     // Returns FW version
     // ========================================
     return mp_obj_new_str(FW_VERSION, strlen(FW_VERSION));
 }
 
-NORETURN STATIC void mp_machine_reset(void) {
+NORETURN static void mp_machine_reset(void) {
     // ========================================
     // Resets the module.
     // ========================================
@@ -151,7 +151,7 @@ NORETURN STATIC void mp_machine_reset(void) {
     while(1) {}
 }
 
-STATIC mp_int_t mp_machine_reset_cause(void) {
+static mp_int_t mp_machine_reset_cause(void) {
     // ========================================
     // Retrieves the last reason for the power on.
     // Returns:
@@ -183,7 +183,7 @@ STATIC mp_int_t mp_machine_reset_cause(void) {
 }
 
 
-STATIC void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
+static void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Sets the minimal CPU frequency.
     // Args:
@@ -199,11 +199,11 @@ STATIC void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
     PM_SetSysMinFreq(i);
 }
 
-STATIC mp_obj_t mp_machine_get_freq(void) {
+static mp_obj_t mp_machine_get_freq(void) {
     return 0; // TODO
 }
 
-STATIC mp_obj_t modmachine_on_power_key(mp_obj_t callable) {
+static mp_obj_t modmachine_on_power_key(mp_obj_t callable) {
     // ========================================
     // Sets a callback on power key press.
     // Args:
@@ -213,9 +213,9 @@ STATIC mp_obj_t modmachine_on_power_key(mp_obj_t callable) {
     power_key_callback = callable;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modmachine_on_power_key_obj, modmachine_on_power_key);
+static MP_DEFINE_CONST_FUN_OBJ_1(modmachine_on_power_key_obj, modmachine_on_power_key);
 
-STATIC void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
+static void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Puts the module into low-power mode by
     // tuning down frequencies and powering
@@ -230,7 +230,7 @@ STATIC void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
     PM_SleepMode(i);
 }
 
-NORETURN STATIC void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
+NORETURN static void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Puts the module into low-power mode by
     // tuning down frequencies and powering
@@ -298,7 +298,7 @@ static void processFota(const unsigned char *data, int len) {
     API_FotaClean();
 }
 
-STATIC mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
@@ -334,5 +334,5 @@ STATIC mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t
     return mp_obj_new_int(0);
 #endif
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(modmachine_ota_obj, 1, modmachine_ota);
+static MP_DEFINE_CONST_FUN_OBJ_KW(modmachine_ota_obj, 1, modmachine_ota);
 

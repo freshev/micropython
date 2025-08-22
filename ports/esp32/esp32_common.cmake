@@ -1,3 +1,9 @@
+# This is the common ESP-IDF "main component" CMakeLists.txt contents for MicroPython.
+#
+# This file is included directly from a main_${IDF_TARGET}/CMakeLists.txt file
+# (or included from an out-of-tree main component CMakeLists.txt for out-of-tree
+# builds.)
+
 # Set location of base MicroPython directory.
 if(NOT MICROPY_DIR)
     get_filename_component(MICROPY_DIR ${CMAKE_CURRENT_LIST_DIR}/../.. ABSOLUTE)
@@ -8,12 +14,27 @@ if(NOT MICROPY_PORT_DIR)
     get_filename_component(MICROPY_PORT_DIR ${MICROPY_DIR}/ports/esp32 ABSOLUTE)
 endif()
 
+# RISC-V specific inclusions
+if(CONFIG_IDF_TARGET_ARCH_RISCV)
+    list(APPEND MICROPY_SOURCE_LIB
+        ${MICROPY_DIR}/shared/runtime/gchelper_native.c
+        ${MICROPY_DIR}/shared/runtime/gchelper_rv32i.s
+    )
+endif()
+
+if(NOT DEFINED MICROPY_PY_TINYUSB)
+    if(CONFIG_IDF_TARGET_ESP32S2 OR CONFIG_IDF_TARGET_ESP32S3)
+        set(MICROPY_PY_TINYUSB ON)
+    endif()
+endif()
+
+# Enable error text compression by default.
+if(NOT MICROPY_ROM_TEXT_COMPRESSION)
+    set(MICROPY_ROM_TEXT_COMPRESSION ON)
+endif()
+
 # Include core source components.
 include(${MICROPY_DIR}/py/py.cmake)
-
-if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-set(ENV{MICROPY_MPYCROSS} "../../mpy-cross/build/mpy-cross.exe")
-endif()
 
 # CMAKE_BUILD_EARLY_EXPANSION is set during the component-discovery phase of
 # `idf.py build`, so none of the extmod/usermod (and in reality, most of the
@@ -21,7 +42,9 @@ endif()
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)
     # Enable extmod components that will be configured by extmod.cmake.
     # A board may also have enabled additional components.
-    set(MICROPY_PY_BTREE OFF)
+    if (NOT DEFINED MICROPY_PY_BTREE)
+        set(MICROPY_PY_BTREE OFF)
+    endif()
 
     include(${MICROPY_DIR}/py/usermod.cmake)
     include(${MICROPY_DIR}/extmod/extmod.cmake)
@@ -31,46 +54,12 @@ list(APPEND MICROPY_QSTRDEFS_PORT
     ${MICROPY_PORT_DIR}/qstrdefsport.h
 )
 
-if(CONFIG_MAIN_STUB)
-    # Define paths
-    set(BOOT_FILE "${CMAKE_SOURCE_DIR}/modules/boot.py")
-    set(SOURCE_FILE "${CMAKE_SOURCE_DIR}/examples/main.py")
-    set(DEST_FILE "main.py")
-
-    # Read and encode the source file to base64
-    file(READ "${SOURCE_FILE}" SOURCE_CONTENT)
-    find_program(BASE64_EXECUTABLE base64)
-    if (BASE64_EXECUTABLE)
-        # Encode the source file directly using base64
-        execute_process(
-            COMMAND "${BASE64_EXECUTABLE}" -w 0 "${SOURCE_FILE}"
-            OUTPUT_VARIABLE BASE64_CONTENT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-    else()
-        # Fallback to Python for base64 encoding
-        execute_process(
-            COMMAND "${Python_EXECUTABLE}" -c "import base64; print(base64.b64encode(open('${SOURCE_FILE}', 'rb').read()).decode('utf-8'))"
-            OUTPUT_VARIABLE BASE64_CONTENT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-    endif()
-
-    # Generate the boot.py file
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/boot.py.in"
-        "${BOOT_FILE}"
-    )
-else()
-    file(REMOVE "${CMAKE_SOURCE_DIR}/modules/boot.py")
-endif()
-
-
 list(APPEND MICROPY_SOURCE_SHARED
     ${MICROPY_DIR}/shared/readline/readline.c
     ${MICROPY_DIR}/shared/netutils/netutils.c
     ${MICROPY_DIR}/shared/timeutils/timeutils.c
     ${MICROPY_DIR}/shared/runtime/interrupt_char.c
+    ${MICROPY_DIR}/shared/runtime/mpirq.c
     ${MICROPY_DIR}/shared/runtime/stdout_helpers.c
     ${MICROPY_DIR}/shared/runtime/sys_stdio_mphal.c
     ${MICROPY_DIR}/shared/runtime/pyexec.c
@@ -88,10 +77,30 @@ list(APPEND MICROPY_SOURCE_LIB
 
 list(APPEND MICROPY_SOURCE_DRIVERS
     ${MICROPY_DIR}/drivers/bus/softspi.c
-    #${MICROPY_DIR}/drivers/dht/dht.c
+    ${MICROPY_DIR}/drivers/dht/dht.c
 )
 
+if(MICROPY_PY_TINYUSB)
+    string(TOUPPER OPT_MCU_${IDF_TARGET} tusb_mcu)
+
+    list(APPEND MICROPY_DEF_TINYUSB
+        CFG_TUSB_MCU=${tusb_mcu}
+    )
+
+    list(APPEND MICROPY_SOURCE_TINYUSB
+        ${MICROPY_DIR}/shared/tinyusb/mp_usbd.c
+        ${MICROPY_DIR}/shared/tinyusb/mp_usbd_cdc.c
+        ${MICROPY_DIR}/shared/tinyusb/mp_usbd_descriptor.c
+        ${MICROPY_DIR}/shared/tinyusb/mp_usbd_runtime.c
+    )
+
+    list(APPEND MICROPY_INC_TINYUSB
+        ${MICROPY_DIR}/shared/tinyusb/
+    )
+endif()
+
 list(APPEND MICROPY_SOURCE_PORT
+    panichandler.c
     adc.c
     main.c
     ppp_set_auth.c
@@ -106,43 +115,28 @@ list(APPEND MICROPY_SOURCE_PORT
     machine_timer.c
     machine_pin.c
     machine_touchpad.c
-    machine_dac.c    
+    machine_dac.c
+    machine_i2c.c
     network_common.c
     network_lan.c
     network_ppp.c
     network_wlan.c
     mpnimbleport.c
     modsocket.c
+    lwip_patch.c
     modesp.c
     esp32_nvs.c
     esp32_partition.c
+    esp32_pcnt.c
     esp32_rmt.c
     esp32_ulp.c
     modesp32.c
     machine_hw_spi.c
-    machine_hw_i2c.c
     mpthreadport.c
     machine_rtc.c
     machine_sdcard.c
     modespnow.c
 )
-
-if(CONFIG_CAMERA_MODULE)
-    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
-endif()
-if(CONFIG_DHT_MODULE)
-    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
-endif()
-if(CONFIG_CC1101_MODULE)
-    list(APPEND MICROPY_SOURCE_PORT modcamera.c)
-endif()
-
-#message("----------------------------")
-#message(CONFIG_CAMERA_MODULE=${CONFIG_CAMERA_MODULE})
-#message(CONFIG_SPIRAM=${CONFIG_SPIRAM})
-#message("----------------------------")
-
-
 list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_PORT_DIR}/)
 list(APPEND MICROPY_SOURCE_PORT ${CMAKE_BINARY_DIR}/pins.c)
 
@@ -154,6 +148,7 @@ list(APPEND MICROPY_SOURCE_QSTR
     ${MICROPY_SOURCE_LIB}
     ${MICROPY_SOURCE_PORT}
     ${MICROPY_SOURCE_BOARD}
+    ${MICROPY_SOURCE_TINYUSB}
 )
 
 list(APPEND IDF_COMPONENTS
@@ -188,8 +183,25 @@ list(APPEND IDF_COMPONENTS
     soc
     spi_flash
     ulp
+    usb
     vfs
 )
+
+# Provide the default LD fragment if not set
+if (MICROPY_USER_LDFRAGMENTS)
+    set(MICROPY_LDFRAGMENTS ${MICROPY_USER_LDFRAGMENTS})
+endif()
+
+if (UPDATE_SUBMODULES)
+    # ESP-IDF checks if some paths exist before CMake does. Some paths don't
+    # yet exist if this is an UPDATE_SUBMODULES pass on a brand new checkout, so remove
+    # any path which might not exist yet. A "real" build will not set UPDATE_SUBMODULES.
+    unset(MICROPY_SOURCE_TINYUSB)
+    unset(MICROPY_SOURCE_EXTMOD)
+    unset(MICROPY_SOURCE_LIB)
+    unset(MICROPY_INC_TINYUSB)
+    unset(MICROPY_INC_CORE)
+endif()
 
 # Register the main IDF component.
 idf_component_register(
@@ -201,12 +213,16 @@ idf_component_register(
         ${MICROPY_SOURCE_DRIVERS}
         ${MICROPY_SOURCE_PORT}
         ${MICROPY_SOURCE_BOARD}
+        ${MICROPY_SOURCE_TINYUSB}
     INCLUDE_DIRS
         ${MICROPY_INC_CORE}
         ${MICROPY_INC_USERMOD}
+        ${MICROPY_INC_TINYUSB}
         ${MICROPY_PORT_DIR}
         ${MICROPY_BOARD_DIR}
         ${CMAKE_BINARY_DIR}
+    LDFRAGMENTS
+        ${MICROPY_LDFRAGMENTS}
     REQUIRES
         ${IDF_COMPONENTS}
 )
@@ -215,15 +231,18 @@ idf_component_register(
 set(MICROPY_TARGET ${COMPONENT_TARGET})
 
 # Define mpy-cross flags, for use with frozen code.
-if(NOT IDF_TARGET STREQUAL "esp32c3")
-set(MICROPY_CROSS_FLAGS -march=xtensawin)
+if(CONFIG_IDF_TARGET_ARCH_XTENSA)
+    set(MICROPY_CROSS_FLAGS -march=xtensawin)
+elseif(CONFIG_IDF_TARGET_ARCH_RISCV)
+    set(MICROPY_CROSS_FLAGS -march=rv32imc)
 endif()
 
 # Set compile options for this port.
 target_compile_definitions(${MICROPY_TARGET} PUBLIC
+    ${MICROPY_DEF_COMPONENT}
     ${MICROPY_DEF_CORE}
     ${MICROPY_DEF_BOARD}
-    MICROPY_ESP_IDF_4=1
+    ${MICROPY_DEF_TINYUSB}
     MICROPY_VFS_FAT=1
     MICROPY_VFS_LFS2=1
     FFCONF_H=\"${MICROPY_OOFATFS_DIR}/ffconf.h\"
@@ -233,6 +252,7 @@ target_compile_definitions(${MICROPY_TARGET} PUBLIC
 
 # Disable some warnings to keep the build output clean.
 target_compile_options(${MICROPY_TARGET} PUBLIC
+    ${MICROPY_COMPILE_COMPONENT}
     -Wno-clobbered
     -Wno-deprecated-declarations
     -Wno-missing-field-initializers
@@ -244,8 +264,24 @@ target_include_directories(${MICROPY_TARGET} PUBLIC
 )
 
 # Add additional extmod and usermod components.
-# target_link_libraries(${MICROPY_TARGET} micropy_extmod_btree)
+if (MICROPY_PY_BTREE)
+    target_link_libraries(${MICROPY_TARGET} micropy_extmod_btree)
+endif()
 target_link_libraries(${MICROPY_TARGET} usermod)
+
+# Extra linker options
+# (when wrap symbols are in standalone files, --undefined ensures
+# the linker doesn't skip that file.)
+target_link_options(${MICROPY_TARGET} PUBLIC
+  # Patch LWIP memory pool allocators (see lwip_patch.c)
+  -Wl,--undefined=memp_malloc
+  -Wl,--wrap=memp_malloc
+  -Wl,--wrap=memp_free
+
+  # Enable the panic handler wrapper
+  -Wl,--undefined=esp_panic_handler
+  -Wl,--wrap=esp_panic_handler
+)
 
 # Collect all of the include directories and compile definitions for the IDF components,
 # including those added by the IDF Component Manager via idf_components.yaml.
@@ -283,16 +319,3 @@ add_custom_command(
     VERBATIM
     COMMAND_EXPAND_LISTS
 )
-
-#message("-----------------------")
-#message(${CMAKE_BINARY_DIR})
-#message("-----------------------")
-
-#add_custom_target(PostBuildTasks ALL
-#    COMMAND ${Python3_EXECUTABLE} -m esptool --chip esp32 merge_bin -o "${CMAKE_BINARY_DIR}/firmware_camera.bin" --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 "${CMAKE_BINARY_DIR}/bootloader/bootloader.bin" 0x10000 "${CMAKE_BINARY_DIR}/micropython.bin" 0x8000 "${CMAKE_BINARY_DIR}/partition_table/partition-table.bin"
-#    DEPENDS 
-#        ${MICROPY_TARGET}
-#    VERBATIM
-#    COMMAND_EXPAND_LISTS
-#)
-

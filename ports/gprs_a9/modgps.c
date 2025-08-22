@@ -46,7 +46,7 @@
 
 #include "py/mperrno.h"
 
-STATIC mp_obj_t modgps_off(void);
+static mp_obj_t modgps_off(void);
 
 void modgps_init0(void) {
     modgps_off();
@@ -66,7 +66,7 @@ void modgps_notify_gps_update(API_Event_t* event) {
 // Methods
 // -------
 
-STATIC mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
+static mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
     // ========================================
     // Turns GPS on.
     // Args:
@@ -90,9 +90,9 @@ STATIC mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modgps_on_obj, 0, 1, modgps_on);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modgps_on_obj, 0, 1, modgps_on);
 
-STATIC mp_obj_t modgps_off(void) {
+static mp_obj_t modgps_off(void) {
     // ========================================
     // Turns GPS off.
     // ========================================
@@ -100,9 +100,9 @@ STATIC mp_obj_t modgps_off(void) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_off_obj, modgps_off);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_off_obj, modgps_off);
 
-STATIC mp_obj_t modgps_get_firmware_version(void) {
+static mp_obj_t modgps_get_firmware_version(void) {
     // ========================================
     // Retrieves firmware version.
     // Returns:
@@ -118,9 +118,9 @@ STATIC mp_obj_t modgps_get_firmware_version(void) {
     return mp_obj_new_str(buffer, strlen(buffer));
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_firmware_version_obj, modgps_get_firmware_version);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_firmware_version_obj, modgps_get_firmware_version);
 
-STATIC mp_obj_t modgps_get_last_location(void) {
+static mp_obj_t modgps_get_last_location(void) {
     // ========================================
     // Retrieves the last GPS location.
     // Returns:
@@ -139,9 +139,9 @@ STATIC mp_obj_t modgps_get_last_location(void) {
     return mp_obj_new_tuple(2, tuple);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_last_location_obj, modgps_get_last_location);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_last_location_obj, modgps_get_last_location);
 
-STATIC mp_obj_t modgps_get_location(void) {
+static mp_obj_t modgps_get_location(void) {
     // ========================================
     // Retrieves the current GPS location.
     // Returns:
@@ -152,9 +152,9 @@ STATIC mp_obj_t modgps_get_location(void) {
     return modgps_get_last_location();
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_location_obj, modgps_get_location);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_location_obj, modgps_get_location);
 
-STATIC mp_obj_t modgps_get_satellites(void) {
+static mp_obj_t modgps_get_satellites(void) {
     // ========================================
     // Retrieves the number of visible GPS satellites.
     // Returns:
@@ -169,9 +169,9 @@ STATIC mp_obj_t modgps_get_satellites(void) {
     return mp_obj_new_tuple(2, tuple);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_satellites_obj, modgps_get_satellites);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_get_satellites_obj, modgps_get_satellites);
 
-STATIC mp_obj_t modgps_time(void) {
+static mp_obj_t modgps_time(void) {
     // ========================================
     // GPS time.
     // Returns:
@@ -187,25 +187,25 @@ STATIC mp_obj_t modgps_time(void) {
     return mp_obj_new_int_from_uint(result);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_time_obj, modgps_time);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_time_obj, modgps_time);
 
-STATIC mp_obj_t _get_time(struct minmea_date date, struct minmea_time time) {
+static mp_obj_t _get_time(struct minmea_date date, struct minmea_time time) {
     mp_uint_t result = timeutils_mktime(date.year + 2000, date.month, date.day, time.hours, time.minutes, time.seconds);
     // Note: the module may report dates between 1980 and 2000 as well: they will be mapped onto the time frame 2080-2100
     return mp_obj_new_int_from_uint(result);
 }
 
-STATIC mp_obj_t _get_float(struct minmea_float f) {
+static mp_obj_t _get_float(struct minmea_float f) {
     return mp_obj_new_float(minmea_tofloat(&f));
 }
 
-STATIC mp_obj_t _get_prn(int* prn) {
+static mp_obj_t _get_prn(int* prn) {
     uint8_t prn_u[12];
     for (int i = 0; i < 12; i++) prn_u[i] = prn[i];
     return mp_obj_new_bytearray(sizeof(prn), prn);
 }
 
-STATIC mp_obj_t _get_sat_info(struct minmea_sat_info s) {
+static mp_obj_t _get_sat_info(struct minmea_sat_info s) {
     mp_obj_t tuple[4] = {
         mp_obj_new_int(s.nr),
         mp_obj_new_int(s.elevation),
@@ -215,7 +215,7 @@ STATIC mp_obj_t _get_sat_info(struct minmea_sat_info s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_rmc(struct minmea_sentence_rmc s) {
+static mp_obj_t _get_rmc(struct minmea_sentence_rmc s) {
     mp_obj_t tuple[7] = {
         _get_time(s.date, s.time),
         mp_obj_new_bool(s.valid),
@@ -228,7 +228,7 @@ STATIC mp_obj_t _get_rmc(struct minmea_sentence_rmc s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_gsa(struct minmea_sentence_gsa s) {
+static mp_obj_t _get_gsa(struct minmea_sentence_gsa s) {
     mp_obj_t tuple[6] = {
         mp_obj_new_int_from_uint(s.mode),
         mp_obj_new_int(s.fix_type),
@@ -240,7 +240,7 @@ STATIC mp_obj_t _get_gsa(struct minmea_sentence_gsa s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_gga(struct minmea_sentence_gga s) {
+static mp_obj_t _get_gga(struct minmea_sentence_gga s) {
     struct minmea_date no_date = {1, 1, 0};
 
     mp_obj_t tuple[11] = {
@@ -259,7 +259,7 @@ STATIC mp_obj_t _get_gga(struct minmea_sentence_gga s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_gll(struct minmea_sentence_gll s) {
+static mp_obj_t _get_gll(struct minmea_sentence_gll s) {
     struct minmea_date no_date = {1, 1, 0};
 
     mp_obj_t tuple[5] = {
@@ -272,7 +272,7 @@ STATIC mp_obj_t _get_gll(struct minmea_sentence_gll s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_gst(struct minmea_sentence_gst s) {
+static mp_obj_t _get_gst(struct minmea_sentence_gst s) {
     struct minmea_date no_date = {1, 1, 0};
 
     mp_obj_t tuple[8] = {
@@ -288,7 +288,7 @@ STATIC mp_obj_t _get_gst(struct minmea_sentence_gst s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_gsv(struct minmea_sentence_gsv s) {
+static mp_obj_t _get_gsv(struct minmea_sentence_gsv s) {
     mp_obj_t sat_info_tuple[4];
     for (int i = 0; i < 4; i++)
         sat_info_tuple[i] = _get_sat_info(s.sats[i]);
@@ -302,7 +302,7 @@ STATIC mp_obj_t _get_gsv(struct minmea_sentence_gsv s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_vtg(struct minmea_sentence_vtg s) {
+static mp_obj_t _get_vtg(struct minmea_sentence_vtg s) {
     mp_obj_t tuple[5] = {
         _get_float(s.true_track_degrees),
         _get_float(s.magnetic_track_degrees),
@@ -313,7 +313,7 @@ STATIC mp_obj_t _get_vtg(struct minmea_sentence_vtg s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t _get_zda(struct minmea_sentence_zda s) {
+static mp_obj_t _get_zda(struct minmea_sentence_zda s) {
     mp_obj_t tuple[3] = {
         _get_time(s.date, s.time),
         mp_obj_new_int(s.hour_offset),
@@ -322,7 +322,7 @@ STATIC mp_obj_t _get_zda(struct minmea_sentence_zda s) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC mp_obj_t modgps_nmea_data(void) {
+static mp_obj_t modgps_nmea_data(void) {
     // ========================================
     // NMEA data in a tuple.
     // Returns:
@@ -352,9 +352,9 @@ STATIC mp_obj_t modgps_nmea_data(void) {
     return mp_obj_new_tuple(sizeof(tuple) / sizeof(mp_obj_t), tuple);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modgps_nmea_data_obj, modgps_nmea_data);
+static MP_DEFINE_CONST_FUN_OBJ_0(modgps_nmea_data_obj, modgps_nmea_data);
 
-STATIC const mp_map_elem_t mp_module_gps_globals_table[] = {
+static const mp_map_elem_t mp_module_gps_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_gps) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_on), (mp_obj_t)&modgps_on_obj },
@@ -367,7 +367,7 @@ STATIC const mp_map_elem_t mp_module_gps_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_nmea_data), (mp_obj_t)&modgps_nmea_data_obj },
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_gps_globals, mp_module_gps_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_gps_globals, mp_module_gps_globals_table);
 
 const mp_obj_module_t gps_module = {
     .base = { &mp_type_module },

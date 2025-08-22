@@ -1,9 +1,0 @@
-import os
-import binascii
-
-try:
-    os.stat('@DEST_FILE@')
-except:
-    f = open('@DEST_FILE@', 'w')
-    f.write(binascii.a2b_base64('@BASE64_CONTENT@'))
-    f.close()

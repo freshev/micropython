@@ -11,21 +11,17 @@ except ImportError:
 PORT = 8000
 
 # These are test certificates. See tests/README.md for details.
-certfile = "multi_net/rsa_cert.der"
-keyfile = "multi_net/rsa_key.der"
+certfile = "ec_cert.der"
+keyfile = "ec_key.der"
 
 try:
-    os.stat(certfile)
-    os.stat(keyfile)
+    with open(certfile, "rb") as cf:
+        cert = cadata = cf.read()
+    with open(keyfile, "rb") as kf:
+        key = kf.read()
 except OSError:
     print("SKIP")
     raise SystemExit
-
-with open(certfile, "rb") as cf:
-    cert = cadata = cf.read()
-
-with open(keyfile, "rb") as kf:
-    key = kf.read()
 
 
 # Server

@@ -33,13 +33,13 @@
 #include "modcellular.h"
 
 uint8_t network_status = 0;
-STATIC uint16_t network_exception = NTW_NO_EXC;
-STATIC uint8_t network_signal_quality = 0;
-STATIC int16_t network_signal_rx_level = 0;
-STATIC int8_t network_signal_snr = 0;
-STATIC mp_obj_t network_status_callback = mp_const_none;
-STATIC int8_t activate_flag = 0;
-STATIC int8_t deactivate_flag = 0;
+static uint16_t network_exception = NTW_NO_EXC;
+static uint8_t network_signal_quality = 0;
+static int16_t network_signal_rx_level = 0;
+static int8_t network_signal_snr = 0;
+static mp_obj_t network_status_callback = mp_const_none;
+static int8_t activate_flag = 0;
+static int8_t deactivate_flag = 0;
 
 
 #define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
@@ -320,7 +320,7 @@ void modcellular_init0(void) {
 // Register
 // not supported, TODO receive HAL_WAKEUP_2 message 
 
-STATIC mp_obj_t modcellular_get_signal_quality(void) {
+static mp_obj_t modcellular_get_signal_quality(void) {
     // ========================================
     // Retrieves the network signal quality.
     // Returns:
@@ -334,9 +334,9 @@ STATIC mp_obj_t modcellular_get_signal_quality(void) {
     return mp_obj_new_tuple(3, tuple);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_signal_quality_obj, modcellular_get_signal_quality);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_signal_quality_obj, modcellular_get_signal_quality);
 
-STATIC mp_obj_t modcellular_get_imei(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_get_imei(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Retrieves IMEI number.
     // Args:
@@ -353,9 +353,9 @@ STATIC mp_obj_t modcellular_get_imei(size_t n_args, const mp_obj_t *args) {
     else return mp_obj_new_str("", 0);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imei_obj, 0, 1, modcellular_get_imei);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imei_obj, 0, 1, modcellular_get_imei);
 
-STATIC mp_obj_t modcellular_is_sim_present(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_is_sim_present(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Checks whether the SIM card is inserted and ICCID can be retrieved.
     // Args:
@@ -370,10 +370,10 @@ STATIC mp_obj_t modcellular_is_sim_present(size_t n_args, const mp_obj_t *args) 
     else return mp_obj_new_bool(false);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_is_sim_present_obj, 0, 1, modcellular_is_sim_present);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_is_sim_present_obj, 0, 1, modcellular_is_sim_present);
 
 
-STATIC mp_obj_t modcellular_poll_network_exception(void) {
+static mp_obj_t modcellular_poll_network_exception(void) {
     // ========================================
     // Raises a last network exception.
     // ========================================
@@ -390,9 +390,9 @@ STATIC mp_obj_t modcellular_poll_network_exception(void) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_poll_network_exception_obj, modcellular_poll_network_exception);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_poll_network_exception_obj, modcellular_poll_network_exception);
 
-STATIC mp_obj_t modcellular_get_network_status(void) {
+static mp_obj_t modcellular_get_network_status(void) {
     // ========================================
     // Retrieves the network status.
     // Returns:
@@ -401,9 +401,9 @@ STATIC mp_obj_t modcellular_get_network_status(void) {
     return mp_obj_new_int(network_status);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_network_status_obj, modcellular_get_network_status);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_network_status_obj, modcellular_get_network_status);
 
-STATIC mp_obj_t modcellular_is_network_registered(void) {
+static mp_obj_t modcellular_is_network_registered(void) {
     // ========================================
     // Checks whether registered on the cellular network.
     // Returns:
@@ -412,9 +412,9 @@ STATIC mp_obj_t modcellular_is_network_registered(void) {
     return mp_obj_new_bool(network_status & NTW_REG_BIT);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_is_network_registered_obj, modcellular_is_network_registered);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_is_network_registered_obj, modcellular_is_network_registered);
 
-STATIC mp_obj_t modcellular_is_roaming(void) {
+static mp_obj_t modcellular_is_roaming(void) {
     // ========================================
     // Checks whether registered on the roaming network.
     // Returns:
@@ -425,9 +425,9 @@ STATIC mp_obj_t modcellular_is_roaming(void) {
     return mp_obj_new_bool(network_status & NTW_ROAM_BIT);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_is_roaming_obj, modcellular_is_roaming);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_is_roaming_obj, modcellular_is_roaming);
 
-STATIC mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Retrieves ICCID number.
     // Args:
@@ -447,10 +447,10 @@ STATIC mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     }
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_iccid_obj, 0, 1, modcellular_get_iccid);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_iccid_obj, 0, 1, modcellular_get_iccid);
 
 
-STATIC mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Retrieves IMSI number.
     // Args:
@@ -470,7 +470,7 @@ STATIC mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     }
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imsi_obj, 0, 1, modcellular_get_imsi);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imsi_obj, 0, 1, modcellular_get_imsi);
 
 bool get_flight_mode(int index) {
     int res = luat_mobile_get_flymode(index);
@@ -478,7 +478,7 @@ bool get_flight_mode(int index) {
     return res == 0;
 }
 
-STATIC mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Retrieves and switches the flight mode
     // status.
@@ -502,9 +502,9 @@ STATIC mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     return mp_obj_new_bool(get_flight_mode(index));
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_flight_mode_obj, 0, 2, modcellular_flight_mode);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_flight_mode_obj, 0, 2, modcellular_flight_mode);
 
-STATIC mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Sets 4G bands the module operates at.
     // Args:
@@ -564,10 +564,10 @@ STATIC mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_set_bands_obj, 0, 1, modcellular_set_bands);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_set_bands_obj, 0, 1, modcellular_set_bands);
 
 
-STATIC mp_obj_t modcellular_reset_wto(int timeout) {
+static mp_obj_t modcellular_reset_wto(int timeout) {
     // ========================================
     // Resets network settings to defaults.
     // Note:
@@ -594,14 +594,14 @@ STATIC mp_obj_t modcellular_reset_wto(int timeout) {
 
     return mp_const_none;
 }
-STATIC mp_obj_t modcellular_reset(void) {
+static mp_obj_t modcellular_reset(void) {
     modcellular_reset_wto(TIMEOUT_NETWORK_ACTIVATION);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_reset_obj, modcellular_reset);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_reset_obj, modcellular_reset);
 
 
-STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Polls and switches GPRS status.
     // Args:
@@ -671,11 +671,11 @@ STATIC mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
     return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_gprs_obj, 0, 4, modcellular_gprs);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_gprs_obj, 0, 4, modcellular_gprs);
 
 
 static void modcellular_get_operator_name(uint8_t plmn[PLMN_STR_MAX_LENGTH], char *pOperatorName);
-STATIC mp_obj_t modcellular_scan(void) {
+static mp_obj_t modcellular_scan(void) {
     // ========================================
     // Lists network operators.
     // ========================================
@@ -728,17 +728,17 @@ STATIC mp_obj_t modcellular_scan(void) {
     return plmn_list;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_scan_obj, modcellular_scan);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_scan_obj, modcellular_scan);
 
 
-STATIC int modcellular_convert_MCCMNC(int code) {
+static int modcellular_convert_MCCMNC(int code) {
     // convert to hex and use as int
     char str [10];
     itoa(code, str, 16);
     return atoi(str);
 }
 
-STATIC mp_obj_t modcellular_stations(void) {
+static mp_obj_t modcellular_stations(void) {
     // ========================================
     // Returns base stations cells.
     // ========================================
@@ -785,9 +785,9 @@ STATIC mp_obj_t modcellular_stations(void) {
     
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(modcellular_stations_obj, modcellular_stations);
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_stations_obj, modcellular_stations);
 
-STATIC mp_obj_t modcellular_on_status_event(mp_obj_t callable) {
+static mp_obj_t modcellular_on_status_event(mp_obj_t callable) {
     // ========================================
     // Sets a callback on status event.
     // Args:
@@ -798,10 +798,10 @@ STATIC mp_obj_t modcellular_on_status_event(mp_obj_t callable) {
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_status_event_obj, modcellular_on_status_event);
+static MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_status_event_obj, modcellular_on_status_event);
 
 
-STATIC const mp_map_elem_t mp_module_cellular_globals_table[] = {
+static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_cellular) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_SMS), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_type) },
@@ -878,7 +878,7 @@ STATIC const mp_map_elem_t mp_module_cellular_globals_table[] = {
     
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_cellular_globals, mp_module_cellular_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_cellular_globals, mp_module_cellular_globals_table);
 
 const mp_obj_module_t cellular_module = {
     .base = { &mp_type_module },

@@ -60,11 +60,11 @@ typedef enum {
     MP_SOFT_RESET
 } reset_reason_t;
 
-STATIC mp_obj_t machine_wdt_test(void) {
+static mp_obj_t machine_wdt_test(void) {
     while(1);
     return mp_const_none;
 }                                
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(machine_wdt_test_obj, machine_wdt_test);
+static MP_DEFINE_CONST_FUN_OBJ_0(machine_wdt_test_obj, machine_wdt_test);
 
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
     /* Reset reasons */                                                         \
@@ -112,7 +112,7 @@ void modmachine_deinit0(void) {
 
 extern int soc_get_model_name(char *model, uint8_t is_full);
 
-STATIC mp_obj_t mp_machine_unique_id(void) {
+static mp_obj_t mp_machine_unique_id(void) {
     char model[40] = {0};
     char imei[22] = {0};    
     char final[64] = {0};
@@ -124,12 +124,12 @@ STATIC mp_obj_t mp_machine_unique_id(void) {
     return mp_obj_new_str(final, strlen(final));
 }
 
-NORETURN STATIC void mp_machine_reset(void) {
+NORETURN static void mp_machine_reset(void) {
     luat_pm_reboot();
     while(1) luat_rtos_task_sleep(1000);
 }
 
-STATIC mp_int_t mp_machine_reset_cause(void) {
+static mp_int_t mp_machine_reset_cause(void) {
     switch (luat_pm_get_poweron_reason()) {
         case LUAT_PM_POWERON_REASON_SWRESET:
             return MP_SOFT_RESET;
@@ -143,26 +143,26 @@ STATIC mp_int_t mp_machine_reset_cause(void) {
 }
 
 
-STATIC void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
+static void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
     mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Chip set freq operation not supported"));
 }
 
-STATIC mp_obj_t mp_machine_get_freq(void) {
+static mp_obj_t mp_machine_get_freq(void) {
     return MP_OBJ_NEW_SMALL_INT(luat_mcu_get_clk());
 }
 
 
-STATIC void mp_machine_idle(void) {
+static void mp_machine_idle(void) {
     luat_pm_set_sleep_mode(LUAT_PM_SLEEP_MODE_IDLE, NULL);
     mp_event_handle_nowait(); // handle any events after possibly a long wait (eg feed WDT)
 }
 
-STATIC void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
+static void mp_machine_lightsleep(size_t n_args, const mp_obj_t *args) {
     mp_int_t i = mp_obj_get_int(args[0]);
     luat_pm_set_sleep_mode(LUAT_PM_SLEEP_MODE_LIGHT, NULL);
 }
 
-NORETURN STATIC void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
+NORETURN static void mp_machine_deepsleep(size_t n_args, const mp_obj_t *args) {
     luat_pm_set_sleep_mode(LUAT_PM_SLEEP_MODE_DEEP, NULL);
     while(1) luat_rtos_task_sleep(1000);
 }
@@ -218,7 +218,7 @@ int http_client_fota_recv_cb(char* buf, uint32_t len) {
    return !result;
 }
 
-STATIC int luatos_fota_http_task(char *url) {
+static int luatos_fota_http_task(char *url) {
 
     // net_lwip_init(); // should be run only once, see modsocket.c
     net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
@@ -284,7 +284,7 @@ STATIC int luatos_fota_http_task(char *url) {
 }
 #endif
 
-STATIC mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
     // Firmware over the air (FOTA)
     // ========================================
@@ -324,4 +324,4 @@ STATIC mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t
     return mp_obj_new_int(0);
 #endif
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(modmachine_ota_obj, 1, modmachine_ota);
+static MP_DEFINE_CONST_FUN_OBJ_KW(modmachine_ota_obj, 1, modmachine_ota);

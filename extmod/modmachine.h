@@ -30,9 +30,9 @@
 #include "py/mphal.h"
 #include "py/obj.h"
 
-#if MICROPY_PY_MACHINE
-
+#if MICROPY_PY_MACHINE_SPI || MICROPY_PY_MACHINE_SOFTSPI
 #include "drivers/bus/spi.h"
+#endif
 
 // Whether to enable the ADC.init() method.
 // Requires a port to implement mp_machine_adc_init_helper().
@@ -127,24 +127,15 @@
 #endif
 
 // A port must provide these types, but they are otherwise opaque.
-#ifndef MICROPY_PY_MACHINE_ADC
+/*
 typedef struct _machine_adc_obj_t machine_adc_obj_t;
-#endif
-#ifndef MICROPY_PY_MACHINE_ADC_BLOCK
 typedef struct _machine_adc_block_obj_t machine_adc_block_obj_t;
-#endif
-#ifndef MICROPY_PY_MACHINE_I2S
+typedef struct _machine_i2c_target_obj_t machine_i2c_target_obj_t;
 typedef struct _machine_i2s_obj_t machine_i2s_obj_t;
-#endif
-#ifndef MICROPY_PY_MACHINE_PWM
 typedef struct _machine_pwm_obj_t machine_pwm_obj_t;
-#endif
-#ifndef MICROPY_PY_MACHINE_UART
 typedef struct _machine_uart_obj_t machine_uart_obj_t;
-#endif
-#ifndef MICROPY_PY_MACHINE_WDT
 typedef struct _machine_wdt_obj_t machine_wdt_obj_t;
-#endif
+*/
 
 typedef struct _machine_mem_obj_t {
     mp_obj_base_t base;
@@ -215,6 +206,7 @@ extern const machine_mem_obj_t machine_mem32_obj;
 extern const mp_obj_type_t machine_adc_type;
 extern const mp_obj_type_t machine_adc_block_type;
 extern const mp_obj_type_t machine_i2c_type;
+extern const mp_obj_type_t machine_i2c_target_type;
 extern const mp_obj_type_t machine_i2s_type;
 extern const mp_obj_type_t machine_mem_type;
 extern const mp_obj_type_t machine_pin_type;
@@ -225,6 +217,7 @@ extern const mp_obj_type_t machine_signal_type;
 extern const mp_obj_type_t machine_spi_type;
 extern const mp_obj_type_t machine_timer_type;
 extern const mp_obj_type_t machine_uart_type;
+extern const mp_obj_type_t machine_usbd_type;
 extern const mp_obj_type_t machine_wdt_type;
 
 #if MICROPY_PY_MACHINE_SOFTI2C
@@ -242,6 +235,10 @@ extern const mp_machine_spi_p_t mp_machine_soft_spi_p;
 extern const mp_obj_dict_t mp_machine_spi_locals_dict;
 #endif
 
+#if MICROPY_HW_ENABLE_USB_RUNTIME_DEVICE
+extern const mp_obj_type_t machine_usb_device_type;
+#endif
+
 #if defined(MICROPY_MACHINE_MEM_GET_READ_ADDR)
 uintptr_t MICROPY_MACHINE_MEM_GET_READ_ADDR(mp_obj_t addr_o, uint align);
 #endif
@@ -249,7 +246,7 @@ uintptr_t MICROPY_MACHINE_MEM_GET_READ_ADDR(mp_obj_t addr_o, uint align);
 uintptr_t MICROPY_MACHINE_MEM_GET_WRITE_ADDR(mp_obj_t addr_o, uint align);
 #endif
 
-NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args);
+MP_NORETURN mp_obj_t machine_bootloader(size_t n_args, const mp_obj_t *args);
 void machine_bitstream_high_low(mp_hal_pin_obj_t pin, uint32_t *timing_ns, const uint8_t *buf, size_t len);
 mp_uint_t machine_time_pulse_us(mp_hal_pin_obj_t pin, int pulse_level, mp_uint_t timeout_us);
 
@@ -268,6 +265,10 @@ int mp_machine_i2c_transfer_adaptor(mp_obj_base_t *self, uint16_t addr, size_t n
 int mp_machine_soft_i2c_transfer(mp_obj_base_t *self, uint16_t addr, size_t n, mp_machine_i2c_buf_t *bufs, unsigned int flags);
 #endif
 
+#if MICROPY_PY_MACHINE_I2C_TARGET
+void mp_machine_i2c_target_deinit_all(void);
+#endif
+
 #if MICROPY_PY_MACHINE_SPI
 mp_obj_t mp_machine_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args);
 MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_machine_spi_read_obj);
@@ -275,7 +276,5 @@ MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_machine_spi_readinto_obj);
 MP_DECLARE_CONST_FUN_OBJ_2(mp_machine_spi_write_obj);
 MP_DECLARE_CONST_FUN_OBJ_3(mp_machine_spi_write_readinto_obj);
 #endif
-
-#endif // MICROPY_PY_MACHINE
 
 #endif // MICROPY_INCLUDED_EXTMOD_MODMACHINE_H

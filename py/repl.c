@@ -43,7 +43,7 @@ const char *mp_repl_get_psx(unsigned int entry) {
 }
 #endif
 
-STATIC bool str_startswith_word(const char *str, const char *head) {
+static bool str_startswith_word(const char *str, const char *head) {
     size_t i;
     for (i = 0; str[i] && head[i]; i++) {
         if (str[i] != head[i]) {
@@ -154,7 +154,7 @@ bool mp_repl_continue_with_input(const char *input) {
     return false;
 }
 
-STATIC bool test_qstr(mp_obj_t obj, qstr name) {
+static bool test_qstr(mp_obj_t obj, qstr name) {
     if (obj) {
         // try object member
         mp_obj_t dest[2];
@@ -167,7 +167,7 @@ STATIC bool test_qstr(mp_obj_t obj, qstr name) {
     }
 }
 
-STATIC const char *find_completions(const char *s_start, size_t s_len,
+static const char *find_completions(const char *s_start, size_t s_len,
     mp_obj_t obj, size_t *match_len, qstr *q_first, qstr *q_last) {
 
     const char *match_str = NULL;
@@ -207,7 +207,7 @@ STATIC const char *find_completions(const char *s_start, size_t s_len,
     return match_str;
 }
 
-STATIC void print_completions(const mp_print_t *print,
+static void print_completions(const mp_print_t *print,
     const char *s_start, size_t s_len,
     mp_obj_t obj, qstr q_first, qstr q_last) {
 
@@ -218,6 +218,10 @@ STATIC void print_completions(const mp_print_t *print,
     for (qstr q = q_first; q <= q_last; ++q) {
         size_t d_len;
         const char *d_str = (const char *)qstr_data(q, &d_len);
+        // filter out words that begin with underscore unless there's already a partial match
+        if (s_len == 0 && d_str[0] == '_') {
+            continue;
+        }
         if (s_len <= d_len && strncmp(s_start, d_str, s_len) == 0) {
             if (test_qstr(obj, q)) {
                 int gap = (line_len + WORD_SLOT_LEN - 1) / WORD_SLOT_LEN * WORD_SLOT_LEN - line_len;
@@ -225,7 +229,6 @@ STATIC void print_completions(const mp_print_t *print,
                     gap += WORD_SLOT_LEN;
                 }
                 if (line_len + gap + d_len <= MAX_LINE_LEN) {
-                    // TODO optimise printing of gap?
                     for (int j = 0; j < gap; ++j) {
                         mp_print_str(print, " ");
                     }

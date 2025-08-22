@@ -46,11 +46,16 @@
 #define MICROPY_EMIT_XTENSA         (1)
 #define MICROPY_EMIT_INLINE_XTENSA  (1)
 #define MICROPY_EMIT_XTENSAWIN      (1)
+#define MICROPY_EMIT_RV32           (1)
+#define MICROPY_EMIT_INLINE_RV32    (1)
+#define MICROPY_EMIT_NATIVE_DEBUG   (1)
+#define MICROPY_EMIT_NATIVE_DEBUG_PRINTER (&mp_stdout_print)
 
 #define MICROPY_DYNAMIC_COMPILER    (1)
 #define MICROPY_COMP_CONST_FOLDING  (1)
 #define MICROPY_COMP_MODULE_CONST   (1)
 #define MICROPY_COMP_CONST          (1)
+#define MICROPY_COMP_CONST_FLOAT    (1)
 #define MICROPY_COMP_DOUBLE_TUPLE_ASSIGN (1)
 #define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (1)
 #define MICROPY_COMP_RETURN_IF_EXPR (1)
@@ -84,7 +89,8 @@
 #define MICROPY_PY_ARRAY            (0)
 #define MICROPY_PY_ATTRTUPLE        (0)
 #define MICROPY_PY_COLLECTIONS      (0)
-#define MICROPY_PY_MATH             (0)
+#define MICROPY_PY_MATH             (MICROPY_COMP_CONST_FLOAT)
+#define MICROPY_PY_MATH_CONSTANTS   (MICROPY_COMP_CONST_FLOAT)
 #define MICROPY_PY_CMATH            (0)
 #define MICROPY_PY_GC               (0)
 #define MICROPY_PY_IO               (0)
@@ -133,7 +139,7 @@ typedef long mp_off_t;
 #ifdef _MSC_VER
 
 #define MP_ENDIANNESS_LITTLE        (1)
-#define NORETURN                    __declspec(noreturn)
+#define MP_NORETURN                 __declspec(noreturn)
 #define MP_NOINLINE                 __declspec(noinline)
 #define MP_ALWAYSINLINE             __forceinline
 #define MP_LIKELY(x)                (x)
@@ -163,3 +169,5 @@ typedef int ssize_t;
 typedef mp_off_t off_t;
 
 #endif
+
+extern const struct _mp_print_t mp_stdout_print;

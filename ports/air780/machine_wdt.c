@@ -38,7 +38,7 @@ typedef struct _machine_wdt_obj_t {
     uint8_t id;
 } machine_wdt_obj_t;
 
-STATIC machine_wdt_obj_t machine_wdt_default = {{&machine_wdt_type}};
+static machine_wdt_obj_t machine_wdt_default = {{&machine_wdt_type}};
 
 void modmachine_wdt_init0(void) {
     machine_wdt_obj_t *wdt;
@@ -47,7 +47,7 @@ void modmachine_wdt_init0(void) {
 }
 
 extern int replTimeoutTaskFlag; // see mphalport.c
-STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t timeout_ms) {
+static machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t timeout_ms) {
     // timeout for software watchdog should be in interval 0 - 60000 ms
     // value = 0 turns off watchdog (SW and HW)
     // value < 0 simply returns watchdog instance
@@ -68,12 +68,12 @@ STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
     }
 }
 
-STATIC void mp_machine_wdt_feed(machine_wdt_obj_t *self) {
+static void mp_machine_wdt_feed(machine_wdt_obj_t *self) {
     luat_wdt_feed();
 }
 
 
-STATIC void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t timeout_ms) {
+static void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t timeout_ms) {
     switch (self_in->id) {
         case 0: // software watchdog
             if(timeout_ms > 0) {

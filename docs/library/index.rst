@@ -69,6 +69,7 @@ library.
    heapq.rst
    io.rst
    json.rst
+   marshal.rst
    math.rst
    os.rst
    platform.rst
@@ -103,7 +104,9 @@ the following libraries.
    micropython.rst
    neopixel.rst
    network.rst
+   openamp.rst
    uctypes.rst
+   vfs.rst
 
 The following libraries provide drivers for hardware components.
 

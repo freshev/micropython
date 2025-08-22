@@ -34,6 +34,11 @@
 
 #if MICROPY_PY_BUILTINS_FLOAT
 
+// Workaround a bug in Windows SDK version 10.0.26100.0, where NAN is no longer constant.
+#if defined(_MSC_VER) && !defined(_UCRT_NOISY_NAN)
+#define _UCRT_NOISY_NAN
+#endif
+
 #include <math.h>
 #include "py/formatfloat.h"
 
@@ -102,29 +107,13 @@ mp_int_t mp_float_hash(mp_float_t src) {
 }
 #endif
 
-STATIC void float_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
+static void float_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
     (void)kind;
     mp_float_t o_val = mp_obj_float_get(o_in);
-    #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_FLOAT
-    char buf[16];
-    #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_C
-    const int precision = 6;
-    #else
-    const int precision = 7;
-    #endif
-    #else
-    char buf[32];
-    const int precision = 16;
-    #endif
-    mp_format_float(o_val, buf, sizeof(buf), 'g', precision, '\0');
-    mp_print_str(print, buf);
-    if (strchr(buf, '.') == NULL && strchr(buf, 'e') == NULL && strchr(buf, 'n') == NULL) {
-        // Python floats always have decimal point (unless inf or nan)
-        mp_print_str(print, ".0");
-    }
+    mp_print_float(print, o_val, 'g', PF_FLAG_ALWAYS_DECIMAL, '\0', -1, MP_FLOAT_REPR_PREC);
 }
 
-STATIC mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     (void)type_in;
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
 
@@ -149,7 +138,7 @@ STATIC mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size
     }
 }
 
-STATIC mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
+static mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
     mp_float_t val = mp_obj_float_get(o_in);
     switch (op) {
         case MP_UNARY_OP_BOOL:
@@ -172,7 +161,7 @@ STATIC mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
     }
 }
 
-STATIC mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+static mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     mp_float_t lhs_val = mp_obj_float_get(lhs_in);
     #if MICROPY_PY_BUILTINS_COMPLEX
     if (mp_obj_is_type(rhs_in, &mp_type_complex)) {
@@ -208,7 +197,7 @@ mp_float_t mp_obj_float_get(mp_obj_t self_in) {
 
 #endif
 
-STATIC void mp_obj_float_divmod(mp_float_t *x, mp_float_t *y) {
+static void mp_obj_float_divmod(mp_float_t *x, mp_float_t *y) {
     // logic here follows that of CPython
     // https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations
     // x == (x//y)*y + (x%y)

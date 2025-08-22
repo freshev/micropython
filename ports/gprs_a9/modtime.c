@@ -34,7 +34,7 @@
 #include "shared/timeutils/timeutils.h"
 
 // Return the localtime as an 8-tuple.
-STATIC mp_obj_t mp_time_localtime_get(void) {
+static mp_obj_t mp_time_localtime_get(void) {
     mp_int_t seconds = TIME_GetTime();
     timeutils_struct_time_t tm;
     timeutils_seconds_since_epoch_to_struct_time(seconds, &tm);
@@ -52,7 +52,7 @@ STATIC mp_obj_t mp_time_localtime_get(void) {
 }
 
 // Return the number of seconds since the Epoch.
-STATIC mp_obj_t mp_time_time_get(void) {
+static mp_obj_t mp_time_time_get(void) {
     mp_int_t seconds = TIME_GetTime();
     return mp_obj_new_int(seconds);
 }

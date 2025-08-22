@@ -33,7 +33,7 @@
 #include "luat_debug.h"
 
 // Return the localtime as an 8-tuple.
-STATIC mp_obj_t mp_time_localtime_get(void) {
+static mp_obj_t mp_time_localtime_get(void) {
     struct tm tb1 = {0};
     struct tm *tb2 = NULL;
     luat_rtc_get(&tb1);
@@ -55,7 +55,7 @@ STATIC mp_obj_t mp_time_localtime_get(void) {
 }
 
 // Return the number of seconds since the Epoch.
-STATIC mp_obj_t mp_time_time_get(void) {
+static mp_obj_t mp_time_time_get(void) {
     struct tm tb1 = {0};
     luat_rtc_get(&tb1);
     time_t utctime = mktime(&tb1);

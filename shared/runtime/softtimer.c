@@ -56,9 +56,9 @@ static void soft_timer_schedule_at_ms(uint32_t ticks_ms) {
 // Pointer to the pairheap of soft timer objects.
 // This may contain bss/data pointers as well as GC-heap pointers,
 // and is explicitly GC traced by soft_timer_gc_mark_all().
-STATIC soft_timer_entry_t *soft_timer_heap;
+static soft_timer_entry_t *soft_timer_heap;
 
-STATIC int soft_timer_lt(mp_pairheap_t *n1, mp_pairheap_t *n2) {
+static int soft_timer_lt(mp_pairheap_t *n1, mp_pairheap_t *n2) {
     soft_timer_entry_t *e1 = (soft_timer_entry_t *)n1;
     soft_timer_entry_t *e2 = (soft_timer_entry_t *)n2;
     return soft_timer_ticks_diff(e1->expiry_ms, e2->expiry_ms) < 0;
@@ -89,7 +89,7 @@ void soft_timer_handler(void) {
         heap = (soft_timer_entry_t *)mp_pairheap_pop(soft_timer_lt, &heap->pairheap);
         if (entry->flags & SOFT_TIMER_FLAG_PY_CALLBACK) {
             mp_sched_schedule(entry->py_callback, MP_OBJ_FROM_PTR(entry));
-        } else {
+        } else if (entry->c_callback) {
             entry->c_callback(entry);
         }
         if (entry->mode == SOFT_TIMER_MODE_PERIODIC) {

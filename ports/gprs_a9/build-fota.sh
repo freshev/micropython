@@ -47,7 +47,7 @@ if [[ "${FOLDER_NAME}" != "gprs_a9" ]]; then
     exit 1
 fi
 
-python ${LODCOMBINE_TOOL} gen_ota --platform ${PLATFORM_LOD_FILE} --lod ${WITH_PLT_LOD_FILE} --out ${WITH_PLT_OTA_FILE}
+python3 ${LODCOMBINE_TOOL} gen_ota --platform ${PLATFORM_LOD_FILE} --lod ${WITH_PLT_LOD_FILE} --out ${WITH_PLT_OTA_FILE}
 if [ "${PLATFORM}" = "Windows_NT" ] ; then
     dos2unix ${WITH_PLT_OTA_FILE}
 fi

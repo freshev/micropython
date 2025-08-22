@@ -1,7 +1,7 @@
 [tool.codespell]
 count = ""
 ignore-regex = '\b[A-Z]{3}\b'
-ignore-words-list = "ans,asend,deques,dout,extint,hsi,iput,mis,numer,shft,technic,ure"
+ignore-words-list = "ans,asend,deques,dout,emac,extint,hsi,iput,mis,notin,numer,ser,shft,synopsys,technic,ure,curren"
 quiet-level = 3
 skip = """
 */build*,\
@@ -13,8 +13,8 @@ skip = """
 ./ports/cc3200/hal,\
 ./ports/cc3200/simplelink,\
 ./ports/cc3200/telnet,\
+./ports/esp32/managed_components,\
 ./ports/nrf/drivers/bluetooth/s1*,\
-./ports/renesas-ra,\
 ./ports/stm32/usbhost,\
 ./tests,\
 ACKNOWLEDGEMENTS,\
@@ -27,6 +27,19 @@ line-length = 99
 target-version = "py37"
 
 [tool.ruff.lint]
+exclude = [  # Ruff finds Python SyntaxError in these files
+  "tests/cmdline/repl_autocomplete.py",
+  "tests/cmdline/repl_autocomplete_underscore.py",
+  "tests/cmdline/repl_autoindent.py",
+  "tests/cmdline/repl_basic.py",
+  "tests/cmdline/repl_cont.py",
+  "tests/cmdline/repl_emacs_keys.py",
+  "tests/cmdline/repl_paste.py",
+  "tests/cmdline/repl_words_move.py",
+  "tests/feature_check/repl_emacs_check.py",
+  "tests/feature_check/repl_words_move_check.py",
+  "tests/micropython/viper_args.py",
+]
 extend-select = ["C9", "PLC"]
 ignore = [
   "E401",
@@ -37,14 +50,12 @@ ignore = [
   "F401",
   "F403",
   "F405",
-  "PLC1901",
+  "PLC0206",
 ]
+mccabe.max-complexity = 40
 
-[tool.ruff.mccabe]
-max-complexity = 40
-
-[tool.ruff.per-file-ignores]
-# Exclude all tests from linting (does not apply to formatting).
+[tool.ruff.lint.per-file-ignores]
+# Exclude all tests from linting.
 "tests/**/*.py" = ["ALL"]
 "ports/cc3200/tools/uniflash.py" = ["E711"]
 # manifest.py files are evaluated with some global names pre-defined

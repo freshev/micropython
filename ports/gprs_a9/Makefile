@@ -2,6 +2,7 @@ mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
 PATH_CURR := $(strip $(patsubst %/, %, $(dir ${mkfile_path})))
 PATH_MICROPY := $(strip $(patsubst %/ports/, %, $(dir ${PATH_CURR})))
 CSDK_PATH := ${PATH_MICROPY}/lib/GPRS_C_SDK
+
 include ../../py/mkenv.mk
 
 PLATFORM := $(shell uname)
@@ -142,6 +143,7 @@ ifdef CONFIG_FOTA_REMOVE_PY
 	KBUILD_CFLAGS += -DFOTA_REMOVE_PY=1
 endif
 
+KBUILD_CFLAGS += -DFFCONF_H=\"lib/oofatfs/ffconf.h\"
 
 
 LD_SRC  := ${CSDK_PATH}/platform/compilation/cust.ld
@@ -257,9 +259,9 @@ version:
 
 lod: ${HEX}
 	$(Q)$(MAKE) targetgen
-	$(Q)python ./libcsdk-patches/patch-lod.py ${PLATFORM_LOD_FILE}
+	$(Q)python3 ./libcsdk-patches/patch-lod.py ${PLATFORM_LOD_FILE}
 	$(Q)$(SRECMAP_TOOL) -c ${MAP_CFG_FILE} -m ${FLSH_MODEL} -b ${TARGET_FILE} ${HEX} ${LODBASE} ${STDOUT_NULL}
-	$(Q)python $(LODCOMBINE_TOOL) merge --platform $(PLATFORM_LOD_FILE) --app $(LOD_FILE) --out $(WITH_PLT_LOD_FILE)
+	$(Q)python3 $(LODCOMBINE_TOOL) merge --platform $(PLATFORM_LOD_FILE) --app $(LOD_FILE) --out $(WITH_PLT_LOD_FILE)
 	@if [ "${PLATFORM}" = "Windows_NT" ] ; then \
 		dos2unix $(WITH_PLT_LOD_FILE); \
 	fi

@@ -195,6 +195,22 @@
 #define TRACE_TICK(current_ip, current_sp, is_exception)
 #endif // MICROPY_PY_SYS_SETTRACE
 
+#if MICROPY_PY_BUILTINS_SLICE
+// This function is marked "no inline" so it doesn't increase the C stack usage of the main VM function.
+MP_NOINLINE static mp_obj_t *build_slice_stack_allocated(byte op, mp_obj_t *sp, mp_obj_t step) {
+    mp_obj_t stop = sp[2];
+    mp_obj_t start = sp[1];
+    mp_obj_slice_t slice = { .base = { .type = &mp_type_slice }, .start = start, .stop = stop, .step = step };
+    if (op == MP_BC_LOAD_SUBSCR) {
+        SET_TOP(mp_obj_subscr(TOP(), MP_OBJ_FROM_PTR(&slice), MP_OBJ_SENTINEL));
+    } else { // MP_BC_STORE_SUBSCR
+        mp_obj_subscr(TOP(), MP_OBJ_FROM_PTR(&slice), sp[-1]);
+        sp -= 2;
+    }
+    return sp;
+}
+#endif
+
 // fastn has items in reverse order (fastn[0] is local[0], fastn[-1] is local[1], etc)
 // sp points to bottom of stack which grows up
 // returns:
@@ -849,9 +865,20 @@ unwind_jump:;
                         // 3-argument slice includes step
                         step = POP();
                     }
-                    mp_obj_t stop = POP();
-                    mp_obj_t start = TOP();
-                    SET_TOP(mp_obj_new_slice(start, stop, step));
+                    if ((*ip == MP_BC_LOAD_SUBSCR || *ip == MP_BC_STORE_SUBSCR)
+                        && (mp_obj_get_type(sp[-2])->flags & MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE)) {
+                        // Fast path optimisation for when the BUILD_SLICE is immediately followed
+                        // by a LOAD/STORE_SUBSCR for an accepting type, to avoid needing to allocate
+                        // the slice on the heap.  In some cases (e.g. a[1:3] = x) this can result
+                        // in no allocations at all.  We can't do this for instance types because
+                        // the get/set/delattr implementation may keep a reference to the slice.
+                        byte op = *ip++;
+                        sp = build_slice_stack_allocated(op, sp - 2, step);
+                    } else {
+                        mp_obj_t stop = POP();
+                        mp_obj_t start = TOP();
+                        SET_TOP(mp_obj_new_slice(start, stop, step));
+                    }
                     DISPATCH();
                 }
                 #endif
@@ -893,7 +920,7 @@ unwind_jump:;
 
                 ENTRY(MP_BC_MAKE_FUNCTION): {
                     DECODE_PTR;
-                    PUSH(mp_make_function_from_raw_code(ptr, code_state->fun_bc->context, NULL));
+                    PUSH(mp_make_function_from_proto_fun(ptr, code_state->fun_bc->context, NULL));
                     DISPATCH();
                 }
 
@@ -901,7 +928,7 @@ unwind_jump:;
                     DECODE_PTR;
                     // Stack layout: def_tuple def_dict <- TOS
                     sp -= 1;
-                    SET_TOP(mp_make_function_from_raw_code(ptr, code_state->fun_bc->context, sp));
+                    SET_TOP(mp_make_function_from_proto_fun(ptr, code_state->fun_bc->context, sp));
                     DISPATCH();
                 }
 
@@ -910,7 +937,7 @@ unwind_jump:;
                     size_t n_closed_over = *ip++;
                     // Stack layout: closed_overs <- TOS
                     sp -= n_closed_over - 1;
-                    SET_TOP(mp_make_closure_from_raw_code(ptr, code_state->fun_bc->context, n_closed_over, sp));
+                    SET_TOP(mp_make_closure_from_proto_fun(ptr, code_state->fun_bc->context, n_closed_over, sp));
                     DISPATCH();
                 }
 
@@ -919,7 +946,7 @@ unwind_jump:;
                     size_t n_closed_over = *ip++;
                     // Stack layout: def_tuple def_dict closed_overs <- TOS
                     sp -= 2 + n_closed_over - 1;
-                    SET_TOP(mp_make_closure_from_raw_code(ptr, code_state->fun_bc->context, 0x100 | n_closed_over, sp));
+                    SET_TOP(mp_make_closure_from_proto_fun(ptr, code_state->fun_bc->context, 0x100 | n_closed_over, sp));
                     DISPATCH();
                 }
 

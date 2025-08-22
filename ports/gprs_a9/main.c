@@ -68,10 +68,10 @@
 #define MICROPYTHON_HEAP_MAX_SIZE    (1024 * 2048)
 #define MICROPYTHON_HEAP_MIN_SIZE    (2048)
 
-STATIC void* heap;
+static void* heap;
 HANDLE mainTaskHandle  = NULL;
 HANDLE microPyTaskHandle = NULL;
-STATIC void *stack_top;
+static void *stack_top;
 
 extern mp_uint_t gc_helper_get_regs_and_sp(mp_uint_t* regs);
 void gc_collect(void) {
@@ -343,7 +343,7 @@ int DEBUG_printf(const char *fmt, ...) {
     return ret;
 }
 
-STATIC void debug_print_strn(void *env, const char *str, size_t len) {
+static void debug_print_strn(void *env, const char *str, size_t len) {
     (void) env;
     if(microPyTaskHandle != NULL) {
         for (size_t i=0; i<len; i++) {

@@ -18,6 +18,7 @@
    cd micropython
    make -C mpy-cross
    cd ports/gprs_a9
+   make submodules
    make
    ```
 4. Make OTA (upgrade packs)

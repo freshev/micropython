@@ -100,8 +100,8 @@ void mbedtls_debug_set_threshold( int threshold ) {}; // correct ./luatos_lwip_s
 #define USOCKET_EVENTS_DIVISOR (1)
 
 extern uint8_t network_status;
-STATIC uint8_t socket_events_divisor;
-STATIC socket_obj_t *socket_events_head;
+static uint8_t socket_events_divisor;
+static socket_obj_t *socket_events_head;
 extern luat_rtos_task_handle microPyTaskHandle;
 
 void socket_events_deinit(void) {
@@ -109,13 +109,13 @@ void socket_events_deinit(void) {
 }
 
 // Assumes the socket is not already in the linked list, and adds it
-STATIC void socket_events_add(socket_obj_t *sock) {
+static void socket_events_add(socket_obj_t *sock) {
     sock->events_next = socket_events_head;
     socket_events_head = sock;
 }
 
 // Assumes the socket is already in the linked list, and removes it
-STATIC void socket_events_remove(socket_obj_t *sock) {
+static void socket_events_remove(socket_obj_t *sock) {
     for (socket_obj_t **s = &socket_events_head;; s = &(*s)->events_next) {
         if (*s == sock) {
             *s = (*s)->events_next;
@@ -268,16 +268,17 @@ static int _socket_getaddrinfo2(const mp_obj_t host, const mp_obj_t portx, struc
     return res;
 }
 
-STATIC void _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
+static void _socket_getaddrinfo(const mp_obj_t addrtuple, struct addrinfo **resp) {
     mp_obj_t *elem;
     mp_obj_get_array_fixed_n(addrtuple, 2, &elem);
     _socket_getaddrinfo2(elem[0], elem[1], resp);
 }
 
-STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 3, false);
 
-    socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+    //socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+    socket_obj_t *sock = m_new_obj(socket_obj_t);
     sock->base.type = type_in;
     sock->ctrl = network_alloc_ctrl(NW_ADAPTER_INDEX_LWIP_GPRS);
 
@@ -309,7 +310,7 @@ STATIC mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
     return MP_OBJ_FROM_PTR(sock);
 }
 
-STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     _socket_getaddrinfo(arg1, &res);
@@ -325,10 +326,10 @@ STATIC mp_obj_t socket_bind(const mp_obj_t arg0, const mp_obj_t arg1) {
     // real connection made in listen() or accept() or connect()
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_bind_obj, socket_bind);
 
 
-STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
     socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 
     int backlog = MICROPY_PY_SOCKET_LISTEN_BACKLOG_DEFAULT;
@@ -343,10 +344,10 @@ STATIC mp_obj_t socket_listen(size_t n_args, const mp_obj_t *args) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_listen_obj, 1, 2, socket_listen);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_listen_obj, 1, 2, socket_listen);
 
 
-STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
+static mp_obj_t socket_accept(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
 
     struct sockaddr addr;
@@ -378,14 +379,15 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
                 mp_raise_OSError(MP_ETIMEDOUT);
             }
         }
-        
+
         // create new socket object
-        socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+        // socket_obj_t *sock = m_new_obj_with_finaliser(socket_obj_t);
+        socket_obj_t *sock = m_new_obj(socket_obj_t);
         sock->base.type = self->base.type;
         sock->ctrl = accept_ctrl;
         sock->state = SOCKET_STATE_CONNECTED;
         _socket_settimeout(sock, UINT64_MAX);
-        
+
         // make the return value
         uint8_t *ip = (uint8_t *)&((struct sockaddr_in *)&addr)->sin_addr;
         uint16_t port = lwip_ntohs(((struct sockaddr_in *)&addr)->sin_port);
@@ -399,9 +401,9 @@ STATIC mp_obj_t socket_accept(const mp_obj_t arg0) {
         return mp_const_none;
     } 
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
+static MP_DEFINE_CONST_FUN_OBJ_1(socket_accept_obj, socket_accept);
 
-STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     struct addrinfo *res;
     int raise_err = 0;
@@ -440,9 +442,9 @@ STATIC mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_connect_obj, socket_connect);
 
-STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
     (void)n_args; // always 4
     socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 
@@ -486,7 +488,7 @@ STATIC mp_obj_t socket_setsockopt(size_t n_args, const mp_obj_t *args) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_setsockopt_obj, 4, 4, socket_setsockopt);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_setsockopt_obj, 4, 4, socket_setsockopt);
 
 void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms) {
     // Rather than waiting for the entire timeout specified, we wait sock->retries times
@@ -504,7 +506,7 @@ void _socket_settimeout(socket_obj_t *sock, uint64_t timeout_ms) {
     lwip_fcntl(sock->ctrl->socket_id, F_SETFL, timeout_ms ? 0 : O_NONBLOCK);
 }
 
-STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     if (arg1 == mp_const_none) {
         _socket_settimeout(self, UINT64_MAX);
@@ -517,9 +519,9 @@ STATIC mp_obj_t socket_settimeout(const mp_obj_t arg0, const mp_obj_t arg1) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_settimeout_obj, socket_settimeout);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_settimeout_obj, socket_settimeout);
 
-STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     if (mp_obj_is_true(arg1)) {
         _socket_settimeout(self, UINT64_MAX);
@@ -528,9 +530,9 @@ STATIC mp_obj_t socket_setblocking(const mp_obj_t arg0, const mp_obj_t arg1) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_setblocking_obj, socket_setblocking);
 
-STATIC mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
+static mp_uint_t _socket_read_data(mp_obj_t self_in, void *buf, size_t size,
     struct sockaddr *from, socklen_t *from_len, int *errcode) {
     socket_obj_t *sock = MP_OBJ_TO_PTR(self_in);
 
@@ -638,12 +640,12 @@ mp_obj_t _socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in,
     return mp_obj_new_bytes_from_vstr(&vstr);
 }
 
-STATIC mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
+static mp_obj_t socket_recv(mp_obj_t self_in, mp_obj_t len_in) {
     return _socket_recvfrom(self_in, len_in, NULL, NULL);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recv_obj, socket_recv);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_recv_obj, socket_recv);
 
-STATIC mp_obj_t socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in) {
+static mp_obj_t socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in) {
     struct sockaddr from;
     socklen_t fromlen = sizeof(from);
 
@@ -656,7 +658,7 @@ STATIC mp_obj_t socket_recvfrom(mp_obj_t self_in, mp_obj_t len_in) {
 
     return mp_obj_new_tuple(2, tuple);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_recvfrom_obj, socket_recvfrom);
 
 int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
     int sentlen = 0;
@@ -682,16 +684,16 @@ int _socket_send(socket_obj_t *sock, const char *data, size_t datalen) {
     return sentlen;
 }
 
-STATIC mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_send(const mp_obj_t arg0, const mp_obj_t arg1) {
     socket_obj_t *sock = MP_OBJ_TO_PTR(arg0);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(arg1, &bufinfo, MP_BUFFER_READ);
     int r = _socket_send(sock, bufinfo.buf, bufinfo.len);
     return mp_obj_new_int(r);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_send_obj, socket_send);
 
-STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
+static mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     // XXX behaviour when nonblocking (see extmod/modlwip.c)
     // XXX also timeout behaviour.
     socket_obj_t *sock = MP_OBJ_TO_PTR(arg0);
@@ -703,9 +705,9 @@ STATIC mp_obj_t socket_sendall(const mp_obj_t arg0, const mp_obj_t arg1) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(socket_sendall_obj, socket_sendall);
+static MP_DEFINE_CONST_FUN_OBJ_2(socket_sendall_obj, socket_sendall);
 
-STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_in) {
+static mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_in) {
     socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     // get the buffer to send
@@ -736,25 +738,25 @@ STATIC mp_obj_t socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_
     }
     mp_raise_OSError(MP_ETIMEDOUT);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(socket_sendto_obj, socket_sendto);
+static MP_DEFINE_CONST_FUN_OBJ_3(socket_sendto_obj, socket_sendto);
 
-STATIC mp_obj_t socket_fileno(const mp_obj_t arg0) {
+static mp_obj_t socket_fileno(const mp_obj_t arg0) {
     socket_obj_t *self = MP_OBJ_TO_PTR(arg0);
     return mp_obj_new_int(self->ctrl->socket_id);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
+static MP_DEFINE_CONST_FUN_OBJ_1(socket_fileno_obj, socket_fileno);
 
-STATIC mp_obj_t socket_makefile(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t socket_makefile(size_t n_args, const mp_obj_t *args) {
     (void)n_args;
     return args[0];
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_makefile);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_makefile_obj, 1, 3, socket_makefile);
 
-STATIC mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
+static mp_uint_t socket_stream_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     return _socket_read_data(self_in, buf, size, NULL, NULL, errcode);
 }
 
-STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
+static mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     socket_obj_t *sock = self_in;
     // LUAT_DEBUG_PRINT("Write %d socket %d bytes", sock->ctrl->socket_id, size);
     for (uint i = 0; i <= sock->retries; i++) {
@@ -778,7 +780,7 @@ STATIC mp_uint_t socket_stream_write(mp_obj_t self_in, const void *buf, mp_uint_
     return MP_STREAM_ERROR;
 }
 
-STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+static mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     socket_obj_t *socket = self_in;
     if (request == MP_STREAM_POLL) {        
         if (socket->ctrl->socket_id == -1) {
@@ -856,7 +858,7 @@ STATIC mp_uint_t socket_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
     return MP_STREAM_ERROR;
 }
 
-STATIC const mp_rom_map_elem_t socket_locals_dict_table[] = {
+static const mp_rom_map_elem_t socket_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mp_stream_close_obj) },
     { MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&mp_stream_close_obj) },
     { MP_ROM_QSTR(MP_QSTR_bind), MP_ROM_PTR(&socket_bind_obj) },
@@ -879,15 +881,15 @@ STATIC const mp_rom_map_elem_t socket_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj) },
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&mp_stream_write_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(socket_locals_dict, socket_locals_dict_table);
+static MP_DEFINE_CONST_DICT(socket_locals_dict, socket_locals_dict_table);
 
-STATIC const mp_stream_p_t socket_stream_p = {
+static const mp_stream_p_t socket_stream_p = {
     .read = socket_stream_read,
     .write = socket_stream_write,
     .ioctl = socket_stream_ioctl
 };
 
-STATIC MP_DEFINE_CONST_OBJ_TYPE(
+static MP_DEFINE_CONST_OBJ_TYPE(
     socket_type,
     MP_QSTR_socket,
     MP_TYPE_FLAG_NONE,
@@ -896,7 +898,7 @@ STATIC MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &socket_locals_dict
     );
 
-STATIC mp_obj_t socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
     // TODO support additional args beyond the first two
 
     struct addrinfo *res = NULL;
@@ -932,9 +934,9 @@ STATIC mp_obj_t socket_getaddrinfo(size_t n_args, const mp_obj_t *args) {
     }
     return ret_list;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_getaddrinfo_obj, 2, 6, socket_getaddrinfo);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socket_getaddrinfo_obj, 2, 6, socket_getaddrinfo);
 
-STATIC mp_obj_t air_socket_initialize() {
+static mp_obj_t air_socket_initialize() {
     static int initialized = 0;
     uint8_t is_ipv6;
     if (!initialized) {
@@ -946,10 +948,10 @@ STATIC mp_obj_t air_socket_initialize() {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(air_socket_initialize_obj, air_socket_initialize);
+static MP_DEFINE_CONST_FUN_OBJ_0(air_socket_initialize_obj, air_socket_initialize);
 
 
-STATIC const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
+static const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_socket) },
     { MP_ROM_QSTR(MP_QSTR___init__), MP_ROM_PTR(&air_socket_initialize_obj) },
     { MP_ROM_QSTR(MP_QSTR_socket), MP_ROM_PTR(&socket_type) },
@@ -968,7 +970,7 @@ STATIC const mp_rom_map_elem_t mp_module_socket_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_SO_BROADCAST), MP_ROM_INT(SO_BROADCAST) }
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_socket_globals, mp_module_socket_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_socket_globals, mp_module_socket_globals_table);
 
 const mp_obj_module_t mp_module_socket = {
     .base = { &mp_type_module },

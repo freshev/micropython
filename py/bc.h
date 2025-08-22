@@ -44,11 +44,11 @@
 //  prelude size    : var uint
 //      contains two values interleaved bit-wise as: xIIIIIIC repeated
 //          x = extension           another byte follows
-//          I = n_info              number of bytes in source info section
+//          I = n_info              number of bytes in source info section (always > 0)
 //          C = n_cells             number of bytes/cells in closure section
 //
 //  source info section:
-//      simple_name : var qstr
+//      simple_name : var qstr      always exists
 //      argname0    : var qstr
 //      ...         : var qstr
 //      argnameN    : var qstr      N = num_pos_args + num_kwonly_args - 1
@@ -226,7 +226,7 @@ typedef struct _mp_compiled_module_t {
 // Outer level struct defining a frozen module.
 typedef struct _mp_frozen_module_t {
     const mp_module_constants_t constants;
-    const struct _mp_raw_code_t *rc;
+    const void *proto_fun;
 } mp_frozen_module_t;
 
 // State for an executing function.
@@ -281,7 +281,7 @@ mp_vm_return_kind_t mp_execute_bytecode(mp_code_state_t *code_state,
 mp_code_state_t *mp_obj_fun_bc_prepare_codestate(mp_obj_t func, size_t n_args, size_t n_kw, const mp_obj_t *args);
 void mp_setup_code_state(mp_code_state_t *code_state, size_t n_args, size_t n_kw, const mp_obj_t *args);
 void mp_setup_code_state_native(mp_code_state_native_t *code_state, size_t n_args, size_t n_kw, const mp_obj_t *args);
-void mp_bytecode_print(const mp_print_t *print, const struct _mp_raw_code_t *rc, const mp_module_constants_t *cm);
+void mp_bytecode_print(const mp_print_t *print, const struct _mp_raw_code_t *rc, size_t fun_data_len, const mp_module_constants_t *cm);
 void mp_bytecode_print2(const mp_print_t *print, const byte *ip, size_t len, struct _mp_raw_code_t *const *child_table, const mp_module_constants_t *cm);
 const byte *mp_bytecode_print_str(const mp_print_t *print, const byte *ip_start, const byte *ip, struct _mp_raw_code_t *const *child_table, const mp_module_constants_t *cm);
 #define mp_bytecode_print_inst(print, code, x_table) mp_bytecode_print2(print, code, 1, x_table)
@@ -308,25 +308,35 @@ static inline void mp_module_context_alloc_tables(mp_module_context_t *context, 
     #endif
 }
 
+typedef struct _mp_code_lineinfo_t {
+    size_t bc_increment;
+    size_t line_increment;
+} mp_code_lineinfo_t;
+
+static inline mp_code_lineinfo_t mp_bytecode_decode_lineinfo(const byte **line_info) {
+    mp_code_lineinfo_t result;
+    size_t c = (*line_info)[0];
+    if ((c & 0x80) == 0) {
+        // 0b0LLBBBBB encoding
+        result.bc_increment = c & 0x1f;
+        result.line_increment = c >> 5;
+        *line_info += 1;
+    } else {
+        // 0b1LLLBBBB 0bLLLLLLLL encoding (l's LSB in second byte)
+        result.bc_increment = c & 0xf;
+        result.line_increment = ((c << 4) & 0x700) | (*line_info)[1];
+        *line_info += 2;
+    }
+    return result;
+}
+
 static inline size_t mp_bytecode_get_source_line(const byte *line_info, const byte *line_info_top, size_t bc_offset) {
     size_t source_line = 1;
     while (line_info < line_info_top) {
-        size_t c = *line_info;
-        size_t b, l;
-        if ((c & 0x80) == 0) {
-            // 0b0LLBBBBB encoding
-            b = c & 0x1f;
-            l = c >> 5;
-            line_info += 1;
-        } else {
-            // 0b1LLLBBBB 0bLLLLLLLL encoding (l's LSB in second byte)
-            b = c & 0xf;
-            l = ((c << 4) & 0x700) | line_info[1];
-            line_info += 2;
-        }
-        if (bc_offset >= b) {
-            bc_offset -= b;
-            source_line += l;
+        mp_code_lineinfo_t decoded = mp_bytecode_decode_lineinfo(&line_info);
+        if (bc_offset >= decoded.bc_increment) {
+            bc_offset -= decoded.bc_increment;
+            source_line += decoded.line_increment;
         } else {
             // found source line corresponding to bytecode offset
             break;

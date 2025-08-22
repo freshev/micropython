@@ -112,18 +112,18 @@ void modos_init0() {
     API_FS_ChangeDir("/");
 }
 
-STATIC const qstr os_uname_info_fields[] = {
+static const qstr os_uname_info_fields[] = {
     MP_QSTR_sysname, MP_QSTR_nodename,
     MP_QSTR_release, MP_QSTR_version, MP_QSTR_machine
 };
 
-STATIC const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, MICROPY_PY_SYS_PLATFORM);
-STATIC const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_PY_SYS_PLATFORM);
-STATIC const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, FW_VERSION);
-STATIC const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
-STATIC const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
+static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, MICROPY_PY_SYS_PLATFORM);
+static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_PY_SYS_PLATFORM);
+static const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, FW_VERSION);
+static const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
+static const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
 
-STATIC MP_DEFINE_ATTRTUPLE(
+static MP_DEFINE_ATTRTUPLE(
     os_uname_info_obj,
     os_uname_info_fields,
     5,
@@ -134,14 +134,14 @@ STATIC MP_DEFINE_ATTRTUPLE(
     (mp_obj_t)&os_uname_info_machine_obj
 );
 
-STATIC mp_obj_t os_uname(void) {
+static mp_obj_t os_uname(void) {
     // ========================================
     // Platform information.
     // ========================================
     return (mp_obj_t)&os_uname_info_obj;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
+static MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
 
 static uint32_t glob_seed = 0;
 
@@ -174,7 +174,7 @@ uint32_t rng_get(void) {
 }
 
 
-STATIC mp_obj_t os_urandom(mp_obj_t num) {
+static mp_obj_t os_urandom(mp_obj_t num) {
     // ========================================
     // Random bytes.
     // Args:
@@ -194,7 +194,7 @@ STATIC mp_obj_t os_urandom(mp_obj_t num) {
     return mp_obj_new_bytes_from_vstr(&vstr);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(os_urandom_obj, os_urandom);
+static MP_DEFINE_CONST_FUN_OBJ_1(os_urandom_obj, os_urandom);
 
 // -------------
 // Native FS API
@@ -228,7 +228,7 @@ mp_obj_t modos_internal_flash_umount() {
 MP_DEFINE_CONST_FUN_OBJ_0(modos_internal_flash_umount_obj, modos_internal_flash_umount);
 MP_DEFINE_CONST_STATICMETHOD_OBJ(modos_internal_flash_umount_static_class_obj, &modos_internal_flash_umount_obj);
 
-STATIC mp_obj_t internal_flash_ilistdir_it_iternext(mp_obj_t self_in) {
+static mp_obj_t internal_flash_ilistdir_it_iternext(mp_obj_t self_in) {
     // ========================================
     // next(ilistdir)
     // ========================================
@@ -423,7 +423,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(modos_internal_flash_statvfs_obj, modos_internal_flash
 MP_DEFINE_CONST_STATICMETHOD_OBJ(modos_internal_flash_statvfs_static_class_obj, &modos_internal_flash_statvfs_obj);
 MP_DEFINE_CONST_STATICMETHOD_OBJ(modos_internal_flash_open_static_class_obj, &internal_flash_open_obj);
 
-STATIC const mp_rom_map_elem_t internal_flash_locals_dict_table[] = {
+static const mp_rom_map_elem_t internal_flash_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&modos_internal_flash_open_static_class_obj) },
     { MP_ROM_QSTR(MP_QSTR_mount), MP_ROM_PTR(&modos_internal_flash_mount_static_class_obj) },
     { MP_ROM_QSTR(MP_QSTR_umount), MP_ROM_PTR(&modos_internal_flash_umount_static_class_obj) },
@@ -438,10 +438,10 @@ STATIC const mp_rom_map_elem_t internal_flash_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_statvfs), MP_ROM_PTR(&modos_internal_flash_statvfs_static_class_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(internal_flash_locals_dict, internal_flash_locals_dict_table);
+static MP_DEFINE_CONST_DICT(internal_flash_locals_dict, internal_flash_locals_dict_table);
 
 
-/*STATIC const mp_obj_type_t modos_internal_flash_type = {
+/*static const mp_obj_type_t modos_internal_flash_type = {
     { &mp_type_type },
     name = MP_QSTR_internal_flash,
     locals_dict = (mp_obj_dict_t*)&internal_flash_locals_dict,
@@ -456,7 +456,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     );
 
 
-STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
+static const mp_rom_map_elem_t os_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_os) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_internal_flash), (mp_obj_t)MP_ROM_PTR(&modos_internal_flash_type) },
     { MP_ROM_QSTR(MP_QSTR_uname), MP_ROM_PTR(&os_uname_obj) },
@@ -484,7 +484,7 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
     #endif
 };
 
-STATIC MP_DEFINE_CONST_DICT(os_module_globals, os_module_globals_table);
+static MP_DEFINE_CONST_DICT(os_module_globals, os_module_globals_table);
 
 const mp_obj_module_t os_module = {
     .base = { &mp_type_module },

@@ -37,12 +37,12 @@ typedef struct _machine_rtc_obj_t {
 } machine_rtc_obj_t;
 
 // singleton RTC object
-STATIC const machine_rtc_obj_t machine_rtc_obj = {{&machine_rtc_type}};
+static const machine_rtc_obj_t machine_rtc_obj = {{&machine_rtc_type}};
 
 void modmachine_rtc_init0(void) {
 }
 
-STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check arguments
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
 
@@ -50,7 +50,7 @@ STATIC mp_obj_t machine_rtc_make_new(const mp_obj_type_t *type, size_t n_args, s
     return (mp_obj_t)&machine_rtc_obj;
 }
 
-STATIC mp_obj_t machine_rtc_datetime(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t machine_rtc_datetime(size_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         // Get time
         RTC_Time_t tm;
@@ -87,12 +87,12 @@ STATIC mp_obj_t machine_rtc_datetime(size_t n_args, const mp_obj_t *args) {
         return mp_const_none;
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_datetime);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(machine_rtc_datetime_obj, 1, 2, machine_rtc_datetime);
 
-STATIC const mp_rom_map_elem_t machine_rtc_locals_dict_table[] = {
+static const mp_rom_map_elem_t machine_rtc_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_datetime), MP_ROM_PTR(&machine_rtc_datetime_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(machine_rtc_locals_dict, machine_rtc_locals_dict_table);
+static MP_DEFINE_CONST_DICT(machine_rtc_locals_dict, machine_rtc_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     machine_rtc_type,

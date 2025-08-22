@@ -39,10 +39,10 @@ typedef struct _machine_wdt_obj_t {
     uint8_t id;
 } machine_wdt_obj_t;
 
-STATIC machine_wdt_obj_t machine_wdt_default = {{&machine_wdt_type}};
-STATIC machine_wdt_obj_t machine_hw_wdt_default = {{&machine_wdt_type}};
+static machine_wdt_obj_t machine_wdt_default = {{&machine_wdt_type}};
+static machine_wdt_obj_t machine_hw_wdt_default = {{&machine_wdt_type}};
 
-STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t timeout_ms) {
+static machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t timeout_ms) {
     // timeout for software watchdog should be in interval 0 - 511999 ms
     // value > 512000 overflows WatchDog_Open() and hangs A9
     // value = 0 turns off watchdog (SW and HW)
@@ -64,12 +64,12 @@ STATIC machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
     }
 }
 
-STATIC void mp_machine_wdt_feed(machine_wdt_obj_t *self) {
+static void mp_machine_wdt_feed(machine_wdt_obj_t *self) {
     WatchDog_KeepAlive();
 }
 
 
-STATIC void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t timeout_ms) {
+static void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t timeout_ms) {
     switch (self_in->id) {
         case 0: // A9 soft watchdog
             if(timeout_ms > 0 && timeout_ms < 512000) {

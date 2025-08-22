@@ -11,6 +11,8 @@
 #define MACHINE_HW_WATCHDOG_TIMEOUT (500)
 #define MACHINE_HW_WATCHDOG_PIN (GPIO_PIN7)
 
+//#define MICROPY_EMIT_RV32                   (0)
+
 #include <stdbool.h>
 #include <stdint.h>
 #include <unistd.h>

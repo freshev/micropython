@@ -169,7 +169,7 @@ uint32_t _get_SPI_FREQ(mp_int_t _frequency) {
 }
 
 
-STATIC void machine_hw_spi_init_internal(machine_hw_spi_obj_t* self) {
+static void machine_hw_spi_init_internal(machine_hw_spi_obj_t* self) {
     if(_spi_inited[self->id - 1][(int)self->cs] == 0) {
         if(self->mode == 0) {
             SPI_Config_t config = {
@@ -214,7 +214,7 @@ STATIC void machine_hw_spi_init_internal(machine_hw_spi_obj_t* self) {
     } else mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI already inited");
 }
 
-STATIC void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
+static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
     if(_spi_inited[self->id - 1][self->cs] == 1) {
         if(SPI_Close(self->id)) {
            _spi_inited[self->id - 1][0] = 0;
@@ -328,7 +328,7 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
     machine_hw_spi_init_internal(self);
     return MP_OBJ_FROM_PTR(self);
 }
-STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t *)self_in;
 
     enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_mode, ARG_cs, ARG_duplex, ARG_cs_active_low, ARG_dma_delay, ARG_debug, ARG_debug_hst};
@@ -420,13 +420,13 @@ STATIC void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_
     machine_hw_spi_init_internal(self);
 }
 
-STATIC void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
+static void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
     machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t *)self_in;
     machine_hw_spi_deinit_internal(self);
 }
 
 
-STATIC void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
+static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // Round to nearest whole set of bits
     int bits_to_send = len * 8 / self->bits * self->bits;
@@ -438,7 +438,7 @@ STATIC void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
 // ---------
 // SPI Print
 // ---------
-STATIC void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "SPI%d_CS%d(baudrate :%d, dma_delay:%d, line:%s, clock_polarity:%d, clock_phase:%d, cs_active_low:%d, bits:%s, mode:%s, ptr: %p)",
         self->id, self->cs, self->baudrate, self->dma_delay, self->line == SPI_LINE_3 ? "SPI_LINE_3" : "SPI_LINE_4", self->cpol, self->cpha,
@@ -446,7 +446,7 @@ STATIC void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_p
 }
 
 
-STATIC const mp_machine_spi_p_t machine_hw_spi_p = {
+static const mp_machine_spi_p_t machine_hw_spi_p = {
     .init = machine_hw_spi_init,
     .deinit = machine_hw_spi_deinit,
     .transfer = machine_hw_spi_transfer,

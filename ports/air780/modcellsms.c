@@ -35,19 +35,19 @@
 #include "luat_pm.h"
 #include "cJSON.h"
 
-STATIC mp_obj_t ussd_response = mp_const_none;
-STATIC mp_obj_t sms_callback = mp_const_none;
-STATIC mp_obj_t ussd_callback = mp_const_none;
+static mp_obj_t ussd_response = mp_const_none;
+static mp_obj_t sms_callback = mp_const_none;
+static mp_obj_t ussd_callback = mp_const_none;
 
-STATIC sms_obj_t *sms_list_buffer[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
-STATIC uint8_t sms_list_buffer_len = 0;
-STATIC uint8_t sms_list_flag = 0;
-STATIC uint8_t sms_delete_flag = 0;
-STATIC uint8_t sms_read_flag = 0;
-STATIC uint8_t sms_send_flag = 0;
-STATIC uint8_t ussd_send_flag = 0;
-STATIC CmiSmsGetStorageStatusCnf storage;
-STATIC uint8_t storage_flag = 0;
+static sms_obj_t *sms_list_buffer[10] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL };
+static uint8_t sms_list_buffer_len = 0;
+static uint8_t sms_list_flag = 0;
+static uint8_t sms_delete_flag = 0;
+static uint8_t sms_read_flag = 0;
+static uint8_t sms_send_flag = 0;
+static uint8_t ussd_send_flag = 0;
+static CmiSmsGetStorageStatusCnf storage;
+static uint8_t storage_flag = 0;
 
 LUAT_SMS_MAIN_CFG_T luat_sms_cfg;
 
@@ -951,8 +951,8 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     return result;
 }
 
-STATIC mp_sched_node_t modcellular_sms_reset_sched_node;
-STATIC char sms_reset_phone[20] = {0};
+static mp_sched_node_t modcellular_sms_reset_sched_node;
+static char sms_reset_phone[20] = {0};
 
 void modcellular_sms_reset(mp_sched_node_t *node) {
     if(sms_reset_phone != NULL) {
@@ -1065,7 +1065,7 @@ mp_obj_t modcellular_sms_make_new(const mp_obj_type_t *type, size_t n_args, size
 }
 
 
-STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Sends an SMS messsage.
     // Args:
@@ -1101,7 +1101,7 @@ STATIC mp_obj_t modcellular_sms_send(size_t n_args, const mp_obj_t *args) {
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_sms_send_obj, 1, 2, modcellular_sms_send);
 
 
-STATIC mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
+static mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -1116,7 +1116,7 @@ STATIC mp_obj_t modcellular_sms_delete(mp_obj_t self_in) {
 
 MP_DEFINE_CONST_FUN_OBJ_1(modcellular_sms_delete_obj, &modcellular_sms_delete);
 
-STATIC void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
+static void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     if (dest[0] != MP_OBJ_NULL) {
     } else {
         sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -1171,7 +1171,7 @@ STATIC void modcellular_sms_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     }
 }
 
-STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     sms_obj_t *self = MP_OBJ_TO_PTR(self_in);
     char *type_string = "UNKNOWN";
     switch(self->type) {
@@ -1192,12 +1192,12 @@ STATIC void modcellular_sms_print(const mp_print_t *print, mp_obj_t self_in, mp_
     );
 }
 
-STATIC const mp_rom_map_elem_t sms_locals_dict_table[] = {
+static const mp_rom_map_elem_t sms_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&modcellular_sms_send_obj) },
     { MP_ROM_QSTR(MP_QSTR_delete), MP_ROM_PTR(&modcellular_sms_delete_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(sms_locals_dict, sms_locals_dict_table);
+static MP_DEFINE_CONST_DICT(sms_locals_dict, sms_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     modcellular_sms_type,
@@ -1727,7 +1727,8 @@ void modcellular_sms_decode_pdu(sms_obj_t *self, CmiSmsPdu *smsPduData, uint8_t 
 } CmiSmsListSmsMsgRecCnf; */
 mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
 
-    sms_obj_t *self = m_new_obj_with_finaliser(sms_obj_t);
+    //sms_obj_t *self = m_new_obj_with_finaliser(sms_obj_t);
+    sms_obj_t *self = m_new_obj(sms_obj_t);
     self->base.type = &modcellular_sms_type;
     self->index = record->index;
     self->type = (uint8_t)record->smsStatus;
@@ -1766,7 +1767,7 @@ mp_obj_t modcellular_sms_from_list_record(CmiSmsListSmsMsgRecCnf *record) {
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
     mp_printf(&mp_plat_print, "USSD over IMS not supported and module does not support 2G fallback\n");
     mp_obj_t tuple[2];
@@ -1776,24 +1777,24 @@ STATIC mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
     return mp_obj_new_tuple(2, tuple);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_ussd_obj, 1, 2, modcellular_ussd);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_ussd_obj, 1, 2, modcellular_ussd);
 
-STATIC mp_obj_t modcellular_on_sms(mp_obj_t callable) {
+static mp_obj_t modcellular_on_sms(mp_obj_t callable) {
     sms_callback = callable;
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_sms_obj, modcellular_on_sms);
+static MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_sms_obj, modcellular_on_sms);
 
 
-STATIC mp_obj_t modcellular_on_ussd(mp_obj_t callable) {
+static mp_obj_t modcellular_on_ussd(mp_obj_t callable) {
     ussd_callback = callable;
     return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_ussd_obj, modcellular_on_ussd);
+static MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_ussd_obj, modcellular_on_ussd);
 
-STATIC mp_obj_t modcellular_sms_delete_by_index(mp_obj_t index) {
+static mp_obj_t modcellular_sms_delete_by_index(mp_obj_t index) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     mp_int_t int_index = mp_obj_get_int(index);
@@ -1815,7 +1816,7 @@ STATIC mp_obj_t modcellular_sms_delete_by_index(mp_obj_t index) {
 
 MP_DEFINE_CONST_FUN_OBJ_1(modcellular_sms_delete_by_index_obj, modcellular_sms_delete_by_index);
 
-STATIC mp_obj_t modcellular_sms_delete_all_read() {
+static mp_obj_t modcellular_sms_delete_all_read() {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     if(modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
@@ -1852,7 +1853,7 @@ mp_obj_t modcellular_sms_read_all(void) {
 MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_read_all_obj, modcellular_sms_read_all);
 
 
-STATIC mp_obj_t modcellular_sms_list_read(void) {
+static mp_obj_t modcellular_sms_list_read(void) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
@@ -1865,7 +1866,7 @@ STATIC mp_obj_t modcellular_sms_list_read(void) {
 MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_list_read_obj, modcellular_sms_list_read);
 
 
-STATIC mp_obj_t modcellular_sms_list(void) {
+static mp_obj_t modcellular_sms_list(void) {
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     mp_obj_list_t *result = mp_obj_new_list(0, NULL);
@@ -1878,7 +1879,7 @@ STATIC mp_obj_t modcellular_sms_list(void) {
 MP_DEFINE_CONST_FUN_OBJ_0(modcellular_sms_list_obj, modcellular_sms_list);
 
 
-STATIC mp_obj_t modcellular_sms_get_storage_size(void) {
+static mp_obj_t modcellular_sms_get_storage_size(void) {
     if(modcellular_get_storage_info() && modcellular_get_sms_list(CMI_SMS_STOR_STATUS_ALL)) {
         // count statuses
         int unReadRecords = 0;

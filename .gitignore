@@ -7,13 +7,13 @@
 # for more information.
 
 # Build directories
-.vscode
 build/
 build-*/
 docs/genrst/
 
-# Test failure outputs
+# Test failure outputs and intermediate artefacts
 tests/results/*
+tests/ports/unix/ffi_lib.so
 
 # Python cache files
 __pycache__/

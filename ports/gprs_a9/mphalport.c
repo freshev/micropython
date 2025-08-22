@@ -44,7 +44,7 @@
 #include "extmod/misc.h"
 
 int uart_attached_to_dupterm[UART_NPORTS];
-STATIC uint8_t stdin_ringbuf_array[2048];
+static uint8_t stdin_ringbuf_array[2048];
 ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array), 0, 0};
 
 uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {

@@ -346,7 +346,7 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_obj_t cc1101_deinit(mp_obj_t self_in) {
+static mp_obj_t cc1101_deinit(mp_obj_t self_in) {
     cc1101_obj_t * self = MP_OBJ_TO_PTR(self_in);
     machine_hw_spi_obj_t *spi = self->spi;
 
@@ -357,7 +357,7 @@ STATIC mp_obj_t cc1101_deinit(mp_obj_t self_in) {
     _cc1101_debug(self, "CC1101 object deinited");
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_deinit_obj, cc1101_deinit);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_deinit_obj, cc1101_deinit);
 
 // ----------------
 // CC1101 SPI Read
@@ -369,15 +369,15 @@ uint8_t _cc1101_read(mp_obj_t self_in,  uint8_t m_addr, uint8_t need_debug) {
     if(need_debug) _cc1101_debug(self, "CC1101 read at 0x%02X -> 0x%02X (%lu)", m_addr, rbyte, clock());
     return rbyte;
 }
-STATIC mp_obj_t cc1101_read(mp_obj_t self_in,  mp_obj_t addr) {
+static mp_obj_t cc1101_read(mp_obj_t self_in,  mp_obj_t addr) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
     return mp_obj_new_int(_cc1101_read(self, m_addr, self->debug_hst));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_read_obj, &cc1101_read);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_read_obj, &cc1101_read);
 
 
-STATIC mp_obj_t cc1101_read_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t length) {
+static mp_obj_t cc1101_read_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t length) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
     uint32_t m_length = mp_obj_get_int(length);
@@ -395,7 +395,7 @@ STATIC mp_obj_t cc1101_read_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t leng
         //return mp_obj_new_bytes_from_vstr(&vstr);
     } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_read_burst_obj, &cc1101_read_burst);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_read_burst_obj, &cc1101_read_burst);
 
 
 // ---------
@@ -408,13 +408,13 @@ uint8_t _cc1101_write(mp_obj_t self_in, uint8_t m_addr, uint8_t m_wbyte) {
     return rbyte;
 }
 
-STATIC mp_obj_t cc1101_write(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbyte) {
+static mp_obj_t cc1101_write(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbyte) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
     uint8_t m_wbyte = mp_obj_get_int(wbyte);
     return mp_obj_new_int(_cc1101_write(self, m_addr, m_wbyte));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_obj, &cc1101_write);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_obj, &cc1101_write);
 
 
 void _cc1101_write_burst(mp_obj_t self_in, uint8_t w_addr, uint8_t* m_write_buffer, uint32_t m_length) {
@@ -426,7 +426,7 @@ void _cc1101_write_burst(mp_obj_t self_in, uint8_t w_addr, uint8_t* m_write_buff
         free(m_read_buffer);
     } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
 }
-STATIC mp_obj_t cc1101_write_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbuffer) {
+static mp_obj_t cc1101_write_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbuffer) {
     cc1101_obj_t * self = self_in;
     uint8_t w_addr = mp_obj_get_int(addr);
 
@@ -436,7 +436,7 @@ STATIC mp_obj_t cc1101_write_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbu
     _cc1101_write_burst(self, w_addr, (uint8_t *)m_write_buffer.buf, m_length);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_burst_obj, &cc1101_write_burst);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_burst_obj, &cc1101_write_burst);
 
 
 uint8_t _cc1101_command(mp_obj_t self_in, uint8_t m_wbyte) {
@@ -464,28 +464,28 @@ uint8_t _cc1101_command(mp_obj_t self_in, uint8_t m_wbyte) {
     }
     return rbyte;
 }
-STATIC mp_obj_t cc1101_command(mp_obj_t self_in, mp_obj_t wbyte) {
+static mp_obj_t cc1101_command(mp_obj_t self_in, mp_obj_t wbyte) {
     cc1101_obj_t * self = self_in;
     uint8_t m_wbyte = mp_obj_get_int(wbyte);
     return mp_obj_new_int(_cc1101_command(self, m_wbyte));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_command_obj, &cc1101_command);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_command_obj, &cc1101_command);
 
 
-STATIC mp_obj_t cc1101_strobe(mp_obj_t self_in, mp_obj_t wbyte) {
+static mp_obj_t cc1101_strobe(mp_obj_t self_in, mp_obj_t wbyte) {
     cc1101_obj_t * self = self_in;
     uint8_t m_wbyte = mp_obj_get_int(wbyte);
     return mp_obj_new_int(_cc1101_command(self, m_wbyte));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_strobe_obj, &cc1101_strobe);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_strobe_obj, &cc1101_strobe);
 
-STATIC mp_obj_t cc1101_flush(mp_obj_t self_in) {
+static mp_obj_t cc1101_flush(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     SPI_FlushFIFOs(self->spi->id);
     _cc1101_debug(self, "CC1101 flush FIFO buffers");
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_obj, &cc1101_flush);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_obj, &cc1101_flush);
 
 
 // ------------
@@ -510,50 +510,50 @@ uint8_t _cc1101_spi_read_status(mp_obj_t self_in, uint8_t addr, uint8_t need_deb
     if(need_debug) _cc1101_debug(self, "CC1101 read status at 0x%02X: 0x%02X (%lu)", addr, rbyte, clock());
     return rbyte;
 }
-STATIC mp_obj_t cc1101_spi_read_status(mp_obj_t self_in, mp_obj_t addr) {
+static mp_obj_t cc1101_spi_read_status(mp_obj_t self_in, mp_obj_t addr) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
     return mp_obj_new_int(_cc1101_spi_read_status(self,  m_addr, self->debug_hst));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_spi_read_status_obj, &cc1101_spi_read_status);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_spi_read_status_obj, &cc1101_spi_read_status);
 
 
 // void SpiWriteReg(byte addr, byte value);
-STATIC mp_obj_t cc1101_spi_write_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t value) {
+static mp_obj_t cc1101_spi_write_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t value) {
     cc1101_obj_t * self = self_in;
     cc1101_write(self, addr, value);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_write_reg_obj, &cc1101_spi_write_reg);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_write_reg_obj, &cc1101_spi_write_reg);
 
 // void SpiWriteBurstReg(byte addr, byte *buffer, byte num);
-STATIC mp_obj_t cc1101_spi_write_burst_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbuffer) {
+static mp_obj_t cc1101_spi_write_burst_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbuffer) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr) | WRITE_BURST;
     cc1101_write_burst(self, mp_obj_new_int(m_addr), wbuffer);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_write_burst_reg_obj, &cc1101_spi_write_burst_reg);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_write_burst_reg_obj, &cc1101_spi_write_burst_reg);
 
 // byte SpiReadReg(byte addr);
-STATIC mp_obj_t cc1101_spi_read_reg(mp_obj_t self_in, mp_obj_t addr) {
+static mp_obj_t cc1101_spi_read_reg(mp_obj_t self_in, mp_obj_t addr) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr) | READ_SINGLE;
     return cc1101_read(self, mp_obj_new_int(m_addr));
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_spi_read_reg_obj, &cc1101_spi_read_reg);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_spi_read_reg_obj, &cc1101_spi_read_reg);
 
 // void SpiReadBurstReg(byte addr, byte *buffer, byte num);
-STATIC mp_obj_t cc1101_spi_read_burst_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t num) {
+static mp_obj_t cc1101_spi_read_burst_reg(mp_obj_t self_in, mp_obj_t addr, mp_obj_t num) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr) | READ_BURST;
     return cc1101_read_burst(self, mp_obj_new_int(m_addr), num);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_read_burst_reg_obj, &cc1101_spi_read_burst_reg);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_spi_read_burst_reg_obj, &cc1101_spi_read_burst_reg);
 
 
 // void setPA(int p);
-STATIC mp_obj_t cc1101_set_pa(mp_obj_t self_in, mp_obj_t p_in) {
+static mp_obj_t cc1101_set_pa(mp_obj_t self_in, mp_obj_t p_in) {
     cc1101_obj_t * self = self_in;
     int8_t m_p = mp_obj_get_int(p_in);
 
@@ -619,11 +619,11 @@ STATIC mp_obj_t cc1101_set_pa(mp_obj_t self_in, mp_obj_t p_in) {
     _cc1101_write_burst(self, CC1101_PATABLE, self->P_TABLE, sizeof(self->P_TABLE));
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pa_obj, &cc1101_set_pa);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pa_obj, &cc1101_set_pa);
 
 
 // void setModulation(byte m);
-STATIC mp_obj_t cc1101_set_modulation(mp_obj_t self_in, mp_obj_t modulation) {
+static mp_obj_t cc1101_set_modulation(mp_obj_t self_in, mp_obj_t modulation) {
     cc1101_obj_t * self = MP_OBJ_TO_PTR(self_in);
     uint8_t m_modulation = mp_obj_get_int(modulation);
     if (m_modulation > 4) m_modulation = 4;
@@ -645,11 +645,11 @@ STATIC mp_obj_t cc1101_set_modulation(mp_obj_t self_in, mp_obj_t modulation) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_modulation_obj, &cc1101_set_modulation);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_modulation_obj, &cc1101_set_modulation);
 
 
 // void setCCMode(bool s);
-STATIC mp_obj_t cc1101_set_cc_mode(mp_obj_t self_in, mp_obj_t mode) {
+static mp_obj_t cc1101_set_cc_mode(mp_obj_t self_in, mp_obj_t mode) {
     cc1101_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint8_t m_mode = mp_obj_get_int(mode);
     self->ccmode = m_mode;
@@ -670,11 +670,11 @@ STATIC mp_obj_t cc1101_set_cc_mode(mp_obj_t self_in, mp_obj_t mode) {
     cc1101_set_modulation(self, mp_obj_new_int(self->modulation));
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_cc_mode_obj, &cc1101_set_cc_mode);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_cc_mode_obj, &cc1101_set_cc_mode);
 
 
 // void setMHZ(float mhz);
-STATIC mp_obj_t cc1101_set_mhz(mp_obj_t self_in, mp_obj_t mhz_in) {
+static mp_obj_t cc1101_set_mhz(mp_obj_t self_in, mp_obj_t mhz_in) {
     cc1101_obj_t * self = self_in;
     uint8_t freq2 = 0;
     uint8_t freq1 = 0;
@@ -711,10 +711,10 @@ STATIC mp_obj_t cc1101_set_mhz(mp_obj_t self_in, mp_obj_t mhz_in) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_mhz_obj, &cc1101_set_mhz);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_mhz_obj, &cc1101_set_mhz);
 
 // void getMHZ(float mhz);
-STATIC mp_obj_t cc1101_get_mhz(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_mhz(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     uint8_t freq2 = _cc1101_read(self, CC1101_FREQ2 | READ_SINGLE, self->debug_hst);
     uint8_t freq1 = _cc1101_read(self, CC1101_FREQ1 | READ_SINGLE, self->debug_hst);
@@ -724,7 +724,7 @@ STATIC mp_obj_t cc1101_get_mhz(mp_obj_t self_in) {
 
     return mp_obj_new_float(mhz);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_mhz_obj, &cc1101_get_mhz);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_mhz_obj, &cc1101_get_mhz);
 
 
 void _cc1101_calibrate(cc1101_obj_t * self) {
@@ -770,7 +770,7 @@ void _cc1101_calibrate(cc1101_obj_t * self) {
 
 
 // void setChannel(byte chnl);
-STATIC mp_obj_t cc1101_set_channel(mp_obj_t self_in, mp_obj_t chan) {
+static mp_obj_t cc1101_set_channel(mp_obj_t self_in, mp_obj_t chan) {
     cc1101_obj_t * self = self_in;
     uint8_t m_chan = mp_obj_get_int(chan);
     self->chan = m_chan;
@@ -778,19 +778,19 @@ STATIC mp_obj_t cc1101_set_channel(mp_obj_t self_in, mp_obj_t chan) {
     _cc1101_write(self, CC1101_CHANNR, self->chan);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_channel_obj, &cc1101_set_channel);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_channel_obj, &cc1101_set_channel);
 
 // void getChannel(byte chnl);
-STATIC mp_obj_t cc1101_get_channel(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_channel(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     uint8_t m_chan = _cc1101_read(self, CC1101_CHANNR | READ_SINGLE, self->debug_hst);
     self->chan = m_chan;
     return mp_obj_new_int(self->chan);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_channel_obj, &cc1101_get_channel);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_channel_obj, &cc1101_get_channel);
 
 // void setChsp(float f);
-STATIC mp_obj_t cc1101_set_chsp(mp_obj_t self_in, mp_obj_t f_in) {
+static mp_obj_t cc1101_set_chsp(mp_obj_t self_in, mp_obj_t f_in) {
     cc1101_obj_t * self = self_in;
     float f = mp_obj_get_float(f_in);
 
@@ -818,10 +818,10 @@ STATIC mp_obj_t cc1101_set_chsp(mp_obj_t self_in, mp_obj_t f_in) {
     _cc1101_write(self, CC1101_MDMCFG0, MDMCFG0);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_chsp_obj, &cc1101_set_chsp);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_chsp_obj, &cc1101_set_chsp);
 
 // void setRxBW(float f);
-STATIC mp_obj_t cc1101_set_rx_bw(mp_obj_t self_in, mp_obj_t f_in) {
+static mp_obj_t cc1101_set_rx_bw(mp_obj_t self_in, mp_obj_t f_in) {
     cc1101_obj_t * self = self_in;
     float f = mp_obj_get_float(f_in);
 
@@ -845,10 +845,10 @@ STATIC mp_obj_t cc1101_set_rx_bw(mp_obj_t self_in, mp_obj_t f_in) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_rx_bw_obj, &cc1101_set_rx_bw);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_rx_bw_obj, &cc1101_set_rx_bw);
 
 // void setDRate(float d);
-STATIC mp_obj_t cc1101_set_d_rate(mp_obj_t self_in, mp_obj_t d_in) {
+static mp_obj_t cc1101_set_d_rate(mp_obj_t self_in, mp_obj_t d_in) {
     cc1101_obj_t * self = self_in;
     float d = mp_obj_get_float(d_in);
 
@@ -874,10 +874,10 @@ STATIC mp_obj_t cc1101_set_d_rate(mp_obj_t self_in, mp_obj_t d_in) {
     _cc1101_write(self, CC1101_MDMCFG3,  MDMCFG3);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_d_rate_obj, &cc1101_set_d_rate);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_d_rate_obj, &cc1101_set_d_rate);
 
 // void setDeviation(float d);
-STATIC mp_obj_t cc1101_set_deviation(mp_obj_t self_in, mp_obj_t d_in) {
+static mp_obj_t cc1101_set_deviation(mp_obj_t self_in, mp_obj_t d_in) {
     cc1101_obj_t * self = self_in;
     float d = mp_obj_get_float(d_in);
 
@@ -904,10 +904,10 @@ STATIC mp_obj_t cc1101_set_deviation(mp_obj_t self_in, mp_obj_t d_in) {
     _cc1101_write(self, CC1101_DEVIATN, c);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_deviation_obj, &cc1101_set_deviation);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_deviation_obj, &cc1101_set_deviation);
 
 // void SetTx(void);
-STATIC mp_obj_t cc1101_set_tx(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_tx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_tx()");
     _cc1101_command(self, CC1101_SIDLE);
@@ -915,10 +915,10 @@ STATIC mp_obj_t cc1101_set_tx(mp_obj_t self_in) {
     self->trxstate = 1;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_tx_obj, &cc1101_set_tx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_tx_obj, &cc1101_set_tx);
 
 // void SetRx(void);
-STATIC mp_obj_t cc1101_set_rx(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_rx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_rx()");
     _cc1101_command(self, CC1101_SIDLE);
@@ -926,10 +926,10 @@ STATIC mp_obj_t cc1101_set_rx(mp_obj_t self_in) {
     self->trxstate = 2;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_rx_obj, &cc1101_set_rx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_rx_obj, &cc1101_set_rx);
 
 // void SetTx(float mhz);
-STATIC mp_obj_t cc1101_set_tx_freq(mp_obj_t self_in, mp_obj_t mhz) {
+static mp_obj_t cc1101_set_tx_freq(mp_obj_t self_in, mp_obj_t mhz) {
     cc1101_obj_t * self = self_in;
     float f = mp_obj_get_float(mhz);
     _cc1101_debug(self, "CC1101 set_tx_freq(%f)", f);
@@ -939,10 +939,10 @@ STATIC mp_obj_t cc1101_set_tx_freq(mp_obj_t self_in, mp_obj_t mhz) {
     self->trxstate = 1;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_tx_freq_obj, &cc1101_set_tx_freq);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_tx_freq_obj, &cc1101_set_tx_freq);
 
 // void SetRx(float mhz);
-STATIC mp_obj_t cc1101_set_rx_freq(mp_obj_t self_in, mp_obj_t mhz) {
+static mp_obj_t cc1101_set_rx_freq(mp_obj_t self_in, mp_obj_t mhz) {
     cc1101_obj_t * self = self_in;
     float f = mp_obj_get_float(mhz);
     _cc1101_debug(self, "CC1101 set_rx_freq(%f)", f);
@@ -952,11 +952,11 @@ STATIC mp_obj_t cc1101_set_rx_freq(mp_obj_t self_in, mp_obj_t mhz) {
     self->trxstate = 2;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_rx_freq_obj, &cc1101_set_rx_freq);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_rx_freq_obj, &cc1101_set_rx_freq);
 
 
 // int getRssi(void);
-STATIC mp_obj_t cc1101_get_rssi(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_rssi(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     int rssi;
     _cc1101_debug(self, "CC1101 get_rssi()");
@@ -965,106 +965,106 @@ STATIC mp_obj_t cc1101_get_rssi(mp_obj_t self_in) {
     else rssi = (rssi / 2) - 74;
     return mp_obj_new_int(rssi);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_rssi_obj, &cc1101_get_rssi);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_rssi_obj, &cc1101_get_rssi);
 
 
 // byte getLqi(void);
-STATIC mp_obj_t cc1101_get_lqi(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_lqi(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 get_lqi()");
     uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI, self->debug_hst);
     return mp_obj_new_int(lqi);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_lqi_obj, &cc1101_get_lqi);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_lqi_obj, &cc1101_get_lqi);
 
 
 // void setSres(void);
-STATIC mp_obj_t cc1101_set_sres(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_sres(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_sres()");
     _cc1101_command(self, CC1101_SRES);
     self->trxstate = 0;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sres_obj, &cc1101_set_sres);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sres_obj, &cc1101_set_sres);
 
 // Enable and calibrate frequency synthesizer
-STATIC mp_obj_t cc1101_set_sfs_tx_on(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_sfs_tx_on(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_sfs_tx_on()");
     _cc1101_command(self, CC1101_SFSTXON);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sfs_tx_on_obj, &cc1101_set_sfs_tx_on);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sfs_tx_on_obj, &cc1101_set_sfs_tx_on);
 
 // Turn off crystal oscillator
-STATIC mp_obj_t cc1101_set_sx_off(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_sx_off(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_sx_off()");
     _cc1101_command(self, CC1101_SXOFF);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sx_off_obj, &cc1101_set_sx_off);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sx_off_obj, &cc1101_set_sx_off);
 
 // Calibrate frequency synthesizer and turn it off
-STATIC mp_obj_t cc1101_set_scal(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_scal(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_scal()");
     _cc1101_command(self, CC1101_SCAL);
     OS_Sleep(100); // 100 ms
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_scal_obj, &cc1101_set_scal);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_scal_obj, &cc1101_set_scal);
 
 // Enable RX
-STATIC mp_obj_t cc1101_set_srx(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_srx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_srx()");
     _cc1101_command(self, CC1101_SRX);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_srx_obj, &cc1101_set_srx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_srx_obj, &cc1101_set_srx);
 
 // Enable TX
-STATIC mp_obj_t cc1101_set_stx(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_stx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_stx()");
     _cc1101_command(self, CC1101_STX);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_stx_obj, &cc1101_set_stx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_stx_obj, &cc1101_set_stx);
 
 // Ends RX and/or TX, turn off frequency synthesizer and exit
-STATIC mp_obj_t cc1101_set_sidle(mp_obj_t self_in) {
+static mp_obj_t cc1101_set_sidle(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 set_sidle()");
     _cc1101_command(self, CC1101_SIDLE);
     self->trxstate = 0;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sidle_obj, &cc1101_set_sidle);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_set_sidle_obj, &cc1101_set_sidle);
 
 // Flush RX FIFO buffer
-STATIC mp_obj_t cc1101_flush_rx(mp_obj_t self_in) {
+static mp_obj_t cc1101_flush_rx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 flush_rx()");
     _cc1101_command(self, CC1101_SFRX);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_rx_obj, &cc1101_flush_rx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_rx_obj, &cc1101_flush_rx);
 
 // Flush TX FIFO buffer
-STATIC mp_obj_t cc1101_flush_tx(mp_obj_t self_in) {
+static mp_obj_t cc1101_flush_tx(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 flush_tx()");
     _cc1101_command(self, CC1101_SFTX);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_tx_obj, &cc1101_flush_tx);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_tx_obj, &cc1101_flush_tx);
 
 
 // void goSleep(void);
-STATIC mp_obj_t cc1101_go_sleep(mp_obj_t self_in) {
+static mp_obj_t cc1101_go_sleep(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 go_sleep()");
     _cc1101_command(self, CC1101_SIDLE);
@@ -1072,10 +1072,10 @@ STATIC mp_obj_t cc1101_go_sleep(mp_obj_t self_in) {
     self->trxstate = 0;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_go_sleep_obj, &cc1101_go_sleep);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_go_sleep_obj, &cc1101_go_sleep);
 
 // void SendData(byte *txBuffer, byte size);
-STATIC mp_obj_t cc1101_send_data(mp_obj_t self_in, mp_obj_t wbuffer, mp_obj_t timeout) {
+static mp_obj_t cc1101_send_data(mp_obj_t self_in, mp_obj_t wbuffer, mp_obj_t timeout) {
     cc1101_obj_t * self = self_in;
     uint32_t m_timeout = mp_obj_get_int(timeout);
     _cc1101_debug(self, "CC1101 send_data()");
@@ -1101,10 +1101,10 @@ STATIC mp_obj_t cc1101_send_data(mp_obj_t self_in, mp_obj_t wbuffer, mp_obj_t ti
     self->trxstate = 1;
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_send_data_obj, &cc1101_send_data);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_send_data_obj, &cc1101_send_data);
 
 // byte CheckReceiveFlag(void);
-STATIC mp_obj_t cc1101_check_receive_flag(mp_obj_t self_in) {
+static mp_obj_t cc1101_check_receive_flag(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     uint32_t counter = 0;
     uint32_t timeout = 100000; // delay 100ms
@@ -1125,10 +1125,10 @@ STATIC mp_obj_t cc1101_check_receive_flag(mp_obj_t self_in) {
     }
     else return mp_obj_new_int(0);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_receive_flag_obj, &cc1101_check_receive_flag);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_receive_flag_obj, &cc1101_check_receive_flag);
 
 // byte ReceiveData(byte *rxBuffer);
-STATIC mp_obj_t cc1101_receive_data(mp_obj_t self_in) {
+static mp_obj_t cc1101_receive_data(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
 
     if(_cc1101_spi_read_status(self, CC1101_RXBYTES, self->debug_hst) & BYTES_IN_RXFIFO)
@@ -1179,11 +1179,11 @@ STATIC mp_obj_t cc1101_receive_data(mp_obj_t self_in) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_receive_data_obj, &cc1101_receive_data);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_receive_data_obj, &cc1101_receive_data);
 
 
 // bool CheckCRC(void);
-STATIC mp_obj_t cc1101_check_crc(mp_obj_t self_in) {
+static mp_obj_t cc1101_check_crc(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI, self->debug_hst);
     uint8_t crc_ok = (lqi & 0x80) >> 7;
@@ -1197,10 +1197,10 @@ STATIC mp_obj_t cc1101_check_crc(mp_obj_t self_in) {
         return mp_obj_new_int(0);
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_crc_obj, &cc1101_check_crc);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_crc_obj, &cc1101_check_crc);
 
 // void setClb(byte b, byte s, byte e);
-STATIC mp_obj_t cc1101_set_clb(size_t n_args, const mp_obj_t *arg) {
+static mp_obj_t cc1101_set_clb(size_t n_args, const mp_obj_t *arg) {
     if (n_args != 4) {
         mp_raise_CC1101Error("4 arguments required\n");
     } else {
@@ -1229,28 +1229,28 @@ STATIC mp_obj_t cc1101_set_clb(size_t n_args, const mp_obj_t *arg) {
     }
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cc1101_set_clb_obj, 4, 4, &cc1101_set_clb);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cc1101_set_clb_obj, 4, 4, &cc1101_set_clb);
 
 // bool getCC1101(void);
-STATIC mp_obj_t cc1101_get_cc1101(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_cc1101(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 get_cc1101()");
     uint8_t status = _cc1101_spi_read_status(self, CC1101_VERSION, self->debug_hst);
     if (status != 0 && status != 0xFF) return mp_obj_new_int(1);
     else return mp_obj_new_int(0);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_cc1101_obj, &cc1101_get_cc1101);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_cc1101_obj, &cc1101_get_cc1101);
 
 // byte getMode(void);
-STATIC mp_obj_t cc1101_get_mode(mp_obj_t self_in) {
+static mp_obj_t cc1101_get_mode(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 get_mode()");
     return mp_obj_new_int(self->trxstate);
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_mode_obj, &cc1101_get_mode);
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_mode_obj, &cc1101_get_mode);
 
 // void setSyncWord(byte sh, byte sl);
-STATIC mp_obj_t cc1101_set_sync_word(mp_obj_t self_in, mp_obj_t sh, mp_obj_t sl) {
+static mp_obj_t cc1101_set_sync_word(mp_obj_t self_in, mp_obj_t sh, mp_obj_t sl) {
     cc1101_obj_t * self = self_in;
     uint8_t m_sh = mp_obj_get_int(sh);
     uint8_t m_sl = mp_obj_get_int(sl);
@@ -1259,20 +1259,20 @@ STATIC mp_obj_t cc1101_set_sync_word(mp_obj_t self_in, mp_obj_t sh, mp_obj_t sl)
     _cc1101_write(self, CC1101_SYNC0, m_sl);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cc1101_set_sync_word_obj, &cc1101_set_sync_word);
+static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_set_sync_word_obj, &cc1101_set_sync_word);
 
 // void setAddr(byte v);
-STATIC mp_obj_t cc1101_set_addr(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_addr(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_addr(0x%02X)", m_v);
     _cc1101_write(self, CC1101_ADDR, m_v);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_addr_obj, &cc1101_set_addr);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_addr_obj, &cc1101_set_addr);
 
 // void setWhiteData(bool v);
-STATIC mp_obj_t cc1101_set_white_data(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_white_data(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_white_data(0x%02X)", m_v);
@@ -1282,10 +1282,10 @@ STATIC mp_obj_t cc1101_set_white_data(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL0, self->pc0WDATA + self->pc0PktForm + self->pc0CRC_EN + self->pc0LenConf);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_white_data_obj, &cc1101_set_white_data);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_white_data_obj, &cc1101_set_white_data);
 
 // void setPktFormat(byte v);
-STATIC mp_obj_t cc1101_set_pkt_format(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_pkt_format(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_pkt_format(0x%02X)", m_v);
@@ -1296,10 +1296,10 @@ STATIC mp_obj_t cc1101_set_pkt_format(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL0, self->pc0WDATA + self->pc0PktForm + self->pc0CRC_EN + self->pc0LenConf);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pkt_format_obj, &cc1101_set_pkt_format);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pkt_format_obj, &cc1101_set_pkt_format);
 
 // void setCrc(bool v);
-STATIC mp_obj_t cc1101_set_crc(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_crc(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_crc(0x%02X)", m_v);
@@ -1309,10 +1309,10 @@ STATIC mp_obj_t cc1101_set_crc(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL0, self->pc0WDATA + self->pc0PktForm + self->pc0CRC_EN + self->pc0LenConf);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_crc_obj, &cc1101_set_crc);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_crc_obj, &cc1101_set_crc);
 
 // void setLengthConfig(byte v);
-STATIC mp_obj_t cc1101_set_length_config(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_length_config(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_length_config(0x%02X)", m_v);
@@ -1323,20 +1323,20 @@ STATIC mp_obj_t cc1101_set_length_config(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL0, self->pc0WDATA + self->pc0PktForm + self->pc0CRC_EN + self->pc0LenConf);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_length_config_obj, &cc1101_set_length_config);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_length_config_obj, &cc1101_set_length_config);
 
 // void setPacketLength(byte v);
-STATIC mp_obj_t cc1101_set_packet_length(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_packet_length(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_packet_length(0x%02X)", m_v);
     _cc1101_write(self, CC1101_PKTLEN, m_v);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_packet_length_obj, &cc1101_set_packet_length);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_packet_length_obj, &cc1101_set_packet_length);
 
 // void setDcFilterOff(bool v);
-STATIC mp_obj_t cc1101_set_dc_filter_off(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_dc_filter_off(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_dc_filter_off(0x%02X)", m_v);
@@ -1346,10 +1346,10 @@ STATIC mp_obj_t cc1101_set_dc_filter_off(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_MDMCFG2, self->m2DCOFF + self->m2MODFM + self->m2MANCH + self->m2SYNCM);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_dc_filter_off_obj, &cc1101_set_dc_filter_off);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_dc_filter_off_obj, &cc1101_set_dc_filter_off);
 
 // void setManchester(bool v);
-STATIC mp_obj_t cc1101_set_manchester(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_manchester(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_manchester(0x%02X)", m_v);
@@ -1359,10 +1359,10 @@ STATIC mp_obj_t cc1101_set_manchester(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_MDMCFG2, self->m2DCOFF + self->m2MODFM + self->m2MANCH + self->m2SYNCM);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_manchester_obj, &cc1101_set_manchester);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_manchester_obj, &cc1101_set_manchester);
 
 // void setSyncMode(byte v);
-STATIC mp_obj_t cc1101_set_sync_mode(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_sync_mode(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_sync_mode(0x%02X)", m_v);
@@ -1373,10 +1373,10 @@ STATIC mp_obj_t cc1101_set_sync_mode(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_MDMCFG2, self->m2DCOFF + self->m2MODFM + self->m2MANCH + self->m2SYNCM);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_sync_mode_obj, &cc1101_set_sync_mode);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_sync_mode_obj, &cc1101_set_sync_mode);
 
 // void setFEC(bool v);
-STATIC mp_obj_t cc1101_set_fec(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_fec(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_fec(0x%02X)", m_v);
@@ -1386,10 +1386,10 @@ STATIC mp_obj_t cc1101_set_fec(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_MDMCFG1, self-> m1FEC + self->m1PRE + self->m1CHSP);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_fec_obj, &cc1101_set_fec);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_fec_obj, &cc1101_set_fec);
 
 // void setPRE(byte v);
-STATIC mp_obj_t cc1101_set_pre(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_pre(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_pre(0x%02X)", m_v);
@@ -1400,10 +1400,10 @@ STATIC mp_obj_t cc1101_set_pre(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_MDMCFG1, self->m1FEC + self->m1PRE + self->m1CHSP);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pre_obj, &cc1101_set_pre);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pre_obj, &cc1101_set_pre);
 
 // void setPQT(byte v);
-STATIC mp_obj_t cc1101_set_pqt(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_pqt(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_pqt(0x%02X)", m_v);
@@ -1414,10 +1414,10 @@ STATIC mp_obj_t cc1101_set_pqt(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL1, self->pc1PQT + self->pc1CRC_AF + self->pc1APP_ST + self->pc1ADRCHK);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pqt_obj, &cc1101_set_pqt);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_pqt_obj, &cc1101_set_pqt);
 
 // void setCRC_AF(bool v);
-STATIC mp_obj_t cc1101_set_crc_af(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_crc_af(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_crc_af(0x%02X)", m_v);
@@ -1427,10 +1427,10 @@ STATIC mp_obj_t cc1101_set_crc_af(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL1, self->pc1PQT + self->pc1CRC_AF + self->pc1APP_ST + self->pc1ADRCHK);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_crc_af_obj, &cc1101_set_crc_af);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_crc_af_obj, &cc1101_set_crc_af);
 
 // void setAppendStatus(bool v);
-STATIC mp_obj_t cc1101_set_append_status(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_append_status(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_append_status(0x%02X)", m_v);
@@ -1440,10 +1440,10 @@ STATIC mp_obj_t cc1101_set_append_status(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL1, self->pc1PQT + self->pc1CRC_AF + self->pc1APP_ST + self->pc1ADRCHK);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_append_status_obj, &cc1101_set_append_status);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_append_status_obj, &cc1101_set_append_status);
 
 // void setAdrChk(byte v);
-STATIC mp_obj_t cc1101_set_adr_chk(mp_obj_t self_in, mp_obj_t v) {
+static mp_obj_t cc1101_set_adr_chk(mp_obj_t self_in, mp_obj_t v) {
     cc1101_obj_t * self = self_in;
     uint8_t m_v = mp_obj_get_int(v);
     _cc1101_debug(self, "CC1101 set_adr_chk(0x%02X)", m_v);
@@ -1454,10 +1454,10 @@ STATIC mp_obj_t cc1101_set_adr_chk(mp_obj_t self_in, mp_obj_t v) {
     _cc1101_write(self, CC1101_PKTCTRL1, self->pc1PQT + self->pc1CRC_AF + self->pc1APP_ST + self->pc1ADRCHK);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_adr_chk_obj, &cc1101_set_adr_chk);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_adr_chk_obj, &cc1101_set_adr_chk);
 
 // uint8_t CheckRxFifo(int t);
-STATIC mp_obj_t cc1101_check_rx_fifo(mp_obj_t self_in, mp_obj_t t) {
+static mp_obj_t cc1101_check_rx_fifo(mp_obj_t self_in, mp_obj_t t) {
     cc1101_obj_t * self = self_in;
     uint8_t m_t = mp_obj_get_int(t);
     if (self->trxstate != 2) cc1101_set_rx(self);
@@ -1470,7 +1470,7 @@ STATIC mp_obj_t cc1101_check_rx_fifo(mp_obj_t self_in, mp_obj_t t) {
         return mp_obj_new_int(0);
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cc1101_check_rx_fifo_obj, &cc1101_check_rx_fifo);
+static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_check_rx_fifo_obj, &cc1101_check_rx_fifo);
 
 
 mp_obj_t cc1101_crc8(mp_obj_t self_in, mp_obj_t data, mp_obj_t polynome) {
@@ -1703,7 +1703,7 @@ uint8_t _cc1101_map(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_m
 // -------
 // Locals
 // -------
-STATIC const mp_rom_map_elem_t cc1101_locals_dict_table[] = {
+static const mp_rom_map_elem_t cc1101_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&cc1101_deinit_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&cc1101_read_obj) },
@@ -1777,7 +1777,7 @@ STATIC const mp_rom_map_elem_t cc1101_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ba2hex), MP_ROM_PTR(&cc1101_ba2hex_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(cc1101_locals_dict, cc1101_locals_dict_table);
+static MP_DEFINE_CONST_DICT(cc1101_locals_dict, cc1101_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     cc1101_type,
@@ -1791,12 +1791,12 @@ MP_DEFINE_CONST_OBJ_TYPE(
 // -------
 // Modules
 // -------
-STATIC const mp_map_elem_t mp_module_cc1101_globals_table[] = {
+static const mp_map_elem_t mp_module_cc1101_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_cc1101) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_cc1101), (mp_obj_t)MP_ROM_PTR(&cc1101_type) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_cc1101_globals, mp_module_cc1101_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_cc1101_globals, mp_module_cc1101_globals_table);
 
 const mp_obj_module_t cc1101_module = {
     .base = { &mp_type_module },

@@ -14,19 +14,23 @@ Translated module documentation at [Docs](docs/)
    ```
    ./docs/get_xmake.sh
    ```
-2. Clone this repo:
+2. Install prerequisites
+   ```bash
+   sudo apt install p7zip-full
+   ```
+3. Clone this repo:
    ```bash
    git clone https://github.com/freshev/micropython
    ```
-3. Make
+4. Make
    ```bash
    cd micropython/ports/air780
    configure # --root
    ./make # --root
    ```
-4. Firmware `Air780_micropython_VERSION.binpkg` file is in `micropython/ports/air780/version/` folder.
+5. Firmware `Air780_micropython_VERSION.binpkg` file is in `micropython/ports/air780/version/` folder.
 
-5. Notes:  
+6. Notes:  
   Version number configured via `configure`  
   Use simple `xmake` to build current version.  
   If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  

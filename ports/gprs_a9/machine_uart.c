@@ -45,7 +45,7 @@ typedef struct _machine_uart_obj_t {
     uint16_t timeout_char;  // timeout waiting between chars (in ms)
 } machine_uart_obj_t;
 
-STATIC const char *_parity_name[] = {"None", "1", "0"};
+const char *_parity_name[] = {"None", "1", "0"};
 
 /******************************************************************************/
 // MicroPython bindings for UART
@@ -85,7 +85,7 @@ void mp_os_dupterm_stream_detached_attached(mp_obj_t stream_detached, mp_obj_t s
 // -------
 // Classes
 // -------
-STATIC void mp_machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void mp_machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     // ========================================
     // print(UART)
     // ========================================
@@ -95,7 +95,7 @@ STATIC void mp_machine_uart_print(const mp_print_t *print, mp_obj_t self_in, mp_
         self->stop, uart_get_rxbuf_len(self->uart_id) - 1, self->timeout, self->timeout_char);
 }
 
-STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
     // Prepares UART.
     // Args:
@@ -261,7 +261,7 @@ STATIC void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         mp_raise_ValueError("failed to setup uart");
 }
 
-STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // ========================================
     // Prepares UART.
     // Args:
@@ -303,11 +303,11 @@ STATIC mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_arg
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC void mp_machine_uart_deinit(machine_uart_obj_t *self) {
+static void mp_machine_uart_deinit(machine_uart_obj_t *self) {
     uart_close(self->uart_id);
 }
 
-STATIC mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
+static mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
     // ========================================
     // Checks if any data ready to be read.
     // Returns:
@@ -315,23 +315,23 @@ STATIC mp_int_t mp_machine_uart_any(machine_uart_obj_t *self) {
     // ========================================
     return uart_rx_any(self->uart_id);
 }
-// STATIC MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_any_obj, machine_uart_any);
+// static MP_DEFINE_CONST_FUN_OBJ_1(machine_uart_any_obj, machine_uart_any);
 
-STATIC bool mp_machine_uart_txdone(machine_uart_obj_t *self) {
+static bool mp_machine_uart_txdone(machine_uart_obj_t *self) {
     return true; // TODO
 }
 
 
-STATIC mp_int_t mp_machine_uart_readchar(machine_uart_obj_t *self) {
+static mp_int_t mp_machine_uart_readchar(machine_uart_obj_t *self) {
     mp_int_t data = uart_rx_one_char(self->uart_id);
     return data;
 }
 
-STATIC void mp_machine_uart_writechar(machine_uart_obj_t *self, uint16_t data) {
+static void mp_machine_uart_writechar(machine_uart_obj_t *self, uint16_t data) {
     uart_tx_one_char(self->uart_id, (byte)data);
 }
 
-STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
+static mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
     // ========================================
     // UART.read()
     // ========================================
@@ -359,7 +359,7 @@ STATIC mp_uint_t mp_machine_uart_read(mp_obj_t self_in, void *buf_in, mp_uint_t 
     }
 }
 
-STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
+static mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
     // ========================================
     // UART.write()
     // ========================================
@@ -382,7 +382,7 @@ STATIC mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_
     return size;
 }
 
-STATIC mp_uint_t mp_machine_uart_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
+static mp_uint_t mp_machine_uart_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
     // ========================================
     // UART io control (close, etc)
     // ========================================

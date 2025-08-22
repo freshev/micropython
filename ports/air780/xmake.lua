@@ -632,7 +632,9 @@ PY_CORE_O_BASENAME = {"mpstate.o", "nlr.o", "nlrx86.o", "nlrx64.o", "nlrthumb.o"
     "objreversed.o", "objset.o", "objsingleton.o", "objslice.o", "objstr.o", "objstrunicode.o", "objstringio.o", "objtuple.o", "objtype.o", 
     "objzip.o", "opmethods.o", "sequence.o", "stream.o", "binary.o", "builtinimport.o", "builtinevex.o", "builtinhelp.o", "modarray.o", 
     "modbuiltins.o", "modcollections.o", "modgc.o", "modio.o", "modmath.o", "modcmath.o", "modmicropython.o", "modstruct.o", "modsys.o", 
-    "moderrno.o", "modthread.o", "vm.o", "bc.o", "showbc.o", "repl.o", "smallint.o", "frozenmod.o" 
+    "moderrno.o", "modthread.o", "vm.o", "bc.o", "showbc.o", "repl.o", "smallint.o", "frozenmod.o", 
+    -- v1.26 addin
+    "cstack.o", "builtinevex.o", "objringio.o", "objcode.o"
     }
 
 for _, name in ipairs(PY_CORE_O_BASENAME) do PY_CORE_O_BASENAME[_] = "py/" .. name end
@@ -667,7 +669,8 @@ SRC_EXTMOD_C = { "extmod/machine_adc.c", "extmod/machine_adc_block.c", "extmod/m
                 "extmod/modframebuf.c", "extmod/modhashlib.c", "extmod/modheapq.c", "extmod/modjson.c", 
                 "extmod/modmachine.c", "extmod/modnetwork.c", "extmod/modonewire.c", "extmod/modos.c", 
                 "extmod/modplatform.c", "extmod/modrandom.c", "extmod/modre.c", "extmod/modselect.c", 
-                "extmod/modsocket.c", "extmod/modssl_mbedtls.c", "extmod/modtime.c", "extmod/moductypes.c", 
+                "extmod/modsocket.c", "extmod/modtime.c", "extmod/moductypes.c", 
+                -- "extmod/modssl_mbedtls.c",
                 "extmod/modwebrepl.c", "extmod/modwebsocket.c", "extmod/network_cyw43.c", "extmod/network_esp_hosted.c", 
                 "extmod/network_ninaw10.c", "extmod/network_wiznet5k.c", "extmod/os_dupterm.c", "extmod/vfs.c", 
                 "extmod/vfs_blockdev.c", "extmod/vfs_fat.c", "extmod/vfs_fat_diskio.c", "extmod/vfs_fat_file.c", 

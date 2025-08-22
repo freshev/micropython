@@ -122,7 +122,7 @@ void modmachine_adc_deinit0(void) {
 }
 
 
-STATIC void mp_machine_adc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void mp_machine_adc_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_adc_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "ADC(channel=%u, atten=%0.1f, range=0-%0.1fV)", self->channel_id, self->atten/10.0, self->maxV/10.0);
 }
@@ -171,11 +171,11 @@ void mp_machine_adc_init_helper_internal(machine_adc_obj_t *self, size_t n_pos_a
     luat_adc_ctrl(self->channel_id, LUAT_ADC_SET_GLOBAL_RANGE, ctrl_param);
 }
 
-STATIC void mp_machine_adc_init_helper(machine_adc_obj_t *self, size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static void mp_machine_adc_init_helper(machine_adc_obj_t *self, size_t n_pos_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     mp_machine_adc_init_helper_internal(self, n_pos_args, pos_args, kw_args);
 }
 
-STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type, size_t n_pos_args, size_t n_kw_args, const mp_obj_t *args) {
+static mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type, size_t n_pos_args, size_t n_kw_args, const mp_obj_t *args) {
     mp_arg_check_num(n_pos_args, n_kw_args, 1, MP_OBJ_FUN_ARGS_MAX, true);
     uint8_t adc_channel = machine_pin_get_id(args[0]);
     
@@ -195,14 +195,14 @@ STATIC mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type, size_t n_pos_
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
+static mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
     int val1, val2;
     luat_adc_read(self->channel_id , &val1, &val2);
     mp_int_t u16 = val1;
     return u16;
 }
 
-STATIC mp_int_t mp_machine_adc_read_uv(machine_adc_obj_t *self) {
+static mp_int_t mp_machine_adc_read_uv(machine_adc_obj_t *self) {
     int val1, val2;
     luat_adc_read(self->channel_id , &val1, &val2);
     mp_int_t uv = val2;

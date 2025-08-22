@@ -49,7 +49,7 @@ typedef struct _machine_hw_i2c_obj_t {
     mp_int_t timeout; // in MS, not US
 } machine_hw_i2c_obj_t;
 
-STATIC machine_hw_i2c_obj_t machine_hw_i2c_obj[I2C_NUM_MAX];
+static machine_hw_i2c_obj_t machine_hw_i2c_obj[I2C_NUM_MAX];
 
 
 // ----------
@@ -86,7 +86,7 @@ void mp_machine_i2c_private_throw_I2C_Error(I2C_Error_t error) {
 // ---------
 // Methods
 // ---------
-STATIC void machine_hw_i2c_init(machine_hw_i2c_obj_t *self, uint32_t freq, uint32_t timeout_us, bool first_init) {
+static void machine_hw_i2c_init(machine_hw_i2c_obj_t *self, uint32_t freq, uint32_t timeout_us, bool first_init) {
     if (!first_init) {
         if(!I2C_Close(self->id)) {
             mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("I2C deinit fail"));
@@ -145,7 +145,7 @@ int machine_hw_i2c_transfer(mp_obj_base_t *self_in, uint16_t addr, size_t n, mp_
 /******************************************************************************/
 // MicroPython bindings for machine API
 
-STATIC void machine_hw_i2c_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void machine_hw_i2c_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_i2c_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_printf(print, "I2C(%u, freq=%u, timeout=%u(us))", self->id, mp_machine_i2c_private_get_freq(self->freq), self->timeout * 1000);
 }
@@ -186,7 +186,7 @@ mp_obj_t machine_hw_i2c_make_new(const mp_obj_type_t *type, size_t n_args, size_
     return MP_OBJ_FROM_PTR(self);
 }
 
-STATIC const mp_machine_i2c_p_t machine_hw_i2c_p = {
+static const mp_machine_i2c_p_t machine_hw_i2c_p = {
     .transfer = machine_hw_i2c_transfer,
 };
 

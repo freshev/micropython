@@ -47,6 +47,11 @@
 // #define LONG_MAX	  LONG_MAX
 // #define ULONG_MAX     ULONG_MAX
 
-
+//#define LLONG_MAX 9223372036854775807ll
+#define LLONG_MAX MAX_INT32
+//#define LLONG_MIN (-9223372036854775807ll - 1)
+#define LLONG_MIN MIN_INT32
+//#define ULLONG_MAX 0xffffffffffffffffull
+#define ULLONG_MAX MAX_UINT32
 
 #endif

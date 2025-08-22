@@ -55,8 +55,8 @@
 
 typedef base_if_obj_t wlan_if_obj_t;
 
-STATIC wlan_if_obj_t wlan_sta_obj;
-STATIC wlan_if_obj_t wlan_ap_obj;
+static wlan_if_obj_t wlan_sta_obj;
+static wlan_if_obj_t wlan_ap_obj;
 
 // Set to "true" if esp_wifi_start() was called
 static bool wifi_started = false;
@@ -112,6 +112,18 @@ static void network_wlan_wifi_event_handler(void *event_handler_arg, esp_event_b
                 case WIFI_REASON_NO_AP_FOUND:
                     // AP may not exist, or it may have momentarily dropped out; try to reconnect.
                     message = "no AP found";
+                    break;
+                case WIFI_REASON_NO_AP_FOUND_IN_RSSI_THRESHOLD:
+                    // No AP with RSSI within given threshold exists, or it may have momentarily dropped out; try to reconnect.
+                    message = "no AP with RSSI within threshold found";
+                    break;
+                case WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD:
+                    // No AP with authmode within given threshold exists, or it may have momentarily dropped out; try to reconnect.
+                    message = "no AP with authmode within threshold found";
+                    break;
+                case WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY:
+                    // No AP with compatible security exists, or it may have momentarily dropped out; try to reconnect.
+                    message = "no AP with compatible security found";
                     break;
                 case WIFI_REASON_AUTH_FAIL:
                     // Password may be wrong, or it just failed to connect; try to reconnect.
@@ -183,7 +195,7 @@ static void network_wlan_ip_event_handler(void *event_handler_arg, esp_event_bas
     }
 }
 
-STATIC void require_if(mp_obj_t wlan_if, int if_no) {
+static void require_if(mp_obj_t wlan_if, int if_no) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(wlan_if);
     if (self->if_id != if_no) {
         mp_raise_msg(&mp_type_OSError, if_no == ESP_IF_WIFI_STA ? MP_ERROR_TEXT("STA required") : MP_ERROR_TEXT("AP required"));
@@ -233,7 +245,7 @@ void esp_initialise_wifi(void) {
     }
 }
 
-STATIC mp_obj_t network_wlan_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t network_wlan_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
 
     esp_initialise_wifi();
@@ -248,7 +260,7 @@ STATIC mp_obj_t network_wlan_make_new(const mp_obj_type_t *type, size_t n_args, 
     }
 }
 
-STATIC mp_obj_t network_wlan_active(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t network_wlan_active(size_t n_args, const mp_obj_t *args) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
 
     wifi_mode_t mode;
@@ -284,9 +296,9 @@ STATIC mp_obj_t network_wlan_active(size_t n_args, const mp_obj_t *args) {
 
     return (mode & bit) ? mp_const_true : mp_const_false;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(network_wlan_active_obj, 1, 2, network_wlan_active);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(network_wlan_active_obj, 1, 2, network_wlan_active);
 
-STATIC mp_obj_t network_wlan_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t network_wlan_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_ssid, ARG_key, ARG_bssid };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_OBJ, {.u_obj = mp_const_none} },
@@ -334,16 +346,16 @@ STATIC mp_obj_t network_wlan_connect(size_t n_args, const mp_obj_t *pos_args, mp
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(network_wlan_connect_obj, 1, network_wlan_connect);
+static MP_DEFINE_CONST_FUN_OBJ_KW(network_wlan_connect_obj, 1, network_wlan_connect);
 
-STATIC mp_obj_t network_wlan_disconnect(mp_obj_t self_in) {
+static mp_obj_t network_wlan_disconnect(mp_obj_t self_in) {
     wifi_sta_connect_requested = false;
     esp_exceptions(esp_wifi_disconnect());
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_disconnect_obj, network_wlan_disconnect);
+static MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_disconnect_obj, network_wlan_disconnect);
 
-STATIC mp_obj_t network_wlan_status(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t network_wlan_status(size_t n_args, const mp_obj_t *args) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     if (n_args == 1) {
         if (self->if_id == ESP_IF_WIFI_STA) {
@@ -353,6 +365,12 @@ STATIC mp_obj_t network_wlan_status(size_t n_args, const mp_obj_t *args) {
                 return MP_OBJ_NEW_SMALL_INT(STAT_GOT_IP);
             } else if (wifi_sta_disconn_reason == WIFI_REASON_NO_AP_FOUND) {
                 return MP_OBJ_NEW_SMALL_INT(WIFI_REASON_NO_AP_FOUND);
+            } else if (wifi_sta_disconn_reason == WIFI_REASON_NO_AP_FOUND_IN_RSSI_THRESHOLD) {
+                return MP_OBJ_NEW_SMALL_INT(WIFI_REASON_NO_AP_FOUND_IN_RSSI_THRESHOLD);
+            } else if (wifi_sta_disconn_reason == WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD) {
+                return MP_OBJ_NEW_SMALL_INT(WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD);
+            } else if (wifi_sta_disconn_reason == WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY) {
+                return MP_OBJ_NEW_SMALL_INT(WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY);
             } else if ((wifi_sta_disconn_reason == WIFI_REASON_AUTH_FAIL) || (wifi_sta_disconn_reason == WIFI_REASON_CONNECTION_FAIL)) {
                 // wrong password
                 return MP_OBJ_NEW_SMALL_INT(WIFI_REASON_AUTH_FAIL);
@@ -405,9 +423,9 @@ STATIC mp_obj_t network_wlan_status(size_t n_args, const mp_obj_t *args) {
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(network_wlan_status_obj, 1, 2, network_wlan_status);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(network_wlan_status_obj, 1, 2, network_wlan_status);
 
-STATIC mp_obj_t network_wlan_scan(mp_obj_t self_in) {
+static mp_obj_t network_wlan_scan(mp_obj_t self_in) {
     // check that STA mode is active
     wifi_mode_t mode;
     esp_exceptions(esp_wifi_get_mode(&mode));
@@ -448,9 +466,9 @@ STATIC mp_obj_t network_wlan_scan(mp_obj_t self_in) {
     }
     return list;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_scan_obj, network_wlan_scan);
+static MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_scan_obj, network_wlan_scan);
 
-STATIC mp_obj_t network_wlan_isconnected(mp_obj_t self_in) {
+static mp_obj_t network_wlan_isconnected(mp_obj_t self_in) {
     wlan_if_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (self->if_id == ESP_IF_WIFI_STA) {
         return mp_obj_new_bool(wifi_sta_connected);
@@ -460,9 +478,9 @@ STATIC mp_obj_t network_wlan_isconnected(mp_obj_t self_in) {
         return mp_obj_new_bool(sta.num != 0);
     }
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_isconnected_obj, network_wlan_isconnected);
+static MP_DEFINE_CONST_FUN_OBJ_1(network_wlan_isconnected_obj, network_wlan_isconnected);
 
-STATIC mp_obj_t network_wlan_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
+static mp_obj_t network_wlan_config(size_t n_args, const mp_obj_t *args, mp_map_t *kwargs) {
     if (n_args != 1 && kwargs->used != 0) {
         mp_raise_TypeError(MP_ERROR_TEXT("either pos or kw args are allowed"));
     }
@@ -527,21 +545,38 @@ STATIC mp_obj_t network_wlan_config(size_t n_args, const mp_obj_t *args, mp_map_
                         break;
                     }
                     case MP_QSTR_channel: {
-                        uint8_t primary;
-                        wifi_second_chan_t secondary;
-                        // Get the current value of secondary
-                        esp_exceptions(esp_wifi_get_channel(&primary, &secondary));
-                        primary = mp_obj_get_int(kwargs->table[i].value);
-                        esp_err_t err = esp_wifi_set_channel(primary, secondary);
-                        if (err == ESP_ERR_INVALID_ARG) {
-                            // May need to swap secondary channel above to below or below to above
-                            secondary = (
-                                (secondary == WIFI_SECOND_CHAN_ABOVE)
-                                ? WIFI_SECOND_CHAN_BELOW
-                                : (secondary == WIFI_SECOND_CHAN_BELOW)
+                        uint8_t channel = mp_obj_get_int(kwargs->table[i].value);
+                        if (self->if_id == ESP_IF_WIFI_AP) {
+                            cfg.ap.channel = channel;
+                        } else {
+                            // This setting is only used to determine the
+                            // starting channel for a scan, so it can result in
+                            // slightly faster connection times.
+                            cfg.sta.channel = channel;
+
+                            // This additional code to directly set the channel
+                            // on the STA interface is only relevant for ESP-NOW
+                            // (when there is no STA connection attempt.)
+                            uint8_t old_primary;
+                            wifi_second_chan_t secondary;
+                            // Get the current value of secondary
+                            esp_exceptions(esp_wifi_get_channel(&old_primary, &secondary));
+                            esp_err_t err = esp_wifi_set_channel(channel, secondary);
+                            if (err == ESP_ERR_INVALID_ARG) {
+                                // May need to swap secondary channel above to below or below to above
+                                secondary = (
+                                    (secondary == WIFI_SECOND_CHAN_ABOVE)
+                                    ? WIFI_SECOND_CHAN_BELOW
+                                    : (secondary == WIFI_SECOND_CHAN_BELOW)
                                     ? WIFI_SECOND_CHAN_ABOVE
                                     : WIFI_SECOND_CHAN_NONE);
-                            esp_exceptions(esp_wifi_set_channel(primary, secondary));
+                                err = esp_wifi_set_channel(channel, secondary);
+                            }
+                            esp_exceptions(err);
+                            if (channel != old_primary) {
+                                // Workaround the ESP-IDF Wi-Fi stack sometimes taking a moment to change channels
+                                mp_hal_delay_ms(1);
+                            }
                         }
                         break;
                     }
@@ -618,7 +653,7 @@ STATIC mp_obj_t network_wlan_config(size_t n_args, const mp_obj_t *args, mp_map_
         case MP_QSTR_essid:
             switch (self->if_id) {
                 case ESP_IF_WIFI_STA:
-                    val = mp_obj_new_str((char *)cfg.sta.ssid, strlen((char *)cfg.sta.ssid));
+                    val = mp_obj_new_str_from_cstr((char *)cfg.sta.ssid);
                     break;
                 case ESP_IF_WIFI_AP:
                     val = mp_obj_new_str((char *)cfg.ap.ssid, cfg.ap.ssid_len);
@@ -697,7 +732,7 @@ unknown:
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(network_wlan_config_obj, 1, network_wlan_config);
 
-STATIC const mp_rom_map_elem_t wlan_if_locals_dict_table[] = {
+static const mp_rom_map_elem_t wlan_if_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_active), MP_ROM_PTR(&network_wlan_active_obj) },
     { MP_ROM_QSTR(MP_QSTR_connect), MP_ROM_PTR(&network_wlan_connect_obj) },
     { MP_ROM_QSTR(MP_QSTR_disconnect), MP_ROM_PTR(&network_wlan_disconnect_obj) },
@@ -706,13 +741,48 @@ STATIC const mp_rom_map_elem_t wlan_if_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_isconnected), MP_ROM_PTR(&network_wlan_isconnected_obj) },
     { MP_ROM_QSTR(MP_QSTR_config), MP_ROM_PTR(&network_wlan_config_obj) },
     { MP_ROM_QSTR(MP_QSTR_ifconfig), MP_ROM_PTR(&esp_network_ifconfig_obj) },
+    { MP_ROM_QSTR(MP_QSTR_ipconfig), MP_ROM_PTR(&esp_nic_ipconfig_obj) },
 
     // Constants
+    { MP_ROM_QSTR(MP_QSTR_IF_STA), MP_ROM_INT(WIFI_IF_STA)},
+    { MP_ROM_QSTR(MP_QSTR_IF_AP), MP_ROM_INT(WIFI_IF_AP)},
+
+    { MP_ROM_QSTR(MP_QSTR_SEC_OPEN), MP_ROM_INT(WIFI_AUTH_OPEN) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WEP), MP_ROM_INT(WIFI_AUTH_WEP) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA), MP_ROM_INT(WIFI_AUTH_WPA_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA2), MP_ROM_INT(WIFI_AUTH_WPA2_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA_WPA2), MP_ROM_INT(WIFI_AUTH_WPA_WPA2_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA2_ENT), MP_ROM_INT(WIFI_AUTH_WPA2_ENTERPRISE) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA3), MP_ROM_INT(WIFI_AUTH_WPA3_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA2_WPA3), MP_ROM_INT(WIFI_AUTH_WPA2_WPA3_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WAPI), MP_ROM_INT(WIFI_AUTH_WAPI_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_OWE), MP_ROM_INT(WIFI_AUTH_OWE) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA3_ENT_192), MP_ROM_INT(WIFI_AUTH_WPA3_ENT_192) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA3_EXT_PSK), MP_ROM_INT(WIFI_AUTH_WPA3_EXT_PSK) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA3_EXT_PSK_MIXED_MODE), MP_ROM_INT(WIFI_AUTH_WPA3_EXT_PSK_MIXED_MODE) },
+    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+    { MP_ROM_QSTR(MP_QSTR_SEC_DPP), MP_ROM_INT(WIFI_AUTH_DPP) },
+    #endif
+    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA3_ENT), MP_ROM_INT(WIFI_AUTH_WPA3_ENTERPRISE) },
+    { MP_ROM_QSTR(MP_QSTR_SEC_WPA2_WPA3_ENT), MP_ROM_INT(WIFI_AUTH_WPA2_WPA3_ENTERPRISE) },
+    #endif
+
     { MP_ROM_QSTR(MP_QSTR_PM_NONE), MP_ROM_INT(WIFI_PS_NONE) },
     { MP_ROM_QSTR(MP_QSTR_PM_PERFORMANCE), MP_ROM_INT(WIFI_PS_MIN_MODEM) },
     { MP_ROM_QSTR(MP_QSTR_PM_POWERSAVE), MP_ROM_INT(WIFI_PS_MAX_MODEM) },
 };
-STATIC MP_DEFINE_CONST_DICT(wlan_if_locals_dict, wlan_if_locals_dict_table);
+static MP_DEFINE_CONST_DICT(wlan_if_locals_dict, wlan_if_locals_dict_table);
+
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 4, 0)
+_Static_assert(WIFI_AUTH_MAX == 16, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types_generic.h");
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+_Static_assert(WIFI_AUTH_MAX == 14, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types_generic.h");
+#elif ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 2, 0)
+_Static_assert(WIFI_AUTH_MAX == 13, "Synchronize WIFI_AUTH_XXX constants with the ESP-IDF. Look at esp-idf/components/esp_wifi/include/esp_wifi_types.h");
+#else
+#error "Error in macro logic, all supported versions should be covered."
+#endif
 
 MP_DEFINE_CONST_OBJ_TYPE(
     esp_network_wlan_type,

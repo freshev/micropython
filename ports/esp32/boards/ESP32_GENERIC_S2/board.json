@@ -1,10 +1,12 @@
 {
     "deploy": [
-        "../deploy_s2.md"
+        "../deploy.md"
     ],
+    "deploy_options": {
+        "flash_offset": "0x1000"
+    },
     "docs": "",
     "features": [
-        "BLE",
         "External Flash",
         "External RAM",
         "WiFi"

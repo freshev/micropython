@@ -45,12 +45,12 @@ typedef struct _internal_flash_file_obj_t {
     int fd;
 } internal_flash_file_obj_t;
 
-STATIC void internal_flash_file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void internal_flash_file_obj_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     (void)kind;
     mp_printf(print, "<io.%s %p>", mp_obj_get_type_str(self_in), MP_OBJ_TO_PTR(self_in));
 }
 
-STATIC mp_uint_t internal_flash_file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
+static mp_uint_t internal_flash_file_obj_read(mp_obj_t self_in, void *buf, mp_uint_t size, int *errcode) {
     // ========================================
     // f.read()
     // ========================================
@@ -63,7 +63,7 @@ STATIC mp_uint_t internal_flash_file_obj_read(mp_obj_t self_in, void *buf, mp_ui
     return (mp_uint_t) ret;
 }
 
-STATIC mp_uint_t internal_flash_file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
+static mp_uint_t internal_flash_file_obj_write(mp_obj_t self_in, const void *buf, mp_uint_t size, int *errcode) {
     // ========================================
     // f.write(s)
     // ========================================
@@ -80,14 +80,14 @@ STATIC mp_uint_t internal_flash_file_obj_write(mp_obj_t self_in, const void *buf
     return (mp_uint_t) ret;
 }
 
-STATIC mp_obj_t file_obj___exit__(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t file_obj___exit__(size_t n_args, const mp_obj_t *args) {
     (void)n_args;
     return mp_stream_close(args[0]);
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(file_obj___exit___obj, 4, 4, file_obj___exit__);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(file_obj___exit___obj, 4, 4, file_obj___exit__);
 
-STATIC mp_uint_t internal_flash_file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode) {
+static mp_uint_t internal_flash_file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg, int *errcode) {
     // ========================================
     // IO stream control: f.seek(), f.flush(), f.close()
     // ========================================
@@ -146,7 +146,7 @@ STATIC mp_uint_t internal_flash_file_obj_ioctl(mp_obj_t o_in, mp_uint_t request,
     return MP_STREAM_ERROR;
 }
 
-STATIC const mp_arg_t file_open_args[] = {
+static const mp_arg_t file_open_args[] = {
     { MP_QSTR_file, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_rom_obj = MP_ROM_PTR(MP_ROM_NONE)} },
     { MP_QSTR_mode, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_QSTR(MP_QSTR_r)} },
     { MP_QSTR_encoding, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_rom_obj = MP_ROM_PTR(MP_ROM_NONE)} },
@@ -154,7 +154,7 @@ STATIC const mp_arg_t file_open_args[] = {
 
 #define FILE_OPEN_NUM_ARGS MP_ARRAY_SIZE(file_open_args)
 
-STATIC mp_obj_t internal_flash_file_open(const char* file_name, const mp_obj_type_t *type, mp_arg_val_t *args) {
+static mp_obj_t internal_flash_file_open(const char* file_name, const mp_obj_type_t *type, mp_arg_val_t *args) {
     // ========================================
     // open(...)
     // ========================================
@@ -184,7 +184,8 @@ STATIC mp_obj_t internal_flash_file_open(const char* file_name, const mp_obj_typ
                 mp_raise_ValueError("Mode must be one or more of 'rwabt+'");
         }
     }
-    internal_flash_file_obj_t *o = m_new_obj_with_finaliser(internal_flash_file_obj_t);
+    //internal_flash_file_obj_t *o = m_new_obj_with_finaliser(internal_flash_file_obj_t);
+    internal_flash_file_obj_t *o = m_new_obj(internal_flash_file_obj_t);
     o->base.type = type;
 
     int32_t fd = maybe_raise_FSError(API_FS_Open(file_name, mode, 0));
@@ -194,13 +195,13 @@ STATIC mp_obj_t internal_flash_file_open(const char* file_name, const mp_obj_typ
     return MP_OBJ_FROM_PTR(o);
 }
 
-STATIC mp_obj_t internal_flash_file_obj_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t internal_flash_file_obj_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_val_t arg_vals[FILE_OPEN_NUM_ARGS];
     mp_arg_parse_all_kw_array(n_args, n_kw, args, FILE_OPEN_NUM_ARGS, file_open_args, arg_vals);
     return internal_flash_file_open(NULL, type, arg_vals);
 }
 
-STATIC const mp_rom_map_elem_t vfs_fat_rawfile_locals_dict_table[] = {
+static const mp_rom_map_elem_t vfs_fat_rawfile_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&mp_stream_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
     { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj) },
@@ -215,9 +216,9 @@ STATIC const mp_rom_map_elem_t vfs_fat_rawfile_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&file_obj___exit___obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(vfs_fat_rawfile_locals_dict, vfs_fat_rawfile_locals_dict_table);
+static MP_DEFINE_CONST_DICT(vfs_fat_rawfile_locals_dict, vfs_fat_rawfile_locals_dict_table);
 
-STATIC const mp_stream_p_t internal_flash_fileio_stream_p = {
+static const mp_stream_p_t internal_flash_fileio_stream_p = {
     .read = internal_flash_file_obj_read,
     .write = internal_flash_file_obj_write,
     .ioctl = internal_flash_file_obj_ioctl,
@@ -233,7 +234,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &vfs_fat_rawfile_locals_dict
     );
 
-STATIC const mp_stream_p_t internal_flash_textio_stream_p = {
+static const mp_stream_p_t internal_flash_textio_stream_p = {
     .read = internal_flash_file_obj_read,
     .write = internal_flash_file_obj_write,
     .ioctl = internal_flash_file_obj_ioctl,
