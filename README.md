@@ -1,6 +1,6 @@
 [![Unix CI badge](https://github.com/micropython/micropython/actions/workflows/ports_unix.yml/badge.svg)](https://github.com/micropython/micropython/actions?query=branch%3Amaster+event%3Apush) [![STM32 CI badge](https://github.com/micropython/micropython/actions/workflows/ports_stm32.yml/badge.svg)](https://github.com/micropython/micropython/actions?query=branch%3Amaster+event%3Apush) [![Docs CI badge](https://github.com/micropython/micropython/actions/workflows/docs.yml/badge.svg)](https://docs.micropython.org/) [![codecov](https://codecov.io/gh/micropython/micropython/branch/master/graph/badge.svg?token=I92PfD05sD)](https://codecov.io/gh/micropython/micropython)
 
-The MicroPython project (v1.22.2 forked)
+The MicroPython project (v1.26 forked)
 ========================================
 <p align="center">
   <img src="https://github.com/freshev/micropython/blob/master/logo/logo.jpg?raw=true" alt="MicroPython Logo"/>
@@ -19,7 +19,7 @@ Python 3.5 and some select features from later versions). The following core
 datatypes are provided: `str`(including basic Unicode support), `bytes`,
 `bytearray`, `tuple`, `list`, `dict`, `set`, `frozenset`, `array.array`,
 `collections.namedtuple`, classes and instances. Builtin modules include
-`os`, `sys`, `time`, `re`, and `struct`, etc. Select ports have support for
+`os`, `sys`, `time`, `re`, and `struct`, etc. Some ports have support for
 `_thread` module (multithreading), `socket` and `ssl` for networking, and
 `asyncio`. Note that only a subset of Python 3 functionality is implemented
 for the data types and modules.
@@ -35,8 +35,8 @@ DAC, PWM, SPI, I2C, CAN, Bluetooth, and USB.
 Getting started
 ---------------
 
-See the [online documentation](https://docs.micropython.org/) for API
-references and information about using MicroPython and information about how
+See the [online documentation](https://docs.micropython.org/) for the API
+reference and information about using MicroPython and information about how
 it is implemented.
 
 We use [GitHub Discussions](https://github.com/micropython/micropython/discussions)
@@ -84,8 +84,8 @@ You will also need bash, gcc, and Python 3.3+ available as the command `python3`
 (if your system only has Python 2.7 then invoke make with the additional option
 `PYTHON=python2`). Some ports (rp2 and esp32) additionally use CMake.
 
-Supported platforms & architectures in this fork
-------------------------------------------------
+Supported platforms & architectures
+-----------------------------------
 
 MicroPython runs on a wide range of microcontrollers, as well as on Unix-like
 (including Linux, BSD, macOS, WSL) and Windows systems.
@@ -105,6 +105,7 @@ well as for ARM Cortex M4. Start with this if you want to port MicroPython to
 another microcontroller. Additionally the ["bare-arm"](ports/bare-arm) port
 is an example of the absolute minimum configuration, and is used to keep
 track of the code size of the core runtime and VM.
+
 
 In addition, the following ports are provided in this repository:
  - [A9/A9G](ports/gprs_a9) -- Ai-Thinker A9/A9G (2G only) SoC.
