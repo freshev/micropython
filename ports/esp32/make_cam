@@ -1,0 +1,6 @@
+#!/bin/bash
+
+idf.py -D MICROPY_BOARD=ESP32_CAM build
+# cd ./build; esptool.py --chip esp32 merge_bin -o firmware_camera.bin @flash_args;cd ..
+#cp ./build/firmware_camera.bin ./firmware/firmware_camera.bin
+#/usr/bin/zlib-flate -compress < ./firmware/firmware_camera.bin > /var/opt/asque/firmware/ESP32CAM_FW/firmware_camera.bin

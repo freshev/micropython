@@ -1,0 +1,13 @@
+menu "Deploy"
+	config DEPLOY_FW_FOLDER
+		string "Deploy firmware to folder"
+        default ""
+	help
+        	Deploy LOD file to folder
+
+        config DEPLOY_FW_COMPRESS
+		bool "Deploy firmware in compressed form"
+		default y
+        help
+		Deploy LOD file in compressed form
+endmenu

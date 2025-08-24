@@ -1,0 +1,3 @@
+#!/bin/bash
+
+idf.py -D MICROPY_BOARD=ESP32_GENERIC menuconfig

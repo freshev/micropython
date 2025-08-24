@@ -73,6 +73,11 @@
 #include "modespnow.h"
 #endif
 
+#if MODULE_CAMERA_ENABLED
+#include "esp_camera.h"
+#endif
+
+
 // MicroPython runs as a task under FreeRTOS
 #define MP_TASK_PRIORITY        (ESP_TASK_PRIO_MIN + 1)
 
@@ -202,6 +207,9 @@ soft_reset_exit:
     mp_hal_stdout_tx_str("MPY: soft reboot\r\n");
 
     // deinitialise peripherals
+    #if MODULE_CAMERA_ENABLED
+    //esp_camera_deinit();
+    #endif
     machine_pwm_deinit_all();
     // TODO: machine_rmt_deinit_all();
     machine_pins_deinit();

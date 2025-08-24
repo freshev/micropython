@@ -130,12 +130,13 @@
 /*
 typedef struct _machine_adc_block_obj_t machine_adc_block_obj_t;
 typedef struct _machine_adc_obj_t machine_adc_obj_t;
-typedef struct _machine_i2c_target_obj_t machine_i2c_target_obj_t;
 typedef struct _machine_i2s_obj_t machine_i2s_obj_t;
 typedef struct _machine_pwm_obj_t machine_pwm_obj_t;
 typedef struct _machine_uart_obj_t machine_uart_obj_t;
 typedef struct _machine_wdt_obj_t machine_wdt_obj_t;
 */
+typedef struct _machine_i2c_target_obj_t machine_i2c_target_obj_t;
+
 
 typedef struct _machine_mem_obj_t {
     mp_obj_base_t base;
