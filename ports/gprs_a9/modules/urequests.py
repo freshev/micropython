@@ -1,6 +1,6 @@
 import sys
 import socket
-import ssl
+import tls
 
 def a2s(array):
         if('encode' in dir('')): return array.decode('utf-8') #python >= 2.7
@@ -60,7 +60,12 @@ def request(method, url, data=None, timeout=None):
 
     try:
         s.connect(ai[-1])
-        if proto == 'https:': s = ssl.wrap_socket(s, server_hostname=host)
+
+        if proto == 'https:': 
+            #s = ssl.wrap_socket(s, server_hostname=host)
+            ctx = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+            ctx.verify_mode = tls.CERT_NONE
+            s = ctx.wrap_socket(s, server_hostname=host)
         s.write('%s /%s HTTP/1.0\r\n' % (method, path))
         s.write('Host: %s\r\n' % host)        
         if data:

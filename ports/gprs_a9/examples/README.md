@@ -41,7 +41,7 @@ Keywords: **internet, TCP, HTTP, GPRS, connection**
 
 Modules: `cellular`, `socket`
 
-[example_31_ssl.py](example_31_ssl.py)
+[example_31_tls.py](example_31_tls.py)
 
 Test an encrypted SSL HTTP request.
 
@@ -49,7 +49,7 @@ Keywords: **HTTPS, SSL, encryption**
 
 Modules: `cellular`, `socket`, `ssl`
 
-[example_32_http.py](example_32_http.py)
+[example_32_http_https.py](example_32_http_https.py)
 
 Performs a simple URL request using `urequests` from [micropython-lib](https://github.com/micropython/micropython-lib).
 

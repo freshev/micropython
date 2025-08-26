@@ -1153,18 +1153,19 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 
         uint8_t ret;
         if(!__is_attached()) {
-        	// mp_printf(&mp_plat_print, "Flight Off...\n");
+        	mp_printf(&mp_plat_print, "Flight Off...\n");
         	Network_SetFlightMode(0);
         	OS_Sleep(1000);
         	//mp_printf(&mp_plat_print, "Attach... ");
         	ret = Network_StartAttach();
         	//mp_printf(&mp_plat_print, " ret1=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
-        	WAIT_UNTIL((network_status & NTW_ATT_BIT), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+        	WAIT_UNTIL((network_status & NTW_ATT_BIT), timeout, 100, mp_raise_RuntimeError("Not attached: try resetting"));
         	//mp_printf(&mp_plat_print, "           ret2=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
         }
         // mp_printf(&mp_plat_print, "Wait attach...\n");
 
-       	WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+        WAIT_UNTIL(__is_attached(), timeout, 100, mp_raise_RuntimeError("Not attached: try resetting"));
+        OS_Sleep(100);
 
         if (!(network_status & NTW_ACT_BIT)) {
         	Network_PDP_Context_t context;

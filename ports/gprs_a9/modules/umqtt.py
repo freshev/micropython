@@ -160,12 +160,17 @@ class MQTTClient:
             type, e, traceback = sys.exc_info()
             raise RuntimeError(e)
         if self.ssl:
-            import ssl
+            import tls
             # do not uncomment !!!!!
             #self.sock = ssl.wrap_socket(self.sock_raw, key=self.ssl_params['key'], cert=self.ssl_params['cert'],
             #            server_side=self.ssl_params['server_side'], server_hostname=self.ssl_params['server_hostname'],
             #            do_handshake=self.ssl_params['do_handshake'])
-            self.sock = ssl.wrap_socket(self.sock_raw, server_hostname=self.server)
+
+            #self.sock = ssl.wrap_socket(self.sock_raw, server_hostname=self.server)
+            ctx = tls.SSLContext(tls.PROTOCOL_TLS_CLIENT)
+            ctx.verify_mode = tls.CERT_NONE
+            self.sock = ctx.wrap_socket(self.sock_raw, server_hostname=self.server)
+
             self.sock_raw.setblocking(1)
         else: self.sock = self.sock_raw
 

@@ -22,7 +22,7 @@ def sms_handler(evt):
         flag = 0
 
 cellular.on_sms(sms_handler)
-cellular.SMS("8800", "asd").send()
+cellular.SMS("8800", "test").send()
 
 print("Doing something important ...")
 while flag:
