@@ -52,6 +52,9 @@ static machine_i2c_target_obj_t machine_i2c_target_obj[I2C_NUM_MAX];
 
 // Called when the controller is about to read from the TX/send buffer.
 static bool i2c_slave_request_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_slave_request_event_data_t *evt_data, void *arg) {
+
+    mp_printf(&mp_plat_print, "request");
+
     machine_i2c_target_obj_t *self = arg;
     machine_i2c_target_data_t *data = &machine_i2c_target_data[self->config.i2c_port];
 
@@ -73,6 +76,9 @@ static bool i2c_slave_request_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_sla
 
 // Called when the controller has written into the RX/receive buffer.
 static bool i2c_slave_receive_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_slave_rx_done_event_data_t *evt_data, void *arg) {
+
+    mp_printf(&mp_plat_print, "receive len = %d, data = %s", evt_data->length, evt_data->buffer);
+
     machine_i2c_target_obj_t *self = arg;
     machine_i2c_target_data_t *data = &machine_i2c_target_data[self->config.i2c_port];
 
@@ -80,6 +86,7 @@ static bool i2c_slave_receive_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_sla
     machine_i2c_target_data_addr_match(data, false);
     self->index = 0;
     self->rx_done_event_data = evt_data;
+
     while (self->index < self->rx_done_event_data->length) {
         machine_i2c_target_data_write_request(self, data);
     }
