@@ -105,3 +105,11 @@ Keywords: **GPS, track, traccar**
 
 Modules: `cellular`, `gps`, `socket`
 
+[example_60_i2c.py](example_60_i2c.py)
+
+I2C communications
+
+Keywords: **I2C**
+
+Modules: `cellular`, `gps`, `socket`
+

@@ -95,7 +95,8 @@ static void machine_hw_i2c_init(machine_hw_i2c_obj_t *self, uint32_t freq, uint3
     I2C_Config_t config;
     self->freq = config.freq = mp_machine_i2c_private_get_I2C_FREQ(freq);
     self->timeout = timeout_us / 1000;
-    if(!I2C_Init(self->id, config)) mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("I2C init fail"));
+    int ret = I2C_Init(self->id, config);
+    if(!ret) mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("I2C init fail (err=%d)"), ret);
 }
 
 int machine_hw_i2c_transfer(mp_obj_base_t *self_in, uint16_t addr, size_t n, mp_machine_i2c_buf_t *bufs, unsigned int flags) {
@@ -114,8 +115,15 @@ int machine_hw_i2c_transfer(mp_obj_base_t *self_in, uint16_t addr, size_t n, mp_
             //Trace(1, "I2C total read %i bytes", data_len);
         } else {
             for (; n--; ++bufs) {
-                //Trace(1, "I2C write start");
-                err = I2C_Transmit(self->id, addr, (uint8_t*)bufs->buf, bufs->len, self->timeout);
+                // Trace(1, "I2C write start");
+                if(bufs->buf != NULL && bufs->len > 0) {
+                    // Trace(1, "I2C write normal");
+                    err = I2C_Transmit(self->id, addr, (uint8_t*)bufs->buf, bufs->len, self->timeout);
+                } else {
+                    // Trace(1, "I2C write NULL");
+                    uint8_t buff = 0xFF;
+                    err = I2C_Transmit(self->id, addr, (uint8_t*)&buff, 1, self->timeout);
+                }
                 //Trace(1, "I2C wrote %i bytes (%s). Err: %i", bufs->len, (char*)bufs->buf, (uint8_t)err);
                 data_len += bufs->len;
             }
