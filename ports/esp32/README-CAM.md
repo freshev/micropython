@@ -216,7 +216,6 @@ class cam_slave:
         self.readbuffer = bytearray(10)
         self.writebuffer = bytearray(0)
         self.status(1) # blink
-        self.busy = False
 
         try:
             camera.init(0, format = camera.JPEG)
@@ -316,7 +315,7 @@ while(1): time.sleep(1) # infinite loop
 ```
 
 Master part on [Ai-ThinkerM A9/A9G module](https://github.com/Ai-Thinker-Open/GPRS_C_SDK) 
-with [this micropython port](https://github.com/freshev/micropython/ports/gprs_a9):
+with [this micropython port](https://github.com/freshev/micropython/tree/master/ports/gprs_a9):
 ```python
 from machine import I2C
 import time
