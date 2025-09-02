@@ -112,6 +112,92 @@ static mp_obj_t esp_gpio_matrix_out(size_t n_args, const mp_obj_t *args) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esp_gpio_matrix_out_obj, 4, 4, esp_gpio_matrix_out);
 
+
+//--------------------------------------------------------
+static int vprintf_redirected(const char *fmt, va_list ap)
+{
+    int ret = mp_vprintf(&mp_plat_print, fmt, ap);
+    return ret;
+}
+
+static vprintf_like_t orig_log_func = NULL;
+static vprintf_like_t prev_log_func = NULL;
+static vprintf_like_t mp_log_func = &vprintf_redirected;
+
+//--------------------------------------------------------------------------
+static mp_obj_t esp_log_level (mp_obj_t tag_in, mp_obj_t level_in) {
+    const char *tag = mp_obj_str_get_str(tag_in);
+    int32_t level = mp_obj_get_int(level_in);
+    if ((level < 0) || (level > 5)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Log level 0~5 expected"));
+    }
+
+    esp_log_level_set(tag, level);
+
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_2(esp_log_level_obj, esp_log_level);
+
+//---------------------------------------
+static mp_obj_t esp_logto_mp () {
+    if (orig_log_func == NULL) {
+        orig_log_func = esp_log_set_vprintf(mp_log_func);
+    }
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(esp_logto_mp_obj, esp_logto_mp);
+
+//----------------------------------------
+static mp_obj_t esp_logto_esp () {
+    if (orig_log_func != NULL) {
+        prev_log_func = esp_log_set_vprintf(orig_log_func);
+        orig_log_func = NULL;
+    }
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(esp_logto_esp_obj, esp_logto_esp);
+
+//--------------------------------------------------
+static void print_heap_info(multi_heap_info_t *info)
+{
+    mp_printf(&mp_plat_print, "              Free: %u\n", info->total_free_bytes);
+    mp_printf(&mp_plat_print, "         Allocated: %u\n", info->total_allocated_bytes);
+    mp_printf(&mp_plat_print, "      Minimum free: %u\n", info->minimum_free_bytes);
+    mp_printf(&mp_plat_print, "      Total blocks: %u\n", info->total_blocks);
+    mp_printf(&mp_plat_print, "Largest free block: %u\n", info->largest_free_block);
+    mp_printf(&mp_plat_print, "  Allocated blocks: %u\n", info->allocated_blocks);
+    mp_printf(&mp_plat_print, "       Free blocks: %u\n", info->free_blocks);
+}
+
+//---------------------------------------
+static mp_obj_t esp_heap_info(void) {
+    multi_heap_info_t info;
+
+    mp_printf(&mp_plat_print, "Heap outside of MicroPython heap:\n---------------------------------\n");
+
+    heap_caps_get_info(&info, MALLOC_CAP_INTERNAL | MALLOC_CAP_32BIT | MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+    print_heap_info(&info);
+
+#if CONFIG_SPIRAM
+#if CONFIG_SPIRAM_USE_MEMMAP
+        mp_printf(&mp_plat_print, "\nSPIRAM info (MEMMAP used):\n--------------------------\n");
+        mp_printf(&mp_plat_print, "            Total: %u\n", CONFIG_SPIRAM_SIZE);
+        mp_printf(&mp_plat_print, "Used for MPy heap: %u\n", mpy_heap_size);
+        mp_printf(&mp_plat_print, "  Free (not used): %u\n", CONFIG_SPIRAM_SIZE - mpy_heap_size);
+#else
+        mp_printf(&mp_plat_print, "\nSPIRAM info:\n------------\n");
+        heap_caps_get_info(&info, MALLOC_CAP_SPIRAM);
+        print_heap_info(&info);
+#endif
+#endif
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(esp_heap_info_obj, esp_heap_info);
+//---------------------------------------
+
+
+
 static const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_esp) },
 
@@ -133,6 +219,15 @@ static const mp_rom_map_elem_t esp_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_LOG_INFO), MP_ROM_INT((mp_uint_t)ESP_LOG_INFO)},
     { MP_ROM_QSTR(MP_QSTR_LOG_DEBUG), MP_ROM_INT((mp_uint_t)ESP_LOG_DEBUG)},
     { MP_ROM_QSTR(MP_QSTR_LOG_VERBOSE), MP_ROM_INT((mp_uint_t)ESP_LOG_VERBOSE)},
+
+    // Logging
+    { MP_OBJ_NEW_QSTR(MP_QSTR_loglevel),    MP_ROM_PTR(&esp_log_level_obj) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_redirectlog), MP_ROM_PTR(&esp_logto_mp_obj) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_restorelog),  MP_ROM_PTR(&esp_logto_esp_obj) },
+
+    // Heap
+    { MP_ROM_QSTR(MP_QSTR_heap_info),       MP_ROM_PTR(&esp_heap_info_obj) },
+
 };
 
 static MP_DEFINE_CONST_DICT(esp_module_globals, esp_module_globals_table);

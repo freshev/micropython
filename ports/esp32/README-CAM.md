@@ -1,5 +1,5 @@
 MicroPython port to the ESP32-CAM
-================================
+=================================
 
 This is a port of MicroPython to the Espressif ESP32 series of
 microcontrollers.  It uses the ESP-IDF framework and MicroPython runs as
@@ -22,9 +22,6 @@ Supported features include:
 
 Initial development of this ESP32 port was sponsored in part by Microbric Pty Ltd.
 
-PSRAM, I2C driver and ESP logging commonly used from 
-[MicroPython_ESP32_psRAM_LoBo](https://github.com/loboris/MicroPython_ESP32_psRAM_LoBo)
-rewritten to ESP-IDF v5.4.2 base.
 
 Setting up ESP-IDF and the build environment
 --------------------------------------------
@@ -86,7 +83,7 @@ $ ./configure_cam
 $ ./make_cam
 ```
 
-This will produce a combined `firmware_camera.bin` image in the `./build/`
+This will produce a combined `merged-binary.bin` image in the `./build/`
 folder (this firmware image is made up of: bootloader.bin, partitions.bin
 and micropython.bin).
 
@@ -99,10 +96,6 @@ $ esptool.py --chip auto --port /dev/ttyUSB0 --baud 921600 write_flash -z 0x0000
 Note: If you get Permission error(13, ...) while burn under Windows with ESP32CAM motherboard, 
 try to reinstall CH341 driver from ports/esp32/driver/CH34x_Install_Windows_v3_4.exe
 
-```bash
-$ idf.py -D MICROPY_BOARD=ESP32_CAM build
-$ idf.py flash
-```
 
 Getting a Python prompt on the device
 -------------------------------------
@@ -124,7 +117,7 @@ $ miniterm.py /dev/ttyUSB0 115200
 The UART protocol for ESP32-CAM board use disabled RTS and DTR.
 So you can not use putty to get REPL prompt.
 
-For use [Thonny](https://thonny.org/) make changes into Thonny configuration.ini
+To use [Thonny](https://thonny.org/) make changes into Thonny configuration.ini
 
 ```bash
 [ESP32]
@@ -133,7 +126,7 @@ dtr = False
 rts = False
 ```
 
-To use AMPY micropython tool use [this](https://github.com/freshev/Universal_AMPY).
+Or use AMPY micropython tool from [here](https://github.com/freshev/Universal_AMPY).
 This tool is proposed by [rt-thread VSCode extension for micropython](https://github.com/SummerGift/micropython-tools).
 
 You can also use `idf.py monitor`.
@@ -160,57 +153,45 @@ The callback version is:
 ```python
 from machine import I2CTarget
 
-uplink=I2C(scl=12, sda=13)
-uplink.callback(lambda res:print(res.getcbdata())) #read all bytes from I2C master node
+uplink=I2CTarget(addr=44, scl=12, sda=13)
+uplink.irq(callback_function, trigger = I2CTarget.IRQ_END_READ | I2CTarget.IRQ_END_WRITE)
+
+def callback_function(i2c_target):
+    flags = i2c_target.irq().flags()
+    if flags & I2CTarget.IRQ_END_READ:
+        pass
+
+    if flags & I2CTarget.IRQ_END_WRITE:
+        i2c_target.readinto(readbuffer)
+        ...
+        # compose writebuffer
+        ...
+        i2c_target.write(writebuffer)
 ```
 
-or use getdata/setdata function
-
-```python
-from machine import I2C
-
-uplink=I2CTarget(scl=12, sda=13)
-uplink.getdata(0, 10) # read 10 bytes from I2C master node
-uplink.setdata(bytearray(32768),0)
-```
-Note that maximum write buffer length in slave mode limited to 64kB.
-Buffer length more then 32kB leads to unstable PSRAM read/write/operations, cyclic reboots etc. Use on your own risk.
+Note: Maximum internal I2C buffers sizes in slave mode limited to 1027 bytes (See `machine_i2c_target.c`).
+Use mem parameter in I2C_Target constructor to use other buffer sizes
 
 Configuring the ESP-logging
 ---------------------------
 set log tag (string) and verbosity (1-5)
 
 ```python
-import machine
-machine.loglevel("*",5)
-machine.redirectlog()
+import esp
+esp.loglevel("*",5)
+esp.redirectlog()
 ...
-machine.loglevel("[I2C]",1)
+esp.loglevel("[I2C]",1)
 ...
-machine.restorelog()
+esp.restorelog()
 ```
 
 Getting heap info
 -----------------
 
 ```python
-import machine
-machine.heap_info()
-```
-
-Autorun
--------
-In order to inject "main.py" script right into firmware you can use:
-1) "default_main.py" script
-2) "default_main.sh" build script
-
-"default_main.py" transforms to "main.py" at the board filesystem during board boot process.
-
-To do this add desired content to "default_main.py" and run:
-
-```bash
-$ ./default_main.sh
-$ ./make
+import esp
+esp.heap_info()
 ```
 
 Full example
@@ -219,145 +200,194 @@ Slave part on ESP32-CAM module:
 ```python
 # micropython esp32 camera module in I2C slave mode
 import machine
-from machine import WDT, I2CTarget, Pin
+from machine import WDT, Pin, I2CTarget
+import time
 import camera
-import utime
+import gc
 
 class cam_slave:
 
-    def __init__(self, scl = 12, sda = 13, freq=100000, wdt_timeout = 120000):
+    def __init__(self, scl = 12, sda = 13, wdt_timeout = 120000, addr = 44, maxdatasize = 1024):
+        self.maxdatasize = maxdatasize
         self.wdt = WDT(timeout=wdt_timeout)
-        self.buffer = []
-        self.status(1) # blink
-        #init camera module
-        try:
-            camera.init(0, format = camera.JPEG)
-        except:
-            camera.deinit()
-            self.status(1) # blink
-            try:
-                camera.init(0, format = camera.JPEG)
-            except:
-                self.status(10) # blink 10 times
-                print("Camera init failed. Resetting...")
-
-                machine.reset()
-
         self.flash = Pin(4, Pin.OUT, 0)
         self.counter = 0       # packet counter
-        self.datamaxsize = 100 # 100 bytes in each packet, depends on master recive buffer length
+        self.buffer = bytearray(0)
+        self.readbuffer = bytearray(10)
+        self.writebuffer = bytearray(0)
+        self.status(1) # blink
+        self.busy = False
+
         try:
-            self.uplink = I2C(scl = scl, sda = sda, freq = freq, mode = I2C.SLAVE, slave_wbuflen=256)
+            camera.init(0, format = camera.JPEG)
+            print("Camera init success")
+        except Exception as ex:
+            print(ex)
+            self.status(3) # blink 3 times
+            print("Resetting...")
+            time.sleep(2)
+            machine.reset()
+
+        try:
+            self.uplink = I2CTarget(addr = addr, scl = scl, sda = sda, timeout=500000) # mem_addrsize=8, 
         except OSError as ex:
-            if(ex.errno == 'I2C bus already used'):
-                print(ex)
-                I2C.deinit_all()
-                self.uplink = I2C(scl = scl, sda = sda, freq = freq, mode = I2C.SLAVE, slave_wbuflen=256)
-            else: self.uplink = None
+            self.status(5) # blink 5 times
+            print("I2C init failed. Resetting...")
+            time.sleep(2)
+            machine.reset()
         if (self.uplink is not None):
-            self.uplink.callback(self.i2ccb)
-        #print(self.uplink)
-
-    def i2ccb(self, res):
-        com = res.getcbdata()
-        #print(com)
-        if com == b'ping':      self.ok(); return
-        if com == b'flash-on':  self.flash.on(); self.ok(); return
-        if com == b'flash-off': self.flash.off(); self.ok(); return
-        if com == b'capture':
-            self.counter = 0
-            self.buffer = camera.capture();
-            self.ok();
-            #print("Total size ", len(self.buffer))
-            return
-        if com == b'get':
-            #send buffer slice by slice
-            start = self.counter * self.datamaxsize
-            stop =  (self.counter + 1) * self.datamaxsize
-            if(stop < len(self.buffer)):
-                #print("Send bytes ", start, stop)
-                self.ok(self.buffer[start:stop])
-                self.counter += 1
-            else:
-                if(start < len(self.buffer)):
-                    #print("Send last ", start, len(self.buffer))
-                    self.ok(self.buffer[start:])
-                    self.counter += 1
-                else:
-                    #print("Send empty buffer")
-                    self.ok(bytearray([])) # send empty buffer
-                    self.counter = 0
-            return
-        #command unknown
-        if(self.wdt is not None): self.wdt.feed()
-        self.uplink.setdata(bytearray([100]), 0) # send code 100 (failed)
-
-    def ok(self, data = None):
-        if(self.uplink != None):
-            if(self.wdt is not None): self.wdt.feed()
-            if(data != None):
-                self.uplink.setdata(bytearray([201]), 0) # send code 201 (success with data)
-                self.uplink.setdata(len(data).to_bytes(2,'little'), 0) # send 2 bytes
-                if(len(data) > 0): self.uplink.setdata(data, 0) # send buffer (max buffer length = 65536, unstable, using PSRAM)
-            else:
-                self.uplink.setdata(bytearray([200]), 0) # send code 200 (success)
+            self.uplink.irq(self.i2ccb, trigger = I2CTarget.IRQ_END_READ | I2CTarget.IRQ_END_WRITE)
+        print("uplink =", self.uplink)
 
     def status(self, num): # blink internal LED 'num' times
         led = Pin(33, Pin.OUT, 1)
         for i in range (0, num):
-            led.off();
-            utime.sleep_ms(200)
-            led.on();
-            if (i < num - 1): utime.sleep_ms(200)
+            led.off()
+            time.sleep_ms(200)
+            led.on()
+            if (i < num - 1): time.sleep_ms(200)
 
-import machine
-#machine.loglevel("*",5)
-#machine.redirectlog()
-cam_slave(scl = 12, sda = 13, freq=100000, wdt_timeout = 60000) #60 seconds for WDT, reboots if no commands received.
-while(1): utime.sleep(1) # infinite loop
+    def i2ccb(self, i2c_target):
+        if self.wdt is not None: self.wdt.feed()
+        flags = i2c_target.irq().flags()
+        if flags & I2CTarget.IRQ_END_READ:
+            #print("writebuffer =", self.writebuffer)
+            pass
+
+        if flags & I2CTarget.IRQ_END_WRITE:
+            i2c_target.readinto(self.readbuffer)
+            com = self.readbuffer.replace(b'\0', b'')
+            for i in range(len(self.readbuffer)): self.readbuffer[i] = 0
+
+            if len(com) > 0:
+                try: print(com.decode())
+                except: pass
+
+            if com == b'ping':
+                self.counter
+                self.ok(i2c_target)
+            elif com == b'flash-on':  self.flash.on();  self.ok(i2c_target)
+            elif com == b'flash-off': self.flash.off(); self.ok(i2c_target)
+            elif com == b'capture':
+                self.counter = 0
+                self.buffer = camera.capture()
+                self.ok(i2c_target)
+                #print("Total size ", len(self.buffer))
+            elif com == b'get':
+                #send buffer part by part
+                start = self.counter * self.maxdatasize
+                stop =  (self.counter + 1) * self.maxdatasize
+                if(stop < len(self.buffer)):
+                    #print("Send bytes ", start, stop)
+                    self.ok(i2c_target, self.buffer[start:stop])
+                    self.counter += 1
+                else:
+                    if(start < len(self.buffer)):
+                        #print("Send last ", start, len(self.buffer))
+                        self.ok(i2c_target, self.buffer[start:])
+                        self.counter += 1
+                    else:
+                        #print("Send empty buffer")
+                        self.ok(i2c_target, bytearray(0)) # send empty buffer
+                        self.counter = 0
+            else: #command unknown
+                print("command unknown:", com)
+                self.failed(i2c_target)
+
+    def failed(self, i2c_target, data = None):
+        self.writebuffer = bytearray([100]) # send code 100 (failed)
+        i2c_target.write(self.writebuffer)
+
+    def ok(self, i2c_target, data = None):
+        self.writebuffer = bytearray(0)
+        if(data != None):
+            self.writebuffer.append(201) # send code 201 (success with data)
+            self.writebuffer.extend(len(data).to_bytes(2,'little')) # send data length (2 bytes)
+            if(len(data) > 0): self.writebuffer.extend(data) # send buffer (max buffer length = 1027)
+        else:
+            self.writebuffer.append(200) # send code 200 (success)
+        i2c_target.write(self.writebuffer)
+
+# 120 seconds for WDT,
+# auto reboot if no commands received,
+# hard coded max I2C send buffer size = 1027 bytes
+cam_slave(maxdatasize = 1024, wdt_timeout = 120000) 
+while(1): time.sleep(1) # infinite loop
 ```
 
 Master part on [Ai-ThinkerM A9/A9G module](https://github.com/Ai-Thinker-Open/GPRS_C_SDK) 
 with [this micropython port](https://github.com/freshev/micropython/ports/gprs_a9):
 ```python
-import i2c
-import utime
+from machine import I2C
+import time
 
-dev = 44
-# capture
-com = 'capture'
-i2c.init(2, 0) # Second I2C fo A9/A9G, frequency = 0-100kHz, 1 - 400kHZ
-i2c.transmit(2, dev, bytearray(com))
-utime.sleep_ms(50) # minimum wait time for slave can process callback
-res = i2c.receive(2, dev, 1)[0]
-print("Capture result =", res)
+i2c = I2C(2, freq = 100000, timeout=500000) # timeout 0.5s
+devs = i2c.scan()
 
-# get photo
-buffer = bytearray()
-blen = 100
-while blen > 0:
-  com = 'get'
-  i2c.transmit(2, dev, bytearray(com))
-  utime.sleep_ms(50) # minimum wait time for slave can process callback
-  res = i2c.receive(2, dev, 1)[0]
-  buf = i2c.receive(2, dev, 2)
-  blen = int.from_bytes(buf, 'little')
-  if(blen > 0):
-    buf = i2c.receive(2, dev, blen, 100) # large packets are slow, so timeout = 100ms
-    buffer = buffer + buf
-print("Last get result =", res)
-print("Got bytes =", len(buffer))
+if len(devs) > 0:
+    dev = devs[0]
+    print("found dev =", dev)
+    time.sleep_ms(20)
 
-#f = open("photo.jpg", "w")
-#f.write(buffer)
-#f.close()
+    com = "ping"
+    print(com + " -> ", end='')
+    res = i2c.writeto(dev, bytearray(com, "utf-8"))    
+    time.sleep_ms(10) # 10 ms minimum
+    print(int(i2c.readfrom(dev, 1)[0]))
+
+    time.sleep_ms(20) # 10 ms minimum
+
+    com = "capture"
+    print(com + " -> ", end="")
+    res = i2c.writeto(dev, bytearray(com, "utf-8"))
+    time.sleep_ms(10) # 10 ms minimum
+    print(int(i2c.readfrom(dev, 1)[0]))
+
+    time.sleep_ms(150) # 150 ms minimum
+
+    file = open("photo.jpg", "wb")
+    com = "get"
+    print(com + " -> ", end="")    
+    rlen = 1
+    while rlen > 0:
+        res = i2c.writeto(dev, bytearray(com, "utf-8"))
+        time.sleep_ms(180) # 150 ms minimum
+        buffer = i2c.readfrom(dev, 1024 + 3)
+        print(buffer[0], end="")
+        rlen = int.from_bytes(buffer[1:3], 'little')    
+        print(" (" + str(rlen) + " bytes)")
+        #print("received", buffer[3:3+rlen])
+        if rlen > 0: res = file.write(buffer[3:3+rlen])
+        time.sleep_ms(10) # 10 ms minimum
+else:
+    print("Camera not found")
 ```
+
+Contribution
+------------
+
+Managed component esp32-camera slightly rewritten (to allow multiple camera init() calls without deinit()) and put to ./components folder
+I2C_Target driver rewriten:
+- use I2C slave internal buffers (without defining mem in I2C_Target constructor) with hard coded sizes
+- add timeout parameter to I2C_Target constructor
+- add bounds checking when receive or send data
+- rewrite mp_machine_i2c_target_read_bytes
+- ./extmod/machine_i2c_target.c not modified
+Add camera pins component (select `ESP32 Camera Board` in ./configure_cam)
+Add deploy component (select `Deploy` to configure copying built files to external folder)
+
 
 Troubleshooting
 ---------------
 
-Firmware can not be burned to ESP32-CAM module while connected to I2C.
-Disconnect external I2C device and try again.
+Firmware can not be burned to ESP32-CAM module while GPIO12 pulled up or connected to something external.
+Disconnect GPIO12 and try again.
+Or you can disable GPIO12 boot behavior by using this [esptool command](https://docs.espressif.com/projects/esptool/en/latest/esp32/espefuse/set-flash-voltage-cmd.html)
+to burn the efuse bits for 3.3V flash (VDD_SDIO) voltage selection as discribed [here](https://github.com/espressif/arduino-esp32/issues/7519).
+```bash
+python -m espefuse --chip auto --port COM6 set-flash-voltage 3.3V
+```
+
 Also this helps when cyclic reboot occurs:
 ```bash
 rst:0x10 (RTCWDT_RTC_RESET),boot:0x33 (SPI_FAST_FLASH_BOOT)
@@ -366,16 +396,5 @@ invalid header: 0xffffffff
 ...
 ```
 
-You get error "I2C bus already used" when I2C interface already inited. Use
-```python
-I2C.deinit_all()
-```
-
 "Camera init failed" error happens when no PSRAM available on board, or micropython compiled with no PSRAM support.
 
-Try
-```bash
-$ idf.pu fullclean
-$ ./configure_cam
-$ ./make_cam
-```

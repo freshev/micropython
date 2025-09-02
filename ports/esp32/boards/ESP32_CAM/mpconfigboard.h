@@ -1,4 +1,4 @@
-#define MICROPY_HW_BOARD_NAME "ESP32-cam module (i2s)"
+#define MICROPY_HW_BOARD_NAME "ESP32-CAM module"
 #define MICROPY_HW_MCU_NAME "ESP32"
 
 //#define MICROPY_PY_BLUETOOTH                (0)
@@ -8,3 +8,6 @@
 // it allows the start of the range allocated to 
 #define MICROPY_ALLOCATE_HEAP_USING_MALLOC (1)
 #define MICROPY_HEAP_SIZE_REDUCTION (512 * 1024)
+
+// Hard IRQ on thss board leads to core dumps
+// #define MICROPY_PY_MACHINE_I2C_TARGET_HARD_IRQ (0)

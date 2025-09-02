@@ -234,6 +234,7 @@ idf_component_register(
     REQUIRES
         ${IDF_COMPONENTS}
         esp32-camera-pins
+        esp32-camera
 )
 
 # Set the MicroPython target as the current (main) IDF component target.
@@ -334,12 +335,14 @@ if(NOT CONFIG_DEPLOY_FW_FOLDER STREQUAL "")
         add_custom_target(deploy ALL
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < merged-binary.bin > ${CONFIG_DEPLOY_FW_FOLDER}/firmware_compressed.bin
+            COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < micropython.elf > ${CONFIG_DEPLOY_FW_FOLDER}/micropython_compressed.elf
             DEPENDS merge-bin
         )
     else()
         add_custom_target(deploy ALL
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMAND ${CMAKE_COMMAND} -E copy merged-binary.bin ${CONFIG_DEPLOY_FW_FOLDER}/firmware.bin
+            COMMAND ${CMAKE_COMMAND} -E copy micropython.elf ${CONFIG_DEPLOY_FW_FOLDER}/micropython.elf
             DEPENDS merge-bin
         )
     endif()

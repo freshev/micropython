@@ -34,6 +34,10 @@
 #include "hal/i2c_ll.h"
 #include "../i2c_private.h"
 
+#define I2C_TARGET_DEFAULT_TIMEOUT_US (50000)
+#define I2C_TARGET_SEND_BUFFER_LEN (1024 + 3)
+#define I2C_TARGET_RECEIVE_BUFFER_LEN (1024 + 3)
+
 typedef struct _machine_i2c_target_obj_t {
     mp_obj_base_t base;
     i2c_slave_dev_handle_t handle;
@@ -43,6 +47,7 @@ typedef struct _machine_i2c_target_obj_t {
     bool irq_active;
     int index;
     const i2c_slave_rx_done_event_data_t *rx_done_event_data;
+    int timeout;
 } machine_i2c_target_obj_t;
 
 static machine_i2c_target_obj_t machine_i2c_target_obj[I2C_NUM_MAX];
@@ -92,7 +97,7 @@ static bool i2c_slave_receive_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_sla
     return false;
 }
 
-static void i2c_target_init(machine_i2c_target_obj_t *self, machine_i2c_target_data_t *data, uint32_t addr, uint32_t addrsize, bool first_init) {
+static void i2c_target_init(machine_i2c_target_obj_t *self, machine_i2c_target_data_t *data, uint32_t addr, uint32_t addrsize, uint32_t timeout_us, bool first_init) {
     if (!first_init && self->handle != NULL) {
         i2c_del_slave_device(self->handle);
         self->handle = NULL;
@@ -100,8 +105,10 @@ static void i2c_target_init(machine_i2c_target_obj_t *self, machine_i2c_target_d
 
     self->config.clk_source = I2C_CLK_SRC_DEFAULT;
     self->config.slave_addr = addr;
-    self->config.send_buf_depth = data->mem_len;
-    self->config.receive_buf_depth = data->mem_len;
+    //self->config.send_buf_depth = data->mem_len;
+    //self->config.receive_buf_depth = data->mem_len;
+    self->config.send_buf_depth = (data->mem_len != 0) ? data->mem_len : I2C_TARGET_SEND_BUFFER_LEN;
+    self->config.receive_buf_depth = (data->mem_len != 0) ? data->mem_len : I2C_TARGET_RECEIVE_BUFFER_LEN;
     if (addrsize == 7) {
         self->config.addr_bit_len = I2C_ADDR_BIT_LEN_7;
     } else {
@@ -121,6 +128,7 @@ static void i2c_target_init(machine_i2c_target_obj_t *self, machine_i2c_target_d
         .on_request = i2c_slave_request_cb,
     };
     ESP_ERROR_CHECK(i2c_slave_register_event_callbacks(self->handle, &cbs, self));
+    self->timeout = timeout_us / 1000;
 }
 
 /******************************************************************************/
@@ -135,16 +143,39 @@ static void mp_machine_i2c_target_event_callback(machine_i2c_target_irq_obj_t *i
 }
 
 static size_t mp_machine_i2c_target_read_bytes(machine_i2c_target_obj_t *self, size_t len, uint8_t *buf) {
-    size_t i = 0;
-    while (i < len && self->index < self->rx_done_event_data->length) {
-        buf[i++] = self->rx_done_event_data->buffer[self->index++];
+    if (xPortInIsrContext()) {
+        // called from ISR
+        size_t i = 0;
+        while (i < len && self->index < self->rx_done_event_data->length) {
+            buf[i++] = self->rx_done_event_data->buffer[self->index++];
+        }
+        return i;
+    } else {
+        // called from MP environment (machine_i2c_target_readinto)
+        size_t index = mp_machine_i2c_target_get_index(self);
+        machine_i2c_target_data_t *data = &machine_i2c_target_data[index];
+        if(data->mem_buf == NULL && len > I2C_TARGET_RECEIVE_BUFFER_LEN) mp_warning(NULL, "readinto failed, default I2C received buffer too small");
+
+        mp_uint_t atomic_state = MICROPY_BEGIN_ATOMIC_SECTION();
+        size_t i = MIN(self->rx_done_event_data->length, len);
+        if(i > 0 && self->rx_done_event_data->buffer != NULL && buf != NULL) {
+            memcpy(buf, self->rx_done_event_data->buffer, i);
+        } else {
+            mp_warning(NULL, "readinto failed, received buffer empty (slow down I2C commands)");
+            memset(buf, 0, len);
+        }
+        MICROPY_END_ATOMIC_SECTION(atomic_state);
+        return i;
     }
-    return i;
 }
 
 static size_t mp_machine_i2c_target_write_bytes(machine_i2c_target_obj_t *self, size_t len, const uint8_t *buf) {
+    size_t index = mp_machine_i2c_target_get_index(self);
+    machine_i2c_target_data_t *data = &machine_i2c_target_data[index];
+    if(data->mem_buf == NULL && len > I2C_TARGET_SEND_BUFFER_LEN) mp_warning(NULL, "write failed, default I2C send buffer too small");
+
     uint32_t write_len;
-    i2c_slave_write(self->handle, buf, len, &write_len, 1000);
+    i2c_slave_write(self->handle, buf, len, &write_len, self->timeout);
     return write_len;
 }
 
@@ -152,7 +183,7 @@ static void mp_machine_i2c_target_irq_config(machine_i2c_target_obj_t *self, uns
 }
 
 static mp_obj_t mp_machine_i2c_target_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_id, ARG_addr, ARG_addrsize, ARG_mem, ARG_mem_addrsize, ARG_scl, ARG_sda };
+    enum { ARG_id, ARG_addr, ARG_addrsize, ARG_mem, ARG_mem_addrsize, ARG_scl, ARG_sda, ARG_timeout };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_id, MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_addr, MP_ARG_REQUIRED | MP_ARG_INT },
@@ -161,6 +192,7 @@ static mp_obj_t mp_machine_i2c_target_make_new(const mp_obj_type_t *type, size_t
         { MP_QSTR_mem_addrsize, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 8} },
         { MP_QSTR_scl, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
         { MP_QSTR_sda, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE} },
+        { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = I2C_TARGET_DEFAULT_TIMEOUT_US} },
     };
 
     // Parse args.
@@ -209,15 +241,15 @@ static mp_obj_t mp_machine_i2c_target_make_new(const mp_obj_type_t *type, size_t
     }
 
     // Initialise the I2C target.
-    i2c_target_init(self, data, args[ARG_addr].u_int, args[ARG_addrsize].u_int, first_init);
+    i2c_target_init(self, data, args[ARG_addr].u_int, args[ARG_addrsize].u_int, args[ARG_timeout].u_int, first_init);
 
     return MP_OBJ_FROM_PTR(self);
 }
 
 static void mp_machine_i2c_target_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_i2c_target_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "I2CTarget(%u, addr=%u, scl=%u, sda=%u)",
-        self->config.i2c_port, self->config.slave_addr, self->config.scl_io_num, self->config.sda_io_num);
+    mp_printf(print, "I2CTarget(%u, addr=%u, scl=%u, sda=%u, timeout=%u(ms))",
+        self->config.i2c_port, self->config.slave_addr, self->config.scl_io_num, self->config.sda_io_num, self->timeout);
 }
 
 static void mp_machine_i2c_target_deinit(machine_i2c_target_obj_t *self) {

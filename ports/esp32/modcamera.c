@@ -82,7 +82,8 @@ static bool camera_init_helper(camera_obj_t *camera, size_t n_pos_args, const mp
         { MP_QSTR_sioc,            MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = CAM_PIN_SIOC} },
         { MP_QSTR_xclk_freq,       MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = XCLK_FREQ_10MHz} },
         { MP_QSTR_fb_size,         MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = 1} },
-        { MP_QSTR_fb_location,     MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = CAMERA_FB_IN_DRAM} },
+        //{ MP_QSTR_fb_location,     MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = CAMERA_FB_IN_DRAM} },
+        { MP_QSTR_fb_location,     MP_ARG_KW_ONLY  | MP_ARG_INT,   {.u_int = CAMERA_FB_IN_PSRAM} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -366,8 +367,17 @@ static mp_obj_t camera_whitebalance(mp_obj_t what){
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(camera_whitebalance_obj, camera_whitebalance);
 
+static mp_obj_t camera___del__(mp_obj_t self_in) {
+    camera_deinit();
+    ESP_LOGE(TAG, "__del__ fired");
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(camera___del___obj, camera___del__);
+
+
 static const mp_rom_map_elem_t camera_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_camera) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&camera___del___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_init), MP_ROM_PTR(&camera_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&camera_deinit_obj) },
