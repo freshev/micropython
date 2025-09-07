@@ -54,44 +54,45 @@ uint8_t machine_hw_watchdog_pin_level = GPIO_LEVEL_LOW;
 //{ MP_OBJ_NEW_QSTR(MP_QSTR_RTC), (mp_obj_t)&modmachine_rtc_obj },
 
 #define MICROPY_PY_MACHINE_EXTRA_GLOBALS \
-    { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                             \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_on_power_key), (mp_obj_t)&modmachine_on_power_key_obj },		 \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },                         \
-                                                                                             \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_KEY),       MP_ROM_INT(POWER_ON_CAUSE_KEY) },       \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_CHARGE),    MP_ROM_INT(POWER_ON_CAUSE_CHARGE) },    \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_ALARM),     MP_ROM_INT(POWER_ON_CAUSE_ALARM) },     \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_EXCEPTION), MP_ROM_INT(POWER_ON_CAUSE_EXCEPTION) }, \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_RESET),     MP_ROM_INT(POWER_ON_CAUSE_RESET) },     \
-    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_MAX),       MP_ROM_INT(POWER_ON_CAUSE_MAX) },       \
-                                                                                                    \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_32K),          MP_ROM_INT(PM_SYS_FREQ_32K) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_13M),          MP_ROM_INT(PM_SYS_FREQ_13M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_26M),          MP_ROM_INT(PM_SYS_FREQ_26M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_39M),          MP_ROM_INT(PM_SYS_FREQ_39M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_52M),          MP_ROM_INT(PM_SYS_FREQ_52M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_78M),          MP_ROM_INT(PM_SYS_FREQ_78M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_89M),          MP_ROM_INT(PM_SYS_FREQ_89M) },                 \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_104M),         MP_ROM_INT(PM_SYS_FREQ_104M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_113M),         MP_ROM_INT(PM_SYS_FREQ_113M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_125M),         MP_ROM_INT(PM_SYS_FREQ_125M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_139M),         MP_ROM_INT(PM_SYS_FREQ_139M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_156M),         MP_ROM_INT(PM_SYS_FREQ_156M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_178M),         MP_ROM_INT(PM_SYS_FREQ_178M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_208M),         MP_ROM_INT(PM_SYS_FREQ_208M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_250M),         MP_ROM_INT(PM_SYS_FREQ_250M) },                \
-    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_312M),         MP_ROM_INT(PM_SYS_FREQ_312M) },                \
-                                                                                                    \
-    { MP_ROM_QSTR(MP_QSTR_ADC_CHANNEL_0),            MP_ROM_INT(ADC_CHANNEL_0) },                   \
-    { MP_ROM_QSTR(MP_QSTR_ADC_CHANNEL_1),            MP_ROM_INT(ADC_CHANNEL_1) },                   \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_122US),  MP_ROM_INT(ADC_SAMPLE_PERIOD_122US) },         \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_1MS),    MP_ROM_INT(ADC_SAMPLE_PERIOD_1MS) },           \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_10MS),   MP_ROM_INT(ADC_SAMPLE_PERIOD_10MS) },          \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_100MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_100MS) },         \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_250MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_250MS) },         \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_500MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_500MS) },         \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_1S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_1S) },            \
-    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_2S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_2S) },            \
+    { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                            \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_on_power_key), (mp_obj_t)&modmachine_on_power_key_obj },      \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },                        \
+    { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&machine_rtc_type) },                            \
+                                                                                            \
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_KEY),       MP_ROM_INT(POWER_ON_CAUSE_KEY) },      \
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_CHARGE),    MP_ROM_INT(POWER_ON_CAUSE_CHARGE) },   \
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_ALARM),     MP_ROM_INT(POWER_ON_CAUSE_ALARM) },    \
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_EXCEPTION), MP_ROM_INT(POWER_ON_CAUSE_EXCEPTION) },\
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_RESET),     MP_ROM_INT(POWER_ON_CAUSE_RESET) },    \
+    { MP_ROM_QSTR(MP_QSTR_POWER_ON_CAUSE_MAX),       MP_ROM_INT(POWER_ON_CAUSE_MAX) },      \
+                                                                                            \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_32K),          MP_ROM_INT(PM_SYS_FREQ_32K) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_13M),          MP_ROM_INT(PM_SYS_FREQ_13M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_26M),          MP_ROM_INT(PM_SYS_FREQ_26M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_39M),          MP_ROM_INT(PM_SYS_FREQ_39M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_52M),          MP_ROM_INT(PM_SYS_FREQ_52M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_78M),          MP_ROM_INT(PM_SYS_FREQ_78M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_89M),          MP_ROM_INT(PM_SYS_FREQ_89M) },         \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_104M),         MP_ROM_INT(PM_SYS_FREQ_104M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_113M),         MP_ROM_INT(PM_SYS_FREQ_113M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_125M),         MP_ROM_INT(PM_SYS_FREQ_125M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_139M),         MP_ROM_INT(PM_SYS_FREQ_139M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_156M),         MP_ROM_INT(PM_SYS_FREQ_156M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_178M),         MP_ROM_INT(PM_SYS_FREQ_178M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_208M),         MP_ROM_INT(PM_SYS_FREQ_208M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_250M),         MP_ROM_INT(PM_SYS_FREQ_250M) },        \
+    { MP_ROM_QSTR(MP_QSTR_PM_SYS_FREQ_312M),         MP_ROM_INT(PM_SYS_FREQ_312M) },        \
+                                                                                            \
+    { MP_ROM_QSTR(MP_QSTR_ADC_CHANNEL_0),            MP_ROM_INT(ADC_CHANNEL_0) },           \
+    { MP_ROM_QSTR(MP_QSTR_ADC_CHANNEL_1),            MP_ROM_INT(ADC_CHANNEL_1) },           \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_122US),  MP_ROM_INT(ADC_SAMPLE_PERIOD_122US) }, \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_1MS),    MP_ROM_INT(ADC_SAMPLE_PERIOD_1MS) },   \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_10MS),   MP_ROM_INT(ADC_SAMPLE_PERIOD_10MS) },  \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_100MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_100MS) }, \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_250MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_250MS) }, \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_500MS),  MP_ROM_INT(ADC_SAMPLE_PERIOD_500MS) }, \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_1S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_1S) },    \
+    { MP_ROM_QSTR(MP_QSTR_ADC_SAMPLE_PERIOD_2S),     MP_ROM_INT(ADC_SAMPLE_PERIOD_2S) },    \
 
 static void mp_machine_idle(void) {
     //OS_Sleep(1);

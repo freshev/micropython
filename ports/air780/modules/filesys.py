@@ -36,7 +36,7 @@ _log_content_ = ''
 
 def log(s, end='\n'):
     global _log_content_
-    builtins.print(s, end=end)    
+    builtins.print(s, end=end)
     if len(_log_content_) > 1024: _log_content_ = _log_content_[len(_log_content_) - 1024:]
     _log_content_ = _log_content_ + str(s) + end
 

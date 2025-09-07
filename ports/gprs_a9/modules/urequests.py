@@ -34,7 +34,7 @@ class Response:
         elif attr == 'content': return self._getcontent()
         else: return self.__dict__[attr]
 
-def request(method, url, data=None, timeout=None):
+def request(method, url, data=None, headers={}, timeout=None):
     redirect = None
     chunked_data = data and getattr(data, '__iter__', None) and not getattr(data, '__len__', None)
 
@@ -67,7 +67,12 @@ def request(method, url, data=None, timeout=None):
             ctx.verify_mode = tls.CERT_NONE
             s = ctx.wrap_socket(s, server_hostname=host)
         s.write('%s /%s HTTP/1.0\r\n' % (method, path))
-        s.write('Host: %s\r\n' % host)        
+        s.write('Host: %s\r\n' % host)
+        for k in headers:
+            s.write(k)
+            s.write(b": ")
+            s.write(headers[k])
+            s.write(b"\r\n")
         if data:
             if chunked_data: s.write('Transfer-Encoding: chunked\r\n')
             else: s.write('Content-Length: %d\r\n' % len(data))
@@ -123,15 +128,15 @@ def request(method, url, data=None, timeout=None):
         resp.headers = resp_d
         return resp
 
-def get(url, data=None, timeout=None):
-    return request('GET', url, data, timeout)
-def head(url, data=None, timeout=None):
-    return request('HEAD', url, data, timeout)
-def post(url, data=None, timeout=None):
-    return request('POST', url, data, timeout)
-def put(url, data=None, timeout=None):
-    return request('PUT', url, data, timeout)
-def patch(url, data=None, timeout=None):
-    return request('PATCH', url, data, timeout)
-def delete(url, data=None, timeout=None):
-    return request('DELETE', url, data, timeout)
+def get(url, data=None, headers={}, timeout=None):
+    return request('GET', url, data, headers, timeout)
+def head(url, data=None, headers={}, timeout=None):
+    return request('HEAD', url, data, headers, timeout)
+def post(url, data=None, headers={}, timeout=None):
+    return request('POST', url, data, headers, timeout)
+def put(url, data=None, headers={}, timeout=None):
+    return request('PUT', url, data, headers, timeout)
+def patch(url, data=None, headers={}, timeout=None):
+    return request('PATCH', url, data, headers, timeout)
+def delete(url, data=None, headers={}, timeout=None):
+    return request('DELETE', url, data, headers, timeout)

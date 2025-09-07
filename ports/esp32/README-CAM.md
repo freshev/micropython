@@ -310,7 +310,7 @@ class cam_slave:
 # 120 seconds for WDT,
 # auto reboot if no commands received,
 # hard coded max I2C send buffer size = 1027 bytes
-cam_slave(maxdatasize = 1024, wdt_timeout = 120000) 
+cam_slave(maxdatasize = 1024, wdt_timeout = 120000)
 while(1): time.sleep(1) # infinite loop
 ```
 
@@ -330,7 +330,7 @@ if len(devs) > 0:
 
     com = "ping"
     print(com + " -> ", end='')
-    res = i2c.writeto(dev, bytearray(com, "utf-8"))    
+    res = i2c.writeto(dev, bytearray(com, "utf-8"))
     time.sleep_ms(10) # 10 ms minimum
     print(int(i2c.readfrom(dev, 1)[0]))
 
@@ -346,14 +346,14 @@ if len(devs) > 0:
 
     file = open("photo.jpg", "wb")
     com = "get"
-    print(com + " -> ", end="")    
+    print(com + " -> ", end="")
     rlen = 1
     while rlen > 0:
         res = i2c.writeto(dev, bytearray(com, "utf-8"))
         time.sleep_ms(180) # 150 ms minimum
         buffer = i2c.readfrom(dev, 1024 + 3)
         print(buffer[0], end="")
-        rlen = int.from_bytes(buffer[1:3], 'little')    
+        rlen = int.from_bytes(buffer[1:3], 'little')
         print(" (" + str(rlen) + " bytes)")
         #print("received", buffer[3:3+rlen])
         if rlen > 0: res = file.write(buffer[3:3+rlen])

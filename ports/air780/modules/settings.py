@@ -7,7 +7,7 @@ import time
 import cellular
 
 def gprs_on(led=None, debug=0):
-    res = 0    
+    res = 0
     #stat = cellular.get_network_status(); filesys.log('NWS: %s' % hex(stat))
     #if debug: filesys.log('NWS: %s, Registered = %i, InProress = %i, Attached = %i, Active = %i' % (hex(stat), ((stat & 0x01) >> 0), ((stat & 0x04) >> 2), ((stat & 0x08) >> 3), ((stat & 0x10) >> 4)))
     flag = 0
@@ -86,7 +86,7 @@ class Settings:
         f = filesys.open(self.file, 'r')
         r = f.read()
         f.close()
-        j = json.loads(r)        
+        j = json.loads(r)
         try: 
             checkstr = 'Counter: '+ j['sname'] + '_' + j['snum'] + ', sub:' + j['ssub'] + ', OTA:' + j['OTA'] + ', DEBUG:' + j['DEBUG'] + ', BC:' + j['BC']
             if self.debug: self.logline(checkstr)
