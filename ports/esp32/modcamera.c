@@ -160,7 +160,7 @@ static bool camera_init_helper(camera_obj_t *camera, size_t n_pos_args, const mp
     camera->config.fb_count = args[ARG_FBSIZE].u_int;      //if more than one, i2s runs in continuous mode. Use only with JPEG
     camera->config.fb_location = args[ARG_FBLOC].u_int;
     camera->config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-    
+
     esp_err_t err = esp_camera_init(&camera->config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Camera init failed");
