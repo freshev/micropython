@@ -137,7 +137,7 @@ blink.blink(1)
 - [x] GPS: `gps`
 - [x] time: `time`
 - [x] File system (littlefs)
-- [x] DNS: `cellular`, `socket`, `ssl`
+- [x] DNS: `cellular`, `socket`, `tls`
 - [x] Power: `machine`, `watchdog`, `FOTA`
 - [ ] CC1101: `CC1101`
 - [ ] DHT: `DHT`
@@ -156,7 +156,7 @@ Featured:
 
 1. [`cellular`](#cellular): SMS, calls, connectivity
 2. [`socket`](#socket): sockets over 4G
-3. [`ssl`](#ssl): SSL over sockets
+3. [`tls`](#ssl): TLS over sockets
 4. [`machine`](#machine): hardware and power control
 5. [`I2C`](#I2C): I2C hardware implementation
 6. [`SPI`](#SPI): SPI hardware implementation
@@ -224,9 +224,7 @@ The purpose of this module is to have an access to high-level networking (SMS, n
 TCP/IP stack over 4G based on lwIP.
 See [micropython docs](https://docs.micropython.org/en/latest/library/socket.html) for details.
 
-### `ssl` ###
-
-*Alias: `ussl`*
+### `tls` ###
 
 TCP/IP stack over 4G based on Mbedtls.
 See [micropython docs](https://docs.micropython.org/en/latest/library/ssl.html) for details.
@@ -329,5 +327,6 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware resets the module by SMS 'reset' (configurable).
 * You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
 * My Air780EG module often does not boot correctly due to insufficient power from USB.
-* To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written
+* To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written.
 * You can deploy BINPKG and FOTA pack files to another folder in compressed or uncompressed form (configurable)
+* When REPL over USB feature used, writing special characters to UART over USB (or soft reboot in MP) conflicts with Luatools (module hangs). Close Luatools window or use REPL over UART1/UART2.

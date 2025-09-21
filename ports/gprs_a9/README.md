@@ -589,6 +589,3 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Patch to avoid freezing while GPRS sends/receives data (for sys_arch_mbox_fetch() timeout changed from 100 to 50)
 * Patch to avoid freezing while GPRS sends/receives data (in netconn_drain()->lwip_netconn_is_err_msg() check mem for NULL)
 * Initial PIN state patches (disabled in ./libcsdk-patches/patch-lod.py)
-
-## Bugs known ##
-* SMS with UCS2 encoding is not fully supported (TODO: add support for UCS2 encoding using `iconv` library)
