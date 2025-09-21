@@ -114,8 +114,8 @@ static int mp_machine_pin_isr_handler(int pin, void *arg) {
     if(trigger == LUAT_GPIO_HIGH_IRQ || trigger == LUAT_GPIO_LOW_IRQ) {
         // reset IRQ mode
         luat_gpio_ctrl(pin, LUAT_GPIO_CMD_SET_IRQ_MODE, LUAT_GPIO_NO_IRQ);
-    }   
-    
+    }
+
     mp_obj_t handler = MP_STATE_PORT(mp_machine_pin_irq_handler)[pin];
     if(handler != MP_OBJ_NULL) {
         mp_sched_schedule(handler, MP_OBJ_FROM_PTR(&machine_pin_obj_table[pin]));
@@ -132,11 +132,11 @@ static const machine_pin_obj_t *machine_pin_find(mp_obj_t pin_in) {
     }
 
     // Try to find the pin via integer index into the array of all pins.
-    if (mp_obj_is_int(pin_in)) {        
+    if (mp_obj_is_int(pin_in)) {
         int wanted_pin = mp_obj_get_int(pin_in);
         if (0 <= wanted_pin && wanted_pin < (int)MP_ARRAY_SIZE(machine_pin_obj_table)) {
             const machine_pin_obj_t *self = (machine_pin_obj_t *)&machine_pin_obj_table[wanted_pin];
-            if (self->base.type != NULL) {              
+            if (self->base.type != NULL) {
                 return self;
             }
         }
@@ -190,8 +190,8 @@ static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
     // configure the pin for gpio
     // esp_rom_gpio_pad_select_gpio(index);
     luat_gpio_cfg_t gpio_cfg;
-    luat_gpio_set_default_cfg(&gpio_cfg); 
-    gpio_cfg.pin = index;   
+    luat_gpio_set_default_cfg(&gpio_cfg);
+    gpio_cfg.pin = index;
 
     // set initial value (do this before configuring mode/pull)
     if (args[ARG_value].u_obj != MP_OBJ_NULL) {
@@ -216,7 +216,7 @@ static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
 }
 
 // constructor(id, ...)
-mp_obj_t mp_machine_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
 
     // get the wanted pin object
@@ -288,13 +288,13 @@ static mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     if (n_args > 1 || kw_args->used != 0) {
-        
+
         // configure irq
         mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(self);
         mp_obj_t handler = args[ARG_handler].u_obj;
         uint32_t trigger = args[ARG_trigger].u_int;
         mp_obj_t wake_obj = args[ARG_wake].u_obj;
-        
+
         //LUAT_DEBUG_PRINT("index = %d, trigger = %d, self = %p", index, trigger, self);
 
         if ((trigger == LUAT_GPIO_LOW_IRQ || trigger == LUAT_GPIO_HIGH_IRQ) && wake_obj != mp_const_none) {
@@ -325,7 +325,7 @@ static mp_obj_t mp_machine_pin_irq(size_t n_args, const mp_obj_t *pos_args, mp_m
             machine_rtc_config.ext0_level = trigger == GPIO_INTR_LOW_LEVEL ? 0 : 1;
             machine_rtc_config.ext0_wake_types = wake;
             */
-            
+
         } else {
             if (handler == mp_const_none) {
                 handler = MP_OBJ_NULL;
@@ -400,7 +400,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     machine_pin_type,
     MP_QSTR_Pin,
     MP_TYPE_FLAG_NONE,
-    make_new, mp_machine_pin_make_new,
+    make_new, mp_pin_make_new,
     print, mp_machine_pin_print,
     call, mp_machine_pin_call,
     protocol, &pin_pin_p,
@@ -413,7 +413,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 static mp_obj_t mp_machine_pin_irq_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     machine_pin_irq_obj_t *self = self_in;
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
-    
+
     machine_pin_obj_t *self_pin = PIN_OBJ_PTR_FROM_IRQ_OBJ_PTR(self);
     int index = self_pin->pin;
     mp_machine_pin_isr_handler(index, (void *)PIN_OBJ_PTR_FROM_IRQ_OBJ_PTR(self));
@@ -424,7 +424,7 @@ static mp_obj_t mp_machine_pin_irq_trigger(size_t n_args, const mp_obj_t *args) 
     machine_pin_irq_obj_t *self = args[0];
     mp_hal_pin_obj_t index = PIN_OBJ_PTR_INDEX(PIN_OBJ_PTR_FROM_IRQ_OBJ_PTR(self));
     uint32_t old_trig = machine_pin_obj_table[index].irq.trigger;
-    //LUAT_DEBUG_PRINT("index = %d, old trigger = %d", index, old_trig);        
+    //LUAT_DEBUG_PRINT("index = %d, old trigger = %d", index, old_trig);
 
     if (n_args == 2) {
         // set trigger

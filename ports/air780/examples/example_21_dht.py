@@ -6,7 +6,7 @@
 import dht
 import time
 
-d1 = dht.dht(30,type=dht.DHT21) # use external pull-up resistor for this sensor!
+d1 = dht.dht(11, type=dht.DHT11) # use external pull-up resistor for this sensor!
 for i in range(0,100):
     d1.read_temperature(0,0)
     time.sleep(1)

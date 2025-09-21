@@ -95,7 +95,7 @@
 #define MICROPY_PY_THREAD_GIL               (0)
 #define MICROPY_PY_THREAD_GIL_VM_DIVISOR    (32)
 
-#define MICROPY_PY_MACHINE_PIN_MAKE_NEW     mp_machine_pin_make_new
+#define MICROPY_PY_MACHINE_PIN_MAKE_NEW     mp_pin_make_new
 #define MICROPY_PY_MACHINE_PULSE            (1)
 
 #define MICROPY_PY_MACHINE_PWM              (1)
