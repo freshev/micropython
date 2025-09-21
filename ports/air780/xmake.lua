@@ -670,7 +670,7 @@ SRC_EXTMOD_C = { "extmod/machine_adc.c", "extmod/machine_adc_block.c", "extmod/m
                 "extmod/modmachine.c", "extmod/modnetwork.c", "extmod/modonewire.c", "extmod/modos.c", 
                 "extmod/modplatform.c", "extmod/modrandom.c", "extmod/modre.c", "extmod/modselect.c", 
                 "extmod/modsocket.c", "extmod/modtime.c", "extmod/moductypes.c", 
-                -- "extmod/modssl_mbedtls.c",
+                "extmod/modtls_mbedtls.c",
                 "extmod/modwebrepl.c", "extmod/modwebsocket.c", "extmod/network_cyw43.c", "extmod/network_esp_hosted.c", 
                 "extmod/network_ninaw10.c", "extmod/network_wiznet5k.c", "extmod/os_dupterm.c", "extmod/vfs.c", 
                 "extmod/vfs_blockdev.c", "extmod/vfs_fat.c", "extmod/vfs_fat_diskio.c", "extmod/vfs_fat_file.c", 

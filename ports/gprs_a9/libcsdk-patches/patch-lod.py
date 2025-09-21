@@ -52,6 +52,9 @@ patch_list = {
     # elf address 0x880fb346 "move v1, timeout" -> "li v1, 0x32"
     0x080FB344: ("Replace in  sys_arch_mbox_fetch(): timeout from 100 to 50", bytearray.fromhex('04676667'), bytearray.fromhex('0467326b')),
 
+    # elf address 0x880fb346 "move v1, timeout" -> "li v1, 0xC8"
+    #0x080FB344: ("Replace in  sys_arch_mbox_fetch(): timeout from 100 to 20", bytearray.fromhex('04676667'), bytearray.fromhex('0467146b')),
+
     # elf address 0x88175fb0 "bnez err, LAB_..." -> "bnez mem, LAB_..."
     #0x08175FB0: ("Replace in  netconn_drain()->lwip_netconn_is_err_msg(): check mem for NULL", bytearray.fromhex('042d0eb4'), bytearray.fromhex('042c0eb4')),
     0x08175FB0: ("Replace in  netconn_drain()->lwip_netconn_is_err_msg(): check mem for NULL (part1)", bytearray.fromhex('042d0eb4'), bytearray.fromhex('15241425')),

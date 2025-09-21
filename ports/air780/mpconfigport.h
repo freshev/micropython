@@ -91,7 +91,6 @@
 #define MICROPY_PY_MACHINE_RESET            (1)
 #define MICROPY_PY_MACHINE_BARE_METAL_FUNCS (1)
 #define MICROPY_PY_MACHINE_INCLUDEFILE      "ports/air780/modmachine.c"
-#define MICROPY_PY_MACHINE_BARE_METAL_FUNCS (1)
 #define MICROPY_PY_THREAD                   (0)
 #define MICROPY_PY_THREAD_GIL               (0)
 #define MICROPY_PY_THREAD_GIL_VM_DIVISOR    (32)
@@ -127,7 +126,7 @@
 
 #define MICROPY_PY_SOCKET_EVENTS            (1)
 #define MICROPY_PY_SSL                      (1)
-#define MICROPY_SSL_MBEDTLS                 (1) 
+#define MICROPY_SSL_MBEDTLS                 (1)
 #define MICROPY_STREAMS_POSIX_API           (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
 #define MICROPY_PY_CRYPTOLIB                (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)
 #define MICROPY_PY_HASHLIB_SHA1             (MICROPY_PY_SSL && MICROPY_SSL_MBEDTLS)

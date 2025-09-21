@@ -288,8 +288,8 @@ static mp_obj_t socket_make_new(const mp_obj_type_t *type_in, size_t n_args, siz
         // GC before failing outright.
         gc_collect();
         sock->ctrl = network_alloc_ctrl(NW_ADAPTER_INDEX_LWIP_GPRS);
-    } 
-    
+    }
+
     if(sock->ctrl == NULL) {
         mp_raise_OSError(MP_ENOMEM);
     }
@@ -359,10 +359,10 @@ static mp_obj_t socket_accept(const mp_obj_t arg0) {
         for (uint i = 0; i <= self->retries; i++) {
             MP_THREAD_GIL_EXIT();
             //new_fd = lwip_accept(self->fd, &addr, &addr_len);
-            
+
             res = network_socket_accept(self->ctrl, accept_ctrl); 
             // LUAT_DEBUG_PRINT("client %s, %u", ipaddr_ntoa(&(self->ctrl)->remote_ip), self->ctrl->remote_port);
-        
+
             MP_THREAD_GIL_ENTER();
             if (res >= 0) {
                 break;
@@ -394,7 +394,7 @@ static mp_obj_t socket_accept(const mp_obj_t arg0) {
         mp_obj_tuple_t *client = mp_obj_new_tuple(2, NULL);
         client->items[0] = sock;
         client->items[1] = netutils_format_inet_addr(ip, port, NETUTILS_BIG);
-        
+
         return client;
     } else {
         LUAT_DEBUG_PRINT("Client socket allocation failed");

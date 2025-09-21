@@ -125,28 +125,30 @@ soft_reset:
     void *mp_task_heap = mp_allocate_heap(&mp_task_heap_size); // allocate maximum
     gc_init(mp_task_heap, mp_task_heap + mp_task_heap_size);
 
-    mp_init();
-    modmachine_init0();
-    readline_init0();
-    modcellular_init0();
+    mp_init();           LUAT_DEBUG_PRINT("micropython inited");
+    modmachine_init0();  LUAT_DEBUG_PRINT("machine inited");
+    readline_init0();    LUAT_DEBUG_PRINT("readline inited");
+    modcellular_init0(); LUAT_DEBUG_PRINT("cellular inited");
 #ifdef GPS_MODULE
-    modgps_init0();
+    modgps_init0(); LUAT_DEBUG_PRINT("GPS inited");
 #endif
-    
+
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_));
     mp_obj_list_init(mp_sys_argv, 0);
+    LUAT_DEBUG_PRINT("sys path inited");
 
     // Startup scripts
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
 #ifdef MAINRUN
+        LUAT_DEBUG_PRINT("execute main.py");
         pyexec_file_if_exists("main.py");
 #endif
     }
-    
+    LUAT_DEBUG_PRINT("start REPL");
     while (1) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             if (pyexec_raw_repl() != 0) break;
@@ -154,7 +156,7 @@ soft_reset:
             if (pyexec_friendly_repl() != 0) break;
         }
     }
-    
+
 
 #if MICROPY_ENABLE_GC
     gc_sweep_all();
@@ -165,7 +167,8 @@ soft_reset:
     luat_heap_free(mp_task_heap);
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
     mp_hal_delay_ms(10);// allow UART to flush output
-    
+    LUAT_DEBUG_PRINT("soft reset");
+
     goto soft_reset;
 }
 

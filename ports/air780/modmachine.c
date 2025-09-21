@@ -101,12 +101,13 @@ void modmachine_init0(void) {
     LUAT_DEBUG_PRINT("Battery voltage: %.3fV (ADC=%d)", val2 / 1000.0, val1);
     luat_adc_close(LUAT_ADC_CH_CPU); 
     luat_adc_close(LUAT_ADC_CH_VBAT);
+    // luat_pm_set_sleep_mode(LUAT_PM_SLEEP_MODE_IDLE, NULL); // !!!!!
 }
 void modmachine_deinit0(void) {
     modmachine_adc_deinit0();
     modmachine_pwm_deinit0();
     modmachine_uart_deinit0();
-    modmachine_pin_deinit0();   
+    modmachine_pin_deinit0();
 }
 
 
