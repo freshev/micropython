@@ -2,16 +2,10 @@
 # Source: https://github.com/freshev/micropython
 # Author: freshev
 # Demonstrates how to retrieve temperature from different DHT sensors
+# Use sensor Pin with PULLUP resistor 5-10 kOhm
+# Tested with 3.3V/5V for sensor's VDD/PULLUP and GPIO9/GPIO11
 
 import dht
-import time
 
-d1 = dht.dht(11, type=dht.DHT11) # use external pull-up resistor for this sensor!
-for i in range(0,100):
-    d1.read_temperature(0,0)
-    time.sleep(1)
-
-d2 = dht.dht(20,type=dht.DHT11)
-for i in range(0,100):
-    d2.read_temperature(0,0)
-    time.sleep(1)
+d1 = dht.dht(11, type=dht.DHT11)
+d1.read_temperature(0,0)

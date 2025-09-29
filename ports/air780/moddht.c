@@ -74,22 +74,21 @@ static int moddht_microsecondsToClockCycles(int us) {
 static void moddht_begin(dht_obj_t *self, uint8_t usec) {
     if(dht_inited[self->_pin] == 0) {
         // set up the pins!
-        //mp_hal_pin_input(self->_pin);
         luat_gpio_close(self->_pin);
 
         luat_gpio_cfg_t gpio_cfg;
         luat_gpio_set_default_cfg(&gpio_cfg);
         gpio_cfg.pin = self->_pin;
-        gpio_cfg.output_level = LUAT_GPIO_LOW; // ???
-        gpio_cfg.mode = LUAT_GPIO_INPUT; // DEFAULT is OUTPUT
-        gpio_cfg.pull = LUAT_GPIO_DEFAULT; // ???
+        gpio_cfg.output_level = LUAT_GPIO_HIGH; 
+        gpio_cfg.mode = LUAT_GPIO_INPUT; 
+        gpio_cfg.pull = LUAT_GPIO_DEFAULT; 
         luat_gpio_open(&gpio_cfg);
 
         // Using this value makes sure that millis() - lastreadtime will be
         // >= DHT_MIN_INTERVAL right away. Note that this assignment wraps around,
         // but so will the subtraction.
         self->_lastreadtime = mp_hal_ticks_ms_64() - DHT_MIN_INTERVAL;
-        //Trace(1, "DHT max clock cycles: %d", self->_maxcycles);
+        // LUAT_DEBUG_PRINT("DHT max clock cycles: %d", self->_maxcycles);
         self->pullTime = usec;
         dht_inited[self->_pin] = 1;
         luat_rtos_task_sleep(200); // Call to immediate DHT read failed
@@ -120,6 +119,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // to use last reading.
     uint64_t currenttime = mp_hal_ticks_ms_64();
     if (!force && ((currenttime - self->_lastreadtime) < DHT_MIN_INTERVAL)) {
+        // LUAT_DEBUG_PRINT("return DHT last value");
         return self->_lastresult; // return last correct measurement
     }
     self->_lastreadtime = currenttime;
@@ -138,19 +138,18 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
 
         // Go into high impedence state to let pull-up raise data line level and
         // start the reading process.
-        //mp_hal_pin_input(self->_pin);
-        luat_gpio_mode(self->_pin, LUAT_GPIO_INPUT, LUAT_GPIO_PULLUP, LUAT_GPIO_HIGH);
+        luat_gpio_mode(self->_pin, LUAT_GPIO_INPUT, LUAT_GPIO_DEFAULT, LUAT_GPIO_HIGH);
         luat_rtos_task_sleep(1);
 
         // First set data line low for a period according to sensor type
-        //mp_hal_pin_output(self->_pin);
-        //mp_hal_pin_write(self->_pin, GPIO_LEVEL_LOW);
         luat_gpio_mode(self->_pin, LUAT_GPIO_OUTPUT, LUAT_GPIO_DEFAULT, LUAT_GPIO_LOW);
 
         switch (self->_type) {
             case DHT22:
             case DHT21:
-                mp_hal_delay_us_fast(1100); // data sheet says "at least 1ms"
+                // data sheet says "at least 1ms"
+                // luat_rtos_task_sleep(1); 
+                luat_timer_us_delay(1100);
                 break;
 
             case DHT11:
@@ -164,9 +163,8 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         // Time critical code start
         // -------------------------
 
-        // End the start signal by setting data line high for 55 microseconds.
-        // mp_hal_pin_input(self->_pin);
-        luat_gpio_mode(self->_pin, LUAT_GPIO_INPUT, LUAT_GPIO_PULLUP, LUAT_GPIO_HIGH);
+        // End the start signal by setting data line high for 55 microseconds. Use external PULL_UP resistor!
+        luat_gpio_mode(self->_pin, LUAT_GPIO_INPUT, LUAT_GPIO_DEFAULT, LUAT_GPIO_HIGH);
 
         // Delay a moment to let sensor pull data line low.
         mp_hal_delay_us_fast(self->pullTime);
@@ -180,7 +178,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         uint32_t lowCyclesInit = 0;
         uint32_t highCyclesInit = 0;
         if ((lowCyclesInit = moddht_expectPulse(self, LUAT_GPIO_LOW)) == DHT_TIMEOUT) {
-            //MICROPY_END_ATOMIC_SECTION(status);
+            // MICROPY_END_ATOMIC_SECTION(status);
             LUAT_DEBUG_PRINT("DHT timeout waiting for pulse LOW init(1).");
             self->_lastresult = false;
             if(retry < DHT_RETRY_INIT) {
@@ -188,8 +186,10 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 continue;
             } else return self->_lastresult;
         }
+        //LUAT_DEBUG_PRINT("lowCyclesInit = %d", lowCyclesInit);
+
         if ((highCyclesInit = moddht_expectPulse(self, LUAT_GPIO_HIGH)) == DHT_TIMEOUT) {
-            //MICROPY_END_ATOMIC_SECTION(status);
+            // MICROPY_END_ATOMIC_SECTION(status);
             LUAT_DEBUG_PRINT("DHT timeout waiting for pulse HIGH init(1).");
             self->_lastresult = false;
             if(retry < DHT_RETRY_INIT) {
@@ -197,10 +197,11 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 continue;
             } else return self->_lastresult;
         }
+        //LUAT_DEBUG_PRINT("highCyclesInit = %d", highCyclesInit);
 
         if(lowCyclesInit < 20 || highCyclesInit < 20) {
             if ((lowCyclesInit = moddht_expectPulse(self, LUAT_GPIO_LOW)) == DHT_TIMEOUT) {
-                //MICROPY_END_ATOMIC_SECTION(status);
+                // MICROPY_END_ATOMIC_SECTION(status);
                 LUAT_DEBUG_PRINT("DHT timeout waiting for pulse LOW init(2).");
                 self->_lastresult = false;
                 if(retry < DHT_RETRY_INIT) {
@@ -209,7 +210,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
                 } else return self->_lastresult;
             }
             if ((highCyclesInit = moddht_expectPulse(self, LUAT_GPIO_HIGH)) == DHT_TIMEOUT) {
-                //MICROPY_END_ATOMIC_SECTION(status);
+                // MICROPY_END_ATOMIC_SECTION(status);
                 LUAT_DEBUG_PRINT("DHT timeout waiting for pulse HIGH init(2).");
                 self->_lastresult = false;
                 if(retry < DHT_RETRY_INIT) {
@@ -234,7 +235,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         // -------------------------
         // Time critical code end
         // -------------------------
-        //MICROPY_END_ATOMIC_SECTION(status);
+        // MICROPY_END_ATOMIC_SECTION(status);
 
         // LUAT_DEBUG_PRINT("DHT highCyclesInit = %d, lowCyclesInit = %d", (int)((float)highCyclesInit/3.64), (int)((float)lowCyclesInit/3.64));
         // Inspect pulses and determine which ones are 0 (high state cycle count < low
@@ -252,7 +253,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             }
             self->data[i / 8] <<= 1;
             // Now compare the low and high cycle times to see if the bit is a 0 or 1.
-            // if(i < 3) Trace(1, "DHT highCycles = %d, lowCycles = %d, bit=%d", (int)((float)highCycles/3.64), (int)((float)lowCycles/3.64), highCycles > lowCycles);
+            // if(i < 3) LUAT_DEBUG_PRINT("DHT highCycles = %d, lowCycles = %d, bit=%d", (int)((float)highCycles/3.64), (int)((float)lowCycles/3.64), highCycles > lowCycles);
             if (highCycles > lowCycles) {
                 // High cycles are greater than 50us low cycle count, must be a 1.
                 self->data[i / 8] |= 1;
@@ -312,7 +313,7 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
 
     self->_pin = args[ARG_pin].u_int;
     self->_type = args[ARG_type].u_int;
-    self->_maxcycles = moddht_microsecondsToClockCycles(1000);
+    self->_maxcycles = moddht_microsecondsToClockCycles(1000); // was 1000
 
     if(self->_pin == 14 || self->_pin == 23) {
         mp_raise_ValueError(MP_ERROR_TEXT("Failed. GPIO14 and GPIO23 use prohibited"));
@@ -324,7 +325,6 @@ mp_obj_t dht_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, con
         mp_printf(&mp_plat_print, "Warning: GPIO20, GPIO21 and GPIO22 used for WAKEUP\n");
     }
 
-    mp_printf(&mp_plat_print, "pin state %d", dht_pins[self->_pin]);
     if(dht_pins[self->_pin] != 0) {
         mp_warning(MP_WARN_CAT(RuntimeWarning), "Another DHT sensor already use this pin");
     }

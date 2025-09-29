@@ -183,17 +183,16 @@ static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
     }
 
     // reset the pin to digital if this is a mode-setting init (grab it back from ADC)
-    if (args[ARG_mode].u_obj != mp_const_none) {
-        luat_gpio_close(index);
+    if (args[ARG_mode].u_obj != mp_const_none) { 
+        luat_gpio_close(index); 
     }
 
     // configure the pin for gpio
-    // esp_rom_gpio_pad_select_gpio(index);
     luat_gpio_cfg_t gpio_cfg;
-    luat_gpio_set_default_cfg(&gpio_cfg);
+    luat_gpio_set_default_cfg(&gpio_cfg); // set all to zeroes (mode = OUTPUT, level = LOW, PULL = OPEN_DRAIN)
     gpio_cfg.pin = index;
 
-    // set initial value (do this before configuring mode/pull)
+    // set initial value
     if (args[ARG_value].u_obj != MP_OBJ_NULL) {
         gpio_cfg.output_level = mp_obj_is_true(args[ARG_value].u_obj);
     }
@@ -202,6 +201,9 @@ static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
     if (args[ARG_mode].u_obj != mp_const_none) {
         mp_int_t pin_io_mode = mp_obj_get_int(args[ARG_mode].u_obj);
         gpio_cfg.mode = pin_io_mode;
+        if(pin_io_mode == LUAT_GPIO_OUTPUT && (index == 20 || index == 21 || index == 22)) {
+             mp_printf(&mp_plat_print, "Warning: GPIO20, GPIO21 and GPIO22 can not be set to OUTPUT mode\n");
+        }
     }
 
     // configure pull
@@ -209,6 +211,9 @@ static mp_obj_t mp_machine_pin_obj_init_helper(const machine_pin_obj_t *self, si
         int pull = 0;
         if (args[ARG_pull].u_obj != mp_const_none) pull = mp_obj_get_int(args[ARG_pull].u_obj);
         gpio_cfg.pull = pull;
+        if(gpio_cfg.mode == LUAT_GPIO_INPUT) { // Pin.IN
+            mp_printf(&mp_plat_print, "Warning: Pull up/down can not be set in INPUT mode. Please use external pull\n");
+        }
     }
     luat_gpio_open(&gpio_cfg);
 
@@ -362,8 +367,8 @@ static const mp_rom_map_elem_t machine_pin_locals_dict_table[] = {
     // class constants
     { MP_ROM_QSTR(MP_QSTR_IN), MP_ROM_INT(LUAT_GPIO_INPUT) },
     { MP_ROM_QSTR(MP_QSTR_OUT), MP_ROM_INT(LUAT_GPIO_OUTPUT) },
-    { MP_ROM_QSTR(MP_QSTR_OPEN_DRAIN), MP_ROM_INT(LUAT_GPIO_DEFAULT) },
 
+    { MP_ROM_QSTR(MP_QSTR_OPEN_DRAIN), MP_ROM_INT(LUAT_GPIO_DEFAULT) },
     { MP_ROM_QSTR(MP_QSTR_PULL_UP), MP_ROM_INT(LUAT_GPIO_PULLUP) },
     { MP_ROM_QSTR(MP_QSTR_PULL_DOWN), MP_ROM_INT(LUAT_GPIO_PULLDOWN) },
 

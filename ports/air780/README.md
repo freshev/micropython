@@ -128,10 +128,10 @@ blink.blink(1)
 
 - [x] GPIO: `machine.Pin`
 - [x] ADC: `machine.ADC`
-- [x] PWM: `machine.PWM` (NOT TESTED - have no test module)
+- [x] PWM: `machine.PWM` (NOT TESTED)
 - [x] UART: `machine.UART` 
-- [ ] SPI: `machine.SPI` (NOT TESTED - have no test module)
-- [ ] I2C: `machine.I2C` (NOT TESTED - have no test module)
+- [ ] SPI: `machine.SPI` (NOT TESTED)
+- [ ] I2C: `machine.I2C` (NOT TESTED)
 - [ ] RTC: `machine.RTC` 
 - [x] 4G networking (IMEI, ICCID, SMS, ...): `cellular`
 - [x] GPS: `gps`
@@ -140,11 +140,7 @@ blink.blink(1)
 - [x] DNS: `cellular`, `socket`, `tls`
 - [x] Power: `machine`, `watchdog`, `FOTA`
 - [ ] CC1101: `CC1101`
-- [ ] DHT: `DHT`
-
-Missed software modules actively developed now (At least at 2024).  
-I would be very grateful for a test board to test `NOT TESTED` functionality.  
-Make a [pull request](https://github.com/freshev/micropython/pulls) to contact.
+- [x] DHT: `DHT`. Use external resistor 5-10 kOhm for DHT11 sensor PULLUP.
 
 ## Examples
 

@@ -114,6 +114,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
     // to use last reading.
     uint64_t currenttime = mp_hal_ticks_ms_64();
     if (!force && ((currenttime - self->_lastreadtime) < DHT_MIN_INTERVAL)) {
+        // Trace(1, "return DHT last value");
         return self->_lastresult; // return last correct measurement
     }
     self->_lastreadtime = currenttime;

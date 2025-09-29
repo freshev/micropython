@@ -120,10 +120,11 @@ void mp_hal_delay_us(uint32_t us) {
 }
 
 void mp_hal_delay_us_fast(uint32_t us) {
-    uint64_t start = luat_mcu_ticks() / luat_mcu_us_period();
+    /*uint64_t start = luat_mcu_ticks() / luat_mcu_us_period();
     while (((uint64_t)luat_mcu_ticks() / luat_mcu_us_period() - start) < us) {
-        asm ("nop");
-    }
+        asm ("nop");        
+    }*/
+    luat_timer_us_delay(us);
 }
 
 int mp_hal_pin_read(mp_hal_pin_obj_t pin) {
