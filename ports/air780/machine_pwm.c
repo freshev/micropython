@@ -7,7 +7,7 @@
  * Copyright (c) 2018 Alan Dragomirecky
  * Copyright (c) 2020 Antoine Aubert
  * Copyright (c) 2021 Ihor Nehrutsa
- * Copyright (c) 2024 freshev
+ * Copyright (c) 2025 freshev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -340,7 +340,7 @@ static mp_obj_t mp_machine_pwm_freq_get(machine_pwm_obj_t *self) {
 static void mp_machine_pwm_freq_set(machine_pwm_obj_t *self, mp_int_t freq) {
     pwm_is_active(self);
     luat_pwm_close(self->channel); 
-    int res = luat_pwm_open(self->channel, self->freq, self->duty * LUAT_DUTY_MAX / MP_DUTY_MAX, 0); 
+    int res = luat_pwm_open(self->channel, freq, self->duty * LUAT_DUTY_MAX / MP_DUTY_MAX, 0); 
     if (res != 0) mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("PWM set freq failed (%d)"), res);
     self->freq = freq;
 }
@@ -373,9 +373,9 @@ static void mp_machine_pwm_duty_set_ns(machine_pwm_obj_t *self, mp_int_t duty_ns
 /*
 # Test cases
 from machine import PWM, Pin
-pwm = PWM(Pin(2), freq=1000, duty=512)
+pwm = PWM(Pin(27), freq=1000, duty=512)
 print(pwm)
-pwm = PWM(Pin(2), freq=1000)
+pwm = PWM(Pin(27), freq=1000)
 pwm.duty(512)
 pwm.duty_u16(10000)
 
