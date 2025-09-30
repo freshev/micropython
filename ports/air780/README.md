@@ -128,7 +128,7 @@ blink.blink(1)
 
 - [x] GPIO: `machine.Pin`
 - [x] ADC: `machine.ADC`
-- [x] PWM: `machine.PWM` (NOT TESTED)
+- [x] PWM: `machine.PWM`
 - [x] UART: `machine.UART` 
 - [ ] SPI: `machine.SPI` (NOT TESTED)
 - [ ] I2C: `machine.I2C` (NOT TESTED)
