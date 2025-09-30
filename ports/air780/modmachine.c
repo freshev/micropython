@@ -76,13 +76,15 @@ static MP_DEFINE_CONST_FUN_OBJ_0(machine_wdt_test_obj, machine_wdt_test);
                                                                                 \
     { MP_ROM_QSTR(MP_QSTR_Pin), MP_ROM_PTR(&machine_pin_type) },                \
                                                                                 \
+    { MP_ROM_QSTR(MP_QSTR_RTC), MP_ROM_PTR(&machine_rtc_type) },                \
+                                                                                \
     { MP_OBJ_NEW_QSTR(MP_QSTR_OTA), (mp_obj_t)&modmachine_ota_obj },            \
                                                                                 \
     { MP_ROM_QSTR(MP_QSTR_wdt_test), MP_ROM_PTR(&machine_wdt_test_obj) }
 
 void modmachine_init0(void) {
     modmachine_wdt_init0();
-    //modmachine_rtc_init0();
+    modmachine_rtc_init0();
     modmachine_pin_init0();
     modmachine_uart_init0();
     modmachine_pwm_init0();
@@ -101,13 +103,13 @@ void modmachine_init0(void) {
     LUAT_DEBUG_PRINT("Battery voltage: %.3fV (ADC=%d)", val2 / 1000.0, val1);
     luat_adc_close(LUAT_ADC_CH_CPU); 
     luat_adc_close(LUAT_ADC_CH_VBAT);
-    // luat_pm_set_sleep_mode(LUAT_PM_SLEEP_MODE_IDLE, NULL); // !!!!!
 }
 void modmachine_deinit0(void) {
     modmachine_adc_deinit0();
     modmachine_pwm_deinit0();
     modmachine_uart_deinit0();
     modmachine_pin_deinit0();
+    modmachine_rtc_deinit0();
 }
 
 
