@@ -4,7 +4,7 @@ Original module documentation at [OpenLuat](https://docs.openluat.com/air780e/)
 Translated module documentation at [Docs](docs/)
 
 ## Test board 
-![Air780e test board](https://wiki.luatos.org/_images/pinout2.png)
+![Air780e test board](https://github.com/freshev/micropython/blob/master/ports/Air780/docs/pinout.png)
 
 
 ## Build

@@ -32,7 +32,7 @@
 
 // I2C0 (Inter-integrated Circuit Interface) [Driver_I2C0]
 // Configuration settings for Driver_I2C0 in component ::Drivers:I2C
-#define RTE_I2C0                        1
+// #define RTE_I2C0                        1
 
 // { PAD_PIN28},  // 0 : gpio13 / 2 : I2C0 SCL
 // { PAD_PIN27},  // 0 : gpio12 / 2 : I2C0 SDA
@@ -189,7 +189,7 @@
 
 // SPI1 (Serial Peripheral Interface) [Driver_SPI1]
 // Configuration settings for Driver_SPI1 in component ::Drivers:SPI
-#define RTE_SPI1                        0
+// #define RTE_SPI1                        1
 
 // { PAD_PIN27},  // 0 : gpio12  / 1 : SPI1 SSn
 // { PAD_PIN28},  // 0 : gpio13  / 1 : SPI1 MOSI

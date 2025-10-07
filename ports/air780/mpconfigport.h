@@ -109,8 +109,8 @@
 #define MICROPY_PY_MACHINE_ADC_READ_UV      (1)
 #define MICROPY_PY_MACHINE_ADC_INCLUDEFILE  "ports/air780/machine_adc.c"
 
-//#define MICROPY_PY_MACHINE_SPI              (1)
-//#define MICROPY_PY_MACHINE_SOFTSPI          (0)
+#define MICROPY_PY_MACHINE_SPI              (1)
+#define MICROPY_PY_MACHINE_SOFTSPI          (0)
 //#define MICROPY_HW_SOFTSPI_MIN_DELAY        (0)
 //#define MICROPY_HW_SOFTSPI_MAX_BAUDRATE     (500000)
 

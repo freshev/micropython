@@ -37,6 +37,10 @@ option("04 GPIO8-11 mux")
     set_description("GPIO8-11 mux")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
+option("04 GPIO12-15 mux")
+    set_description("GPIO12-15 mux")
+    set_default("UART0 & I2C0")
+    set_values("UART0 & I2C0", "SPI1")
 option("05 Main stub respawn")
     set_description("Respawned on delete main.py")
     set_default(true)
@@ -484,9 +488,12 @@ local BOARD = "Air780_GENERIC"
 local USER_PROJECT_NAME_VERSION = "v1.0"
 local FW_VERSION = USER_PROJECT_NAME_VERSION
 local HW_UART_REPL=0x20 -- LUAT_VUART_ID_0
+local RTE_UART0 = 1
 local RTE_UART2 = 1
+local RTE_I2C0 = 1
 local RTE_I2C1 = 1
 local RTE_SPI0 = 1
+local RTE_SPI1 = 1
 local MAIN_STUB_URL = ""
 local ZIP_COMPRESS = false
 local DEPLOY_BINPKG_FOLDER = ""
@@ -521,11 +528,24 @@ if get_config("04 GPIO8-11 mux") == "SPI0" then
    RTE_I2C1 = 0
 end
 
+if get_config("04 GPIO12-15 mux") == "UART0 & I2C0" then 
+    RTE_SPI1 = 0 
+end
+
+if get_config("04 GPIO12-15 mux") == "SPI1" then
+   RTE_UART0 = 0
+   RTE_I2C0 = 0
+end
+
+
 table.insert(DEFINES, "FW_VERSION=\"" .. FW_VERSION .. "\"")
 table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
+table.insert(DEFINES, "RTE_UART0=" .. RTE_UART0)
 table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
+table.insert(DEFINES, "RTE_I2C0=" .. RTE_I2C0)
 table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
 table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
+table.insert(DEFINES, "RTE_SPI1=" .. RTE_SPI1)
 if get_config("06 Main stub autorun") then table.insert(DEFINES, "MAINRUN") end
 if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
 if get_config("08 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
@@ -747,7 +767,7 @@ CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
 SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", 
-          "modgps.c", "moddht.c", "machine_rtc.c" }
+          "modgps.c", "moddht.c", "machine_rtc.c", "machine_hw_spi.c" }
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 

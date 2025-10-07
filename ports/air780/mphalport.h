@@ -37,6 +37,7 @@
 #include "py/ringbuf.h"
 #include "luat_mcu.h"
 
+#define MP_HAL_PIN_FMT "%u"
 #define mp_hal_pin_name(p) (p)
 #define mp_hal_pin_obj_t uint32_t
 mp_hal_pin_obj_t machine_pin_get_id(mp_obj_t pin_in);

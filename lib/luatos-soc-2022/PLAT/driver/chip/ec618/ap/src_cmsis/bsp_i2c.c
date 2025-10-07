@@ -47,7 +47,7 @@
 #define ARM_I2C_DRV_VERSION    ARM_DRIVER_VERSION_MAJOR_MINOR(2, 0) /* driver version */
 
 #if ((!RTE_I2C0) && (!RTE_I2C1))
-#error "I2C not enabled in RTE_Device.h!"
+//#error "I2C not enabled in RTE_Device.h!"
 #endif
 
 #ifdef PM_FEATURE_ENABLE

@@ -111,7 +111,6 @@ In addition, the following ports are provided in this repository:
  - [A9/A9G](ports/gprs_a9) -- Ai-Thinker A9/A9G (2G only) SoC.
  - [Air780e/g](ports/air780) -- Hezhou 4G Cat.1 Air780e (EC618) SoC.
  - [esp32](ports/esp32) -- Espressif ESP32 SoC (including ESP32S2, ESP32S3, ESP32C3, [ESP32-CAM](ports/esp32/README-CAM.md) board).
- - [esp8266](ports/esp8266) -- Espressif ESP8266 SoC.
 
 The MicroPython cross-compiler, mpy-cross
 -----------------------------------------
@@ -161,4 +160,5 @@ Main contrubutions:
 Others:
 * Add ESP-32-CAM module support (with I2C slave mode) to [esp32 port](ports/esp32)
 * Add CC1101 433MHz support to ESP32
-* Add Esp8266 default script (WiFi-UART bridge) [esp8266](ports/esp8266)
+
+* Added support for Air780e/g module
