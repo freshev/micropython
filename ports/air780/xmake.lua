@@ -37,7 +37,7 @@ option("04 GPIO8-11 mux")
     set_description("GPIO8-11 mux")
     set_default("UART2 & I2C1")
     set_values("UART2 & I2C1", "SPI0")
-option("04 GPIO12-15 mux")
+option("04 GPIO12-15 mux") -- supported only for Air780ep !
     set_description("GPIO12-15 mux")
     set_default("UART0 & I2C0")
     set_values("UART0 & I2C0", "SPI1")
@@ -529,23 +529,22 @@ if get_config("04 GPIO8-11 mux") == "SPI0" then
 end
 
 if get_config("04 GPIO12-15 mux") == "UART0 & I2C0" then 
-    RTE_SPI1 = 0 
+   RTE_SPI1 = 0 
 end
 
 if get_config("04 GPIO12-15 mux") == "SPI1" then
-   RTE_UART0 = 0
-   RTE_I2C0 = 0
+  RTE_UART0 = 0
+  RTE_I2C0 = 0
 end
-
 
 table.insert(DEFINES, "FW_VERSION=\"" .. FW_VERSION .. "\"")
 table.insert(DEFINES, "HW_UART_REPL=" .. HW_UART_REPL)
-table.insert(DEFINES, "RTE_UART0=" .. RTE_UART0)
-table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2)
-table.insert(DEFINES, "RTE_I2C0=" .. RTE_I2C0)
-table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1)
-table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0)
-table.insert(DEFINES, "RTE_SPI1=" .. RTE_SPI1)
+if RTE_UART0 == 1 then table.insert(DEFINES, "RTE_UART0=" .. RTE_UART0) end
+if RTE_UART2 == 1 then table.insert(DEFINES, "RTE_UART2=" .. RTE_UART2) end
+if RTE_I2C0 == 1 then table.insert(DEFINES, "RTE_I2C0=" .. RTE_I2C0) end
+if RTE_I2C1 == 1 then table.insert(DEFINES, "RTE_I2C1=" .. RTE_I2C1) end
+if RTE_SPI0 == 1 then table.insert(DEFINES, "RTE_SPI0=" .. RTE_SPI0) end
+if RTE_SPI1 == 1 then table.insert(DEFINES, "RTE_SPI1=" .. RTE_SPI1) end
 if get_config("06 Main stub autorun") then table.insert(DEFINES, "MAINRUN") end
 if get_config("07 Reset on SMS") then table.insert(DEFINES, "SMSRESET") end
 if get_config("08 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESETACK") end
@@ -884,7 +883,8 @@ target("driver")
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_lpusart_stub.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/tls.c",
-                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c"
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c" --,
+                -- SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/i2cGpio.c"
     )
 target_end()
 --------------------------------------------------------

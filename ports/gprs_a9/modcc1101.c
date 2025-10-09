@@ -279,7 +279,7 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         { MP_QSTR_id, MP_ARG_INT, {.u_int = SPI1 } },
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
         { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },
+        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },  // not default!
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
         { MP_QSTR_mode, MP_ARG_INT, {.u_int = 1 } }, // DMA mode
         { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },

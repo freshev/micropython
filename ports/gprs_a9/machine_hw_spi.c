@@ -337,7 +337,7 @@ static void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_
         { MP_QSTR_id, MP_ARG_INT, {.u_int = SPI1 } },
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
         { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },
+        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
         { MP_QSTR_mode, MP_ARG_INT, {.u_int = 1 } }, // DMA mode
         { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
