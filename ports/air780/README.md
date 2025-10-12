@@ -326,28 +326,3 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written.
 * You can deploy BINPKG and FOTA pack files to another folder in compressed or uncompressed form (configurable)
 * When REPL over USB feature used, writing special characters to UART over USB (or soft reboot in MP) conflicts with Luatools (module hangs). Close Luatools window or use REPL over UART1/UART2.
-* Development board Camera shelf has following SoC pins:
-1:  NC
-2:  GND
-3:  GPIO_12  / CAM_ISDA (PULLUP 1.8V)
-4:  RESERVED / VCAMA
-5:  GPIO_13  / CAM_ISCL (PULLUP 1.8V)
-6:  RESERVED / CAM_RST
-7:  NC
-8:  GPIO_05  / CAM_PDN
-9:  NC
-10  RESERVED / VCAMD
-11: VCC 1.8V
-12: NC
-13: GPIO_03  / CAM_XCLK
-14: NC
-15: GND
-16: NC
-17: GPIO_04  / CAM_SCK
-18: NC
-19: NC
-20: NC
-21: NC
-22: NC
-23: GPIO_07  / CAM_SI1
-24: GPIO_06  / CAM_SI0 
