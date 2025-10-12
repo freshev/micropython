@@ -883,8 +883,7 @@ target("driver")
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/usb/usb_device/usb_bl_test.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_lpusart_stub.c",
                 SDK_TOP.."/PLAT/driver/chip/ec618/ap/src/tls.c",
-                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c" --,
-                -- SDK_TOP .. "/PLAT/driver/board/ec618_0h00/src/camera/i2cGpio.c"
+                SDK_TOP.."/PLAT/driver/chip/ec618/ap/src_cmsis/bsp_spi.c" 
     )
 target_end()
 --------------------------------------------------------

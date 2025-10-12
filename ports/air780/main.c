@@ -105,6 +105,8 @@ void* mp_allocate_heap(uint32_t* size) {
     return ptr;
 }
 
+extern void soc_uart0_set_log_off(uint8_t is_off);
+
 void mp_task(void *param) {
 
 #ifdef HALTONEXC
@@ -124,6 +126,11 @@ soft_reset:
 
     void *mp_task_heap = mp_allocate_heap(&mp_task_heap_size); // allocate maximum
     gc_init(mp_task_heap, mp_task_heap + mp_task_heap_size);
+
+    
+    soc_uart0_set_log_off(1);
+    luat_uart_pre_setup(0, 1);
+
 
     mp_init();           LUAT_DEBUG_PRINT("micropython inited");
     modmachine_init0();  LUAT_DEBUG_PRINT("machine inited");

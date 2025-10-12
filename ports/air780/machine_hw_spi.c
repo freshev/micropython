@@ -35,6 +35,7 @@
 #include "extmod/modmachine.h"
 
 #include "common_api.h"
+#include "luat_gpio.h"
 #include "luat_spi.h"
 #include "luat_debug.h"
 
@@ -74,14 +75,14 @@
 #define MP_HW_SPI_MAX_XFER_BITS (MP_HW_SPI_MAX_XFER_BYTES * 8) // Has to be an even multiple of 8
 
 
+#ifdef RTE_SPI1
 /** If you want to maintain the unilog function and use SPI1, you need to multiplex the IO of UART0 to other places. See the following operation.*/
-#if defined(RTE_SPI1) 
 extern int32_t soc_unilog_callback(void *pdata, void *param);
 bool soc_init_unilog_uart(uint8_t port, uint32_t baudrate, bool startRecv)
 {
 	soc_get_unilog_br(&baudrate);
-	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 3, 0, 0);
-	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_17, 0), 3, 0, 0);
+	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 3, 0, 0);  // UART0_RXD -> GPIO16
+	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_17, 0), 3, 0, 0);  // UART0_TXD -> GPIO17
 	GPIO_PullConfig(GPIO_ToPadEC618(HAL_GPIO_16, 0), 1, 1);
 	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 0, 0, 0);	//The original UART0 TXRX changes back to GPIO function
 	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 0, 0, 0);
@@ -150,7 +151,6 @@ static const mp_arg_t spi_allowed_args[] = {
 static machine_hw_spi_obj_t machine_hw_spi_obj[MICROPY_HW_SPI_MAX];
 
 static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t *self) {
-
     if(luat_spi_close(self->spi) != 0) {
        mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("invalid configuration"));
     }
@@ -227,7 +227,15 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         return; // no changes
     }
 
-    // LUAT_DEBUG_PRINT("SPI id=%d, CPHA=%d, CPOL=%d, dataw=%d, bandrate=%d, cs=%d, sck=%d, mosi=%d, miso=%d", self->spi, self->phase, self->polarity, self->bits, self->baudrate, self->spi == 0 ? MICROPY_HW_SPI0_CS : MICROPY_HW_SPI1_CS, self->sck, self->mosi, self->miso);
+    //LUAT_DEBUG_PRINT("SPI id=%d, CPHA=%d, CPOL=%d, dataw=%d, bandrate=%d, cs=%d, sck=%d, mosi=%d, miso=%d", self->spi, self->phase, self->polarity, self->bits, self->baudrate, self->spi == 0 ? MICROPY_HW_SPI0_CS : MICROPY_HW_SPI1_CS, self->sck, self->mosi, self->miso);
+
+    /*GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_12, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_13, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 1, 1, 0);
+    */
+    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x500
+    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000)); // 0x500, 5 - (AltFunctionPull = yes, isInputBuffer = no), 0 - AltFunc1
 
     luat_spi_t spi_conf = {
         .id = self->spi,
@@ -244,6 +252,30 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
     if(luat_spi_setup(&spi_conf) != 0) {
         mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("invalid configuration"));
     }
+
+    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
+    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
+
+    /*GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_12, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_13, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 1, 1, 0);
+    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 1, 1, 0);
+    */
+
+    /*luat_gpio_cfg_t cfg12 = {0};
+    cfg12.pin = HAL_GPIO_12;
+    cfg12.mode = LUAT_GPIO_OUTPUT;
+    cfg12.output_level = 0;
+    cfg12.alt_fun = 1;
+    luat_gpio_open(&cfg12);
+
+    luat_gpio_cfg_t cfg13 = {0};
+    cfg13.pin = HAL_GPIO_13;
+    cfg13.mode = LUAT_GPIO_OUTPUT;
+    cfg13.output_level = 0;
+    cfg13.alt_fun = 1;
+    luat_gpio_open(&cfg13);        
+    */
 
     self->state = MACHINE_HW_SPI_STATE_INIT;
 }
@@ -282,7 +314,16 @@ static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
         mp_raise_ValueError(MP_ERROR_TEXT("buffer too short"));
     }
 
-    int res = luat_spi_transfer(self->spi, (const char*)src, len, (const char*)dest, len);
+    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
+    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
+
+    int res;
+    res = luat_spi_transfer(self->spi, (const char*)src, len, (const char*)dest, len);
+    //res = luat_spi_send(self->spi, (const char*)src, len);
+    //res = luat_spi_recv(self->spi, (const char*)dest, len);
+
+    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
+    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
 
     if(res != len) {
         mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI%d received %d/%d bytes", self->spi, res, len);
@@ -378,6 +419,8 @@ s0.read(2, 0x31 | 0xC0)
 response: b'\x00\x14'
 s0.deinit()
 
-s1 = SPI(1)
+from machine import SPI
+s1 = SPI(1, phase=1, polarity=1, baudrate=10000000)
+s1.read(2, 0x31 | 0xC0)
 s1.deinit()
 */

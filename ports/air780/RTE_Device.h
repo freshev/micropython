@@ -23,10 +23,7 @@
 #define RTE_UART2_RX_IO_MODE    DMA_MODE
 
 #define RTE_SPI0_IO_MODE        POLLING_MODE
-//#define RTE_SPI0_IO_MODE        DMA_MODE
-
 #define RTE_SPI1_IO_MODE        POLLING_MODE
-//#define RTE_SPI1_IO_MODE        DMA_MODE
 
 #define RTE_I2C0_IO_MODE        POLLING_MODE
 #define RTE_I2C1_IO_MODE        POLLING_MODE
@@ -34,7 +31,7 @@
 
 // I2C0 (Inter-integrated Circuit Interface) [Driver_I2C0]
 // Configuration settings for Driver_I2C0 in component ::Drivers:I2C
-#define RTE_I2C0                        1
+//#define RTE_I2C0                        1
 
 // { PAD_PIN28},  // 0 : gpio13 / 2 : I2C0 SCL
 // { PAD_PIN27},  // 0 : gpio12 / 2 : I2C0 SDA
