@@ -127,7 +127,7 @@ Featured:
 
 1. [`cellular`](#cellular), `network`: SMS, calls, connectivity
 2. [`socket`](#socket): sockets over GPRS
-3. [`ssl`](#ssl): SSL over sockets
+3. [`tls`](#ssl): SSL/TLS over sockets
 4. [`gps`](#gps): everything related to GPS and assisted positioning
 5. [`machine`](#machine): hardware and power control
 6. [`I2C`](#I2C): I2C hardware implementation

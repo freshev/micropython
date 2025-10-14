@@ -152,7 +152,7 @@ Featured:
 
 1. [`cellular`](#cellular): SMS, calls, connectivity
 2. [`socket`](#socket): sockets over 4G
-3. [`tls`](#ssl): TLS over sockets
+3. [`tls`](#tls): SSL/TLS over sockets
 4. [`machine`](#machine): hardware and power control
 5. [`I2C`](#I2C): I2C hardware implementation
 6. [`SPI`](#SPI): SPI hardware implementation
