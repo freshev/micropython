@@ -114,8 +114,8 @@ blink.blink(1)
 - [x] Power: `machine`, `watchdog`
 - [x] Calls: `cellular`
 - [x] CC1101: `CC1101`
-- [x] DHT: `DHT`
-- [x] CC1101: `CC1101`
+- [x] DHT: `DHT` sensor module
+- [x] CC1101: `CC1101` RF module
 
 ## Examples
 

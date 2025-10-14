@@ -139,8 +139,8 @@ blink.blink(1)
 - [x] File system (littlefs)
 - [x] DNS: `cellular`, `socket`, `tls`
 - [x] Power: `machine`, `watchdog`, `FOTA`
-- [x] DHT: `DHT`. Use external resistor 5-10 kOhm for DHT11 sensor PULLUP.
-- [x] CC1101: `CC1101`
+- [x] DHT: `DHT` sensor module. Use external resistor 5-10 kOhm for DHT11 sensor PULLUP
+- [x] CC1101: `CC1101` RF module
 
 ## Examples
 
@@ -222,7 +222,7 @@ See [micropython docs](https://docs.micropython.org/en/latest/library/socket.htm
 
 ### `tls` ###
 
-TCP/IP stack over 4G based on Mbedtls.
+TCP/IP stack over 4G based on Mbed TLS 3.6.3.
 See [micropython docs](https://docs.micropython.org/en/latest/library/ssl.html) for details.
 
 ### `gps` ###
