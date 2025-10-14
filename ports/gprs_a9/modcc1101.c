@@ -136,6 +136,28 @@
 #define CC1101_TXFIFO       0x3F
 #define CC1101_RXFIFO       0x3F
 
+typedef struct _machine_hw_spi_obj_t {
+    mp_obj_base_t base;
+    SPI_ID_t id;
+    SPI_CS_t cs;
+    uint32_t baudrate;
+    uint8_t polarity;
+    uint8_t phase;
+    uint8_t bits;
+    uint8_t firstbit;
+    int8_t sck;
+    int8_t mosi;
+    int8_t miso;
+    enum {
+        MACHINE_HW_SPI_STATE_NONE,
+        MACHINE_HW_SPI_STATE_INIT,
+        MACHINE_HW_SPI_STATE_DEINIT
+    } state;
+    uint8_t dma_delay;
+    uint8_t debug;
+    uint8_t debug_hst;
+    uint8_t mode;
+} machine_hw_spi_obj_t;
 
 typedef struct _cc1101_obj_t {
     mp_obj_base_t base;
@@ -272,19 +294,21 @@ uint8_t _cc1101_transfer_addr_byte(cc1101_obj_t *self, uint8_t addr, uint8_t wby
 // Constructor & Destructor
 // ------------------------
 extern const mp_obj_type_t cc1101_type;
+extern mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
-    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_mode, ARG_cs, ARG_duplex, ARG_cs_active_low, ARG_dma_delay, ARG_debug, ARG_debug_hst};
+    enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_dma_delay, ARG_debug, ARG_debug_hst};
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_id, MP_ARG_INT, {.u_int = SPI1 } },
+        { MP_QSTR_id, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = SPI1 } },
+        { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
         { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
         { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },  // not default!
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
-        { MP_QSTR_mode, MP_ARG_INT, {.u_int = 1 } }, // DMA mode
-        { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
-        { MP_QSTR_duplex, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_cs_active_low, MP_ARG_INT, {.u_int = 1 } },
+        { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
         { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
@@ -340,7 +364,29 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         default: mp_raise_ValueError("Unknown debug_hst argument"); return mp_const_none;
     }
 
-    self->spi = MP_OBJ_TO_PTR(machine_hw_spi_make_new(&machine_spi_type, n_args, n_kw, all_args));
+    mp_obj_t spi_args[] = {
+        mp_obj_new_int(args[ARG_id].u_int),
+        mp_obj_new_int(args[ARG_cs].u_int),
+        mp_obj_new_int(args[ARG_baudrate].u_int),
+
+        MP_OBJ_NEW_QSTR(MP_QSTR_polarity),
+        mp_obj_new_int(args[ARG_polarity].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_phase),
+        mp_obj_new_int(args[ARG_phase].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_bits),
+        mp_obj_new_int(args[ARG_bits].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_firstbit),
+        mp_obj_new_int(args[ARG_firstbit].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_sck),
+        mp_obj_new_int(args[ARG_sck].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_mosi),
+        mp_obj_new_int(args[ARG_mosi].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_miso),
+        mp_obj_new_int(args[ARG_miso].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_dma_delay),
+        mp_obj_new_int(args[ARG_dma_delay].u_int),
+    };
+    self->spi = MP_OBJ_TO_PTR(machine_hw_spi_make_new(&machine_spi_type, 3, 8, spi_args));
 
     _cc1101_debug(self, "CC1101 object created");
     return MP_OBJ_FROM_PTR(self);

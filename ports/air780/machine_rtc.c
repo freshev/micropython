@@ -29,7 +29,6 @@
 #include "errno.h"
 
 #include "py/runtime.h"
-#include "modmachine.h"
 #include "extmod/modmachine.h"
 #include "luat_rtc.h"
 

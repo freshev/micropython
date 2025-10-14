@@ -40,6 +40,29 @@
 #include "modmachine.h"
 #include "extmod/modmachine.h"
 
+typedef struct _machine_hw_spi_obj_t {
+    mp_obj_base_t base;
+    SPI_ID_t id;
+    SPI_CS_t cs;
+    uint32_t baudrate;
+    uint8_t polarity;
+    uint8_t phase;
+    uint8_t bits;
+    uint8_t firstbit;
+    int8_t sck;
+    int8_t mosi;
+    int8_t miso;
+    enum {
+        MACHINE_HW_SPI_STATE_NONE,
+        MACHINE_HW_SPI_STATE_INIT,
+        MACHINE_HW_SPI_STATE_DEINIT
+    } state;
+    uint8_t dma_delay;
+    uint8_t debug;
+    uint8_t debug_hst;
+    uint8_t mode;
+} machine_hw_spi_obj_t;
+
 // ----------
 // Exceptions
 // ----------
@@ -54,9 +77,8 @@ NORETURN void mp_raise_SPIError(const char *msg) {
 // Globals
 // ----------
 // singleton SPI objects
-machine_hw_spi_obj_t *spi_obj[2][2] = {{NULL, NULL}, {NULL, NULL}};
-uint8_t _spi_inited[2][2] = {{0,0},{0,0}};
-uint32_t _spi_dma_delay[2] = {4,4};
+machine_hw_spi_obj_t machine_hw_spi_obj[SPI_CS_MAX];
+
 const char * SPI_WRITE_FAILED = "SPI write failed";
 const char * SPI_READ_FAILED = "SPI read failed";
 const char * SPI_WRITE_BURST_FAILED = "SPI write burst failed";
@@ -64,10 +86,33 @@ const char * SPI_READ_BURST_FAILED = "SPI read burst failed";
 const char * SPI_NOT_INITED = "SPI NOT inited";
 const char * SPI_MALLOC_FAILED = "SPI memory allocation failed";
 
+// Common arguments for init() and make new
+enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_cs, ARG_dma_delay, ARG_debug, ARG_debug_hst };
+static const mp_arg_t spi_allowed_args[] = {
+    { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_cs,       MP_ARG_INT, {.u_int = 0 } },
+    { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+    { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },    
+	{ MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
+    { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
+    { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
+};
 
 // ---------
 // Internals
 // ---------
+static const int8_t machine_hw_spi_default_pins[SPI_CS_MAX * 2][3] = {
+    { 8, 12, 13 },
+    { 8, 12, 13 },
+    { 0, 3, 4 },
+    { 0, 3, 4 },
+};
 
 void _spi_debug(machine_hw_spi_obj_t * self, char * message, ...) {
     char mess[1024];
@@ -84,11 +129,11 @@ void _spi_debug(machine_hw_spi_obj_t * self, char * message, ...) {
 
 
 void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffer, uint8_t* rbuffer, uint32_t length, uint8_t debug_hst) {
+    
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     SPI_ID_t id = self->id;
-    SPI_CS_t cs = self->cs;
 
-    if(_spi_inited[id-1][cs] == 0) {
+    if(self->state == MACHINE_HW_SPI_STATE_INIT) {
         Trace(1, SPI_NOT_INITED);
         mp_raise_SPIError(SPI_NOT_INITED);
         return;
@@ -156,7 +201,7 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
             Trace(1, "SPI DMA transfer write length %d, result length %d", length, res);
             mp_raise_SPIError(SPI_WRITE_FAILED);
         }
-        OS_SleepUs(_spi_dma_delay[id - 1]); // Without this sleep little length responses can be empty
+        OS_SleepUs(self->dma_delay); // Without this sleep little length responses can be empty
         while((!SPI_IsTxDmaDone(id))&&(!SPI_IsRxDmaDone(id)));
         SPI_ClearTxDmaDone(id);
         SPI_ClearRxDmaDone(id);
@@ -168,263 +213,197 @@ uint32_t _get_SPI_FREQ(mp_int_t _frequency) {
     return (_frequency > SPI_FREQ_MAX) ? SPI_FREQ_MAX : _frequency;
 }
 
-
-static void machine_hw_spi_init_internal(machine_hw_spi_obj_t* self) {
-    if(_spi_inited[self->id - 1][(int)self->cs] == 0) {
-        if(self->mode == 0) {
-            SPI_Config_t config = {
-                .cs = self->cs,
-                .txMode = SPI_MODE_DIRECT_POLLING,
-                .rxMode = SPI_MODE_DIRECT_POLLING,
-                .freq = self->baudrate,
-                .line = self->line, // SPI_LINE_4 (duplex mode), SPI_LINE_3 - half-duplex
-                .txOnly = false,
-                .cpol = self->cpol, // SPI Clk Polarity
-                .cpha = self->cpha, // SPI Clk Phase
-                .csActiveLow = self->cs_active_low, // SPI Cs Active Polarity
-                .dataBits = self->bits,
-                .irqHandler = NULL,
-                .irqMask = {0,0,0,0,0}
-            };
-            if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI init failure");
-        }
-        if(self->mode == 1) {
-            SPI_Config_t config = {
-                .cs = self->cs,
-                .txMode = SPI_MODE_DMA_POLLING,
-                .rxMode = SPI_MODE_DMA_POLLING,
-                .freq = self->baudrate,
-                .line = self->line, // SPI_LINE_4 (duplex mode), SPI_LINE_3 - half-duplex
-                .txOnly = false,
-                .cpol = self->cpol, // SPI Clk Polarity
-                .cpha = self->cpha, // SPI Clk Phase
-                .csActiveLow = self->cs_active_low, // SPI Cs Active Polarity
-                .dataBits = self->bits,
-                .irqHandler = NULL,
-                .irqMask = {0,0,0,0,0}
-            };
-            if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI DMA init failure");
-        }
-
-        _spi_inited[self->id - 1][self->cs] = 1;
-        _spi_dma_delay[self->id - 1] = self->dma_delay;
-
-        _spi_debug(self, "SPI%d_CS%d inited", self->id, self->cs);
-
-    } else mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI already inited");
+static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
+	if(!SPI_Close(self->id)) mp_raise_SPIError("SPI deinit failure");
 }
 
-static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
-    if(_spi_inited[self->id - 1][self->cs] == 1) {
-        if(SPI_Close(self->id)) {
-           _spi_inited[self->id - 1][0] = 0;
-           _spi_inited[self->id - 1][1] = 0;
-           _spi_dma_delay[self->id - 1] = 4;
-        } else mp_raise_SPIError("SPI deinit failure");
-    } else mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI already deinited");
+static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_t args[]) {
+
+    // if we're not initialized, then we're
+    // implicitly 'changed', since this is the init routine
+    bool changed = self->state != MACHINE_HW_SPI_STATE_INIT;
+
+    machine_hw_spi_obj_t old_self = *self;
+
+    if (args[ARG_cs].u_int != -1 && args[ARG_cs].u_int != self->cs) {
+        self->cs = args[ARG_cs].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_baudrate].u_int != -1) {
+        // calculate the actual clock frequency that the SPI peripheral can produce
+        uint32_t baudrate = _get_SPI_FREQ(args[ARG_baudrate].u_int);
+        if (baudrate != self->baudrate) {
+            self->baudrate = baudrate;
+            changed = true;
+        }
+    }
+
+    if (args[ARG_polarity].u_int != -1 && args[ARG_polarity].u_int != self->polarity) {
+        self->polarity = args[ARG_polarity].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_phase].u_int != -1 && args[ARG_phase].u_int != self->phase) {
+        self->phase = args[ARG_phase].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_bits].u_int != -1 && args[ARG_bits].u_int <= 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("invalid bits"));
+    }
+
+    if (args[ARG_bits].u_int != -1 && args[ARG_bits].u_int != self->bits) {
+        self->bits = args[ARG_bits].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_firstbit].u_int != -1 && args[ARG_firstbit].u_int != self->firstbit) {
+        self->firstbit = args[ARG_firstbit].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_sck].u_int != -2 && args[ARG_sck].u_int != self->sck) {
+        self->sck = args[ARG_sck].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_mosi].u_int != -2 && args[ARG_mosi].u_int != self->mosi) {
+        self->mosi = args[ARG_mosi].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_miso].u_int != -2 && args[ARG_miso].u_int != self->miso) {
+        self->miso = args[ARG_miso].u_int;
+        changed = true;
+    }    
+
+    if (args[ARG_dma_delay].u_int != -1 && args[ARG_dma_delay].u_int != self->dma_delay) {
+        self->dma_delay = args[ARG_dma_delay].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_debug].u_int != -1 && args[ARG_debug].u_int != self->debug) {
+        self->debug = args[ARG_debug].u_int;
+        changed = true;
+    }
+
+    if (args[ARG_debug_hst].u_int != -1 && args[ARG_debug_hst].u_int != self->debug_hst) {
+        self->debug_hst = args[ARG_debug_hst].u_int;
+        changed = true;
+    }
+
+    if (changed) {
+        if (self->state == MACHINE_HW_SPI_STATE_INIT) {
+            self->state = MACHINE_HW_SPI_STATE_DEINIT;
+            machine_hw_spi_deinit_internal(&old_self);
+        }
+    } else {
+        return; // no changes
+    }
+
+    
+    if(self->mode == 0) {
+        SPI_Config_t config = {
+            .cs = self->cs,
+            .txMode = SPI_MODE_DIRECT_POLLING,
+            .rxMode = SPI_MODE_DIRECT_POLLING,
+            .freq = self->baudrate,
+            .line = SPI_LINE_4, // SPI_LINE_4 (duplex mode), SPI_LINE_3 - half-duplex
+            .txOnly = false,
+            .cpol = self->polarity, // SPI Clk Polarity
+            .cpha = self->phase, // SPI Clk Phase
+            .csActiveLow = 1, // SPI Cs Active Polarity
+            .dataBits = self->bits,
+            .irqHandler = NULL,
+            .irqMask = {0,0,0,0,0}
+        };
+        if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI init failure");
+    }
+    if(self->mode == 1) {
+        SPI_Config_t config = {
+            .cs = self->cs,
+            .txMode = SPI_MODE_DMA_POLLING,
+            .rxMode = SPI_MODE_DMA_POLLING,
+            .freq = self->baudrate,
+            .line = SPI_LINE_4, // SPI_LINE_4 (duplex mode), SPI_LINE_3 - half-duplex
+            .txOnly = false,
+            .cpol = self->polarity, // SPI Clk Polarity
+            .cpha = self->phase, // SPI Clk Phase
+            .csActiveLow = 1, // SPI Cs Active Polarity
+            .dataBits = self->bits,
+            .irqHandler = NULL,
+            .irqMask = {0,0,0,0,0}
+        };
+        if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI DMA init failure");
+    }
+
+    self->state = MACHINE_HW_SPI_STATE_INIT;
+    _spi_debug(self, "SPI%d_CS%d inited", self->id, self->cs);
+}
+
+static void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
+    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t *)self_in;
+    if (self->state == MACHINE_HW_SPI_STATE_INIT) {
+        self->state = MACHINE_HW_SPI_STATE_DEINIT;
+        machine_hw_spi_deinit_internal(self);
+    }
 }
 
 // ------------------------
 // Constructor & Destructor
 // ------------------------
 
-mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-
-    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_mode, ARG_cs, ARG_duplex, ARG_cs_active_low, ARG_dma_delay, ARG_debug, ARG_debug_hst};
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_id, MP_ARG_INT, {.u_int = SPI1 } },
-        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
-        { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
-        { MP_QSTR_mode, MP_ARG_INT, {.u_int = 1 } }, // DMA mode
-        { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
-        { MP_QSTR_duplex, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_cs_active_low, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
-        { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
-    };
-
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    uint8_t temp_id = 0;
-    uint8_t temp_cs = 0;
-
-    switch (args[ARG_id].u_int) {
-        case SPI1: temp_id = SPI1; break;
-        case SPI2: temp_id = SPI2; break;
-        default: mp_raise_ValueError("Unknown 'SPI ID' argument value"); return mp_const_none;
+// Set constant values, depending of SPI id
+static void machine_hw_spi_argcheck(mp_arg_val_t args[], const int8_t *default_pins) {
+    for (int i = ARG_sck; i <= ARG_miso; i++) {
+        args[i].u_int = default_pins ? default_pins[i - ARG_sck] : -1;
     }
-
-    switch (args[ARG_cs].u_int) {
-        case SPI_CS_0: temp_cs = SPI_CS_0; break;
-        case SPI_CS_1: temp_cs = SPI_CS_1; break;
-        default: mp_raise_ValueError("Unknown 'SPI CS' argument"); return mp_const_none;
-    }
-    // Trace(1, "SPI make new ID=%i, CS=%i", temp_id, temp_cs);
-
-    machine_hw_spi_obj_t *self = NULL;
-    if(spi_obj[temp_id - 1][temp_cs] == NULL) {
-        self = mp_obj_malloc(machine_hw_spi_obj_t, &machine_spi_type);
-        self->id = temp_id;
-        self->cs = temp_cs;
-        spi_obj[temp_id - 1][temp_cs] = self;
-    } else self = spi_obj[temp_id - 1][temp_cs];
-
-    self->baudrate = _get_SPI_FREQ(args[ARG_baudrate].u_int);
-
-    switch (args[ARG_duplex].u_int) {
-        case 0: self->line = SPI_LINE_3; break;
-        case 1: self->line = SPI_LINE_4; break;
-        default:  mp_raise_ValueError("Unknown duplex argument"); return mp_const_none;
-    }
-
-    switch (args[ARG_polarity].u_int) {
-        case 0: self->cpol = 0; break;
-        case 1: self->cpol = 1; break;
-        default:  mp_raise_ValueError("Unknown clock polarity argument"); return mp_const_none;
-    }
-
-    switch (args[ARG_phase].u_int) {
-        case 0: self->cpha = 0; break;
-        case 1: self->cpha = 1; break;
-        default:  mp_raise_ValueError("Unknown clock phase argument"); return mp_const_none;
-    }
-
-    switch (args[ARG_cs_active_low].u_int) {
-        case 0: self->cs_active_low = 0; break;
-        case 1: self->cs_active_low = 1; break;
-        default:  mp_raise_ValueError("Unknown CS active low argument"); return mp_const_none;
-    }
-
-    switch (args[ARG_bits].u_int) {
-        case 8: self->bits = SPI_DATA_BITS_8; break;
-        case 16: self->bits = SPI_DATA_BITS_16; break;
-        default:  mp_raise_ValueError("Unknown data bits argument"); return mp_const_none;
-    }
-
-    self->dma_delay = args[ARG_dma_delay].u_int;
-
-    switch (args[ARG_debug].u_int) {
-        case 0: self->debug = 0; break;
-        case 1: self->debug = 1; break;
-        default: mp_raise_ValueError("Unknown debug argument"); return mp_const_none;
-    }
-
-    switch (args[ARG_debug_hst].u_int) {
-        case 0: self->debug_hst = 0; break;
-        case 1: self->debug_hst = 1; break;
-        default: mp_raise_ValueError("Unknown debug_hst argument"); return mp_const_none;
-    }
-    self->debug_hst = 0;
-
-    switch (args[ARG_mode].u_int) {
-        case 0: self->mode = 0; break; // direct mode
-        case 1: self->mode = 1; break; // DMA mode
-        default: mp_raise_ValueError("Unknown mode argument"); return mp_const_none;
-    }
-    machine_hw_spi_init_internal(self);
-    return MP_OBJ_FROM_PTR(self);
 }
+
 static void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t *)self_in;
 
-    enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_mode, ARG_cs, ARG_duplex, ARG_cs_active_low, ARG_dma_delay, ARG_debug, ARG_debug_hst};
+    mp_arg_val_t args[MP_ARRAY_SIZE(spi_allowed_args)];
+    // offset arg lists by 1 to skip first arg, id, which is not valid for init()
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(spi_allowed_args) - 1,
+        spi_allowed_args + 1, args + 1);
 
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_id, MP_ARG_INT, {.u_int = SPI1 } },
-        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
-        { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
-        { MP_QSTR_mode, MP_ARG_INT, {.u_int = 1 } }, // DMA mode
-        { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
-        { MP_QSTR_duplex, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_cs_active_low, MP_ARG_INT, {.u_int = 1 } },
-        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
-        { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
-    };
-
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    uint8_t temp_id = 0;
-    uint8_t temp_cs = 0;
-
-    switch (args[ARG_id].u_int) {
-        case SPI1: temp_id = SPI1; break;
-        case SPI2: temp_id = SPI2; break;
-        default: mp_raise_ValueError("Unknown 'SPI ID' argument value (init)");
-    }
-
-    switch (args[ARG_cs].u_int) {
-        case SPI_CS_0: temp_cs = SPI_CS_0; break;
-        case SPI_CS_1: temp_cs = SPI_CS_1; break;
-        default: mp_raise_ValueError("Unknown 'SPI CS' argument (init)");
-    }
-
-    self->baudrate = _get_SPI_FREQ(args[ARG_baudrate].u_int);
-
-    switch (args[ARG_duplex].u_int) {
-        case 0: self->line = SPI_LINE_3; break;
-        case 1: self->line = SPI_LINE_4; break;
-        default:  mp_raise_ValueError("Unknown duplex argument (init)");
-    }
-
-    switch (args[ARG_polarity].u_int) {
-        case 0: self->cpol = 0; break;
-        case 1: self->cpol = 1; break;
-        default:  mp_raise_ValueError("Unknown clock polarity argument (init)");
-    }
-
-    switch (args[ARG_phase].u_int) {
-        case 0: self->cpha = 0; break;
-        case 1: self->cpha = 1; break;
-        default:  mp_raise_ValueError("Unknown clock phase argument (init)");
-    }
-
-    switch (args[ARG_cs_active_low].u_int) {
-        case 0: self->cs_active_low = 0; break;
-        case 1: self->cs_active_low = 1; break;
-        default:  mp_raise_ValueError("Unknown CS active low argument (init)");
-    }
-
-    switch (args[ARG_bits].u_int) {
-        case 8: self->bits = SPI_DATA_BITS_8; break;
-        case 16: self->bits = SPI_DATA_BITS_16; break;
-        default:  mp_raise_ValueError("Unknown data bits argument (init)");
-    }
-
-    self->dma_delay = args[ARG_dma_delay].u_int;
-
-    switch (args[ARG_debug].u_int) {
-        case 0: self->debug = 0; break;
-        case 1: self->debug = 1; break;
-        default: mp_raise_ValueError("Unknown debug argument (init)");
-    }
-
-    switch (args[ARG_debug_hst].u_int) {
-        case 0: self->debug_hst = 0; break;
-        case 1: self->debug_hst = 1; break;
-        default: mp_raise_ValueError("Unknown debug_hst argument (init)");
-    }
-
-    switch (args[ARG_mode].u_int) {
-        case 0: self->mode = 0; break; // direct mode
-        case 1: self->mode = 1; break; // DMA mode
-        default: mp_raise_ValueError("Unknown mode argument");
-    }
-    machine_hw_spi_init_internal(self);
+    machine_hw_spi_argcheck(args, NULL);
+    machine_hw_spi_init_internal(self, args);
 }
 
-static void machine_hw_spi_deinit(mp_obj_base_t *self_in) {
-    machine_hw_spi_obj_t *self = (machine_hw_spi_obj_t *)self_in;
-    machine_hw_spi_deinit_internal(self);
-}
+mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
+    mp_arg_val_t args[MP_ARRAY_SIZE(spi_allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(spi_allowed_args), spi_allowed_args, args);
+
+    const mp_int_t spi_id = args[ARG_id].u_int;
+    const mp_int_t spi_cs = args[ARG_cs].u_int;
+
+    if ((spi_id == SPI1 || spi_id == SPI2) && (spi_cs == 0 || spi_cs == 1)) {
+        machine_hw_spi_argcheck(args, machine_hw_spi_default_pins[(spi_id - 1) * 2 + spi_cs]);
+    } else {
+        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist"), spi_id);
+    }
+
+    // Replace -1 non-pin args with default values
+    static const mp_int_t defaults[] = { 500000, 0, 0, 8, MICROPY_PY_MACHINE_SPI_MSB };
+    for (int i = ARG_baudrate; i <= ARG_firstbit; i++) {
+        if (args[i].u_int == -1) {
+            args[i].u_int = defaults[i - ARG_baudrate];
+        }
+    }
+
+    machine_hw_spi_obj_t *self = &machine_hw_spi_obj[spi_id];
+    // self->host = spi_id;
+
+    self->base.type = &machine_spi_type;
+
+    machine_hw_spi_init_internal(self, args);
+
+    return MP_OBJ_FROM_PTR(self);
+}
 
 static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -440,9 +419,9 @@ static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
 // ---------
 static void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SPI%d_CS%d(baudrate :%d, dma_delay:%d, line:%s, clock_polarity:%d, clock_phase:%d, cs_active_low:%d, bits:%s, mode:%s, ptr: %p)",
-        self->id, self->cs, self->baudrate, self->dma_delay, self->line == SPI_LINE_3 ? "SPI_LINE_3" : "SPI_LINE_4", self->cpol, self->cpha,
-        self->cs_active_low, self->bits == SPI_DATA_BITS_8 ? "SPI_DATA_BITS_8" : "SPI_DATA_BITS_16", self->mode == 0 ? "DIRECT" : "DMA", self);
+    mp_printf(print, "SPI%d_CS%d(baudrate :%d, polarity:%d, phase:%d, bits:%s, mode:%s, dma_delay:%d, ptr: %p)",
+        self->id, self->cs, self->baudrate, self->polarity, self->phase,
+        self->bits == SPI_DATA_BITS_8 ? "8" : "16", self->mode == 0 ? "DIRECT" : "DMA", self->dma_delay, self);
 }
 
 

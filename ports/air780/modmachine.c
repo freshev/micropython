@@ -42,7 +42,6 @@
 #include "httpclient.h"
 
 #include "mpconfigport.h"
-#include "modmachine.h"
 
 // This file is never compiled standalone, it's included directly from
 // extmod/modmachine.c via MICROPY_PY_MACHINE_INCLUDEFILE.

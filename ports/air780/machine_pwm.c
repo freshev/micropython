@@ -38,8 +38,6 @@
 #include "luat_debug.h"
 #include "luat_pwm.h"
 
-#include "modmachine.h"
-
 // Total number of channels
 #define PWM_CHANNEL_MAX     (6) 
 

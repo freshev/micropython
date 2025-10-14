@@ -39,6 +39,25 @@
 #include "luat_spi.h"
 #include "luat_debug.h"
 
+typedef struct _machine_hw_spi_obj_t {
+    mp_obj_base_t base;
+    int id;
+    int cs;
+    uint32_t baudrate;
+    uint8_t polarity;
+    uint8_t phase;
+    uint8_t bits;
+    uint8_t firstbit;
+    int8_t sck;
+    int8_t mosi;
+    int8_t miso;
+    enum {
+        MACHINE_HW_SPI_STATE_NONE,
+        MACHINE_HW_SPI_STATE_INIT,
+        MACHINE_HW_SPI_STATE_DEINIT
+    } state;
+} machine_hw_spi_obj_t;
+
 // SPI0 mappings 
 // { PAD_PIN23},  // 0 : gpio8  / 1 : SPI0 SSn
 // { PAD_PIN24},  // 0 : gpio9  / 1 : SPI0 MOSI
@@ -47,7 +66,8 @@
 #define MICROPY_HW_SPI0_SCLK 11
 #define MICROPY_HW_SPI0_MOSI 9
 #define MICROPY_HW_SPI0_MISO 10
-#define MICROPY_HW_SPI0_CS 8
+#define MICROPY_HW_SPI0_CS_0 8
+#define MICROPY_HW_SPI0_CS_1 3
 
 // SPI1 mappings 
 // { PAD_PIN27},  // 0 : gpio12  / 1 : SPI1 SSn
@@ -57,7 +77,8 @@
 #define MICROPY_HW_SPI1_SCLK 15
 #define MICROPY_HW_SPI1_MOSI 13
 #define MICROPY_HW_SPI1_MISO 14
-#define MICROPY_HW_SPI1_CS 12
+#define MICROPY_HW_SPI1_CS_0 12
+#define MICROPY_HW_SPI1_CS_1 16
 
 // Number of available hardware SPI peripherals.
 #if defined(RTE_SPI0) && defined(RTE_SPI1)
@@ -103,26 +124,6 @@ typedef struct _machine_hw_spi_default_pins_t {
     };
 } machine_hw_spi_default_pins_t;
 
-typedef struct _machine_hw_spi_obj_t {
-    mp_obj_base_t base;
-    // spi_host_device_t host;
-    uint32_t baudrate;
-    uint8_t polarity;
-    uint8_t phase;
-    uint8_t bits;
-    uint8_t firstbit;
-    int8_t sck;
-    int8_t mosi;
-    int8_t miso;
-    //spi_device_handle_t spi;
-    int spi;
-    enum {
-        MACHINE_HW_SPI_STATE_NONE,
-        MACHINE_HW_SPI_STATE_INIT,
-        MACHINE_HW_SPI_STATE_DEINIT
-    } state;
-} machine_hw_spi_obj_t;
-
 // Default pin mappings for the hardware SPI instances
 static const machine_hw_spi_default_pins_t machine_hw_spi_default_pins[MICROPY_HW_SPI_MAX] = {
     #ifdef RTE_SPI0
@@ -134,9 +135,10 @@ static const machine_hw_spi_default_pins_t machine_hw_spi_default_pins[MICROPY_H
 };
 
 // Common arguments for init() and make new
-enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
+enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
 static const mp_arg_t spi_allowed_args[] = {
     { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_cs,       MP_ARG_INT, {.u_int = 0 } },
     { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = -1} },
     { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
     { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
@@ -151,9 +153,13 @@ static const mp_arg_t spi_allowed_args[] = {
 static machine_hw_spi_obj_t machine_hw_spi_obj[MICROPY_HW_SPI_MAX];
 
 static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t *self) {
-    if(luat_spi_close(self->spi) != 0) {
+    if(luat_spi_close(self->id) != 0) {
        mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("invalid configuration"));
     }
+    if(self->cs == 1) {
+    	if(self->id == 0) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_3, 0), 0, 0, 0);
+    	if(self->id == 1) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 0, 0, 0);
+  	}
 }
 
 static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_t args[]) {
@@ -162,9 +168,12 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
     // implicitly 'changed', since this is the init routine
     bool changed = self->state != MACHINE_HW_SPI_STATE_INIT;
 
-    // esp_err_t ret;
-
     machine_hw_spi_obj_t old_self = *self;
+
+	if (args[ARG_cs].u_int != -1 && args[ARG_cs].u_int != self->cs) {
+        self->cs = args[ARG_cs].u_int;
+        changed = true;
+    }
 
     if (args[ARG_baudrate].u_int != -1) {
         uint32_t baudrate = args[ARG_baudrate].u_int;
@@ -227,18 +236,14 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         return; // no changes
     }
 
-    //LUAT_DEBUG_PRINT("SPI id=%d, CPHA=%d, CPOL=%d, dataw=%d, bandrate=%d, cs=%d, sck=%d, mosi=%d, miso=%d", self->spi, self->phase, self->polarity, self->bits, self->baudrate, self->spi == 0 ? MICROPY_HW_SPI0_CS : MICROPY_HW_SPI1_CS, self->sck, self->mosi, self->miso);
+    if(self->cs == 1) {
+    	if(self->id == 0) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_3, 0), 4, 0, 0);
+    	if(self->id == 1) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 4, 0, 0);
+  	}
 
-    /*GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_12, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_13, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 1, 1, 0);
-    */
-    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x500
-    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000)); // 0x500, 5 - (AltFunctionPull = yes, isInputBuffer = no), 0 - AltFunc1
-
+    // LUAT_DEBUG_PRINT("SPI id=%d, cs=%d, CPHA=%d, CPOL=%d, dataw=%d, baudrate=%d, sck=%d, mosi=%d, miso=%d", self->id, self->cs, self->phase, self->polarity, self->bits, self->baudrate, self->sck, self->mosi, self->miso);
     luat_spi_t spi_conf = {
-        .id = self->spi,
+        .id = self->id,
         .CPHA = self->phase,
         .CPOL = self->polarity,
         .dataw = self->bits,
@@ -246,36 +251,12 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         .master = 1,
         .mode = 1,             // mode is set to 1, full duplex 
         .bandrate = self->baudrate,
-        .cs = self->spi == 0 ? MICROPY_HW_SPI0_CS : MICROPY_HW_SPI1_CS
+        .cs = self->id == 0 ? (self->cs == 0 ? MICROPY_HW_SPI0_CS_0 : MICROPY_HW_SPI0_CS_1) : (self->cs == 0 ? MICROPY_HW_SPI1_CS_0 : MICROPY_HW_SPI1_CS_1)
     };
 
     if(luat_spi_setup(&spi_conf) != 0) {
         mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("invalid configuration"));
     }
-
-    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
-    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
-
-    /*GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_12, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_13, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 1, 1, 0);
-    GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 1, 1, 0);
-    */
-
-    /*luat_gpio_cfg_t cfg12 = {0};
-    cfg12.pin = HAL_GPIO_12;
-    cfg12.mode = LUAT_GPIO_OUTPUT;
-    cfg12.output_level = 0;
-    cfg12.alt_fun = 1;
-    luat_gpio_open(&cfg12);
-
-    luat_gpio_cfg_t cfg13 = {0};
-    cfg13.pin = HAL_GPIO_13;
-    cfg13.mode = LUAT_GPIO_OUTPUT;
-    cfg13.output_level = 0;
-    cfg13.alt_fun = 1;
-    luat_gpio_open(&cfg13);        
-    */
 
     self->state = MACHINE_HW_SPI_STATE_INIT;
 }
@@ -314,19 +295,11 @@ static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
         mp_raise_ValueError(MP_ERROR_TEXT("buffer too short"));
     }
 
-    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
-    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
-
     int res;
-    res = luat_spi_transfer(self->spi, (const char*)src, len, (const char*)dest, len);
-    //res = luat_spi_send(self->spi, (const char*)src, len);
-    //res = luat_spi_recv(self->spi, (const char*)dest, len);
-
-    //LUAT_DEBUG_PRINT("Pad 27(SSN,  gpio12) value: %d", *(uint *)(27 * 4 + 0x4d060000));  // 0x110
-    //LUAT_DEBUG_PRINT("Pad 28(MOSI, gpio13) value: %d", *(uint *)(28 * 4 + 0x4d060000));  // 0x110 = 1 - (AltFunctionPull = no, isInputBuffer = no), 1 - AltFunc1
+    res = luat_spi_transfer(self->id, (const char*)src, len, (const char*)dest, len);
 
     if(res != len) {
-        mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI%d received %d/%d bytes", self->spi, res, len);
+        mp_warning(MP_WARN_CAT(RuntimeWarning), "SPI%d received %d/%d bytes", self->id, res, len);
     }
 }
 
@@ -335,10 +308,10 @@ static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
 
 static void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SPI(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, cs=%d, sck=%d, mosi=%d, miso=%d)",
-        self->spi, self->baudrate, self->polarity,
+    mp_printf(print, "SPI%d_CS%d(baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
+        self->id, self->cs, self->baudrate, self->polarity,
         self->phase, self->bits, self->firstbit,
-        self->spi == 0 ? MICROPY_HW_SPI0_CS : MICROPY_HW_SPI1_CS, self->sck, self->mosi, self->miso);
+        self->sck, self->mosi, self->miso);
 }
 
 // Set constant values, depending of SPI id
@@ -356,7 +329,7 @@ static void machine_hw_spi_init(mp_obj_base_t *self_in, size_t n_args, const mp_
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(spi_allowed_args) - 1,
         spi_allowed_args + 1, args + 1);
 
-    machine_hw_spi_argcheck(args, &machine_hw_spi_default_pins[self->spi]);
+    machine_hw_spi_argcheck(args, &machine_hw_spi_default_pins[self->id]);
     machine_hw_spi_init_internal(self, args);
 }
 
@@ -382,7 +355,7 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
     }
 
     machine_hw_spi_obj_t *self = &machine_hw_spi_obj[spi_id];
-    self->spi = spi_id;
+    self->id = spi_id;
 
     self->base.type = &machine_spi_type;
 
@@ -414,13 +387,13 @@ from machine import SPI
 s0 = SPI(0)
 
 from machine import SPI
-s0 = SPI(0, phase=1, polarity=1, baudrate=10000000)
+s0 = SPI(0, phase=1, polarity=1, baudrate=5000000)
 s0.read(2, 0x31 | 0xC0)
 response: b'\x00\x14'
 s0.deinit()
 
 from machine import SPI
-s1 = SPI(1, phase=1, polarity=1, baudrate=10000000)
+s1 = SPI(1, phase=1, polarity=1, baudrate=5000000)
 s1.read(2, 0x31 | 0xC0)
 s1.deinit()
 */

@@ -25,13 +25,21 @@ Keywords: **GPS**
 
 Modules: `gps`
 
-[example_21_dht.py](example_20_gps.py)
+[example_21_dht.py](example_21_dht.py)
 
 Displays temperature using DHT temperature sensor.
 
 Keywords: **DHT**
 
 Modules: `dht`
+
+[example_22_cc1101.py](example_22_cc1101.py)
+
+RF scanner based on CC1101 RF module.
+
+Keywords: **CC1101, Scanner**
+
+Modules: `cc1101`
 
 [example_30_network.py](example_30_network.py)
 

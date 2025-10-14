@@ -34,7 +34,6 @@
 #include "py/mphal.h"
 #include "py/stream.h"
 #include "extmod/vfs.h"
-#include "modmachine.h"
 
 #include "luat_flash.h"
 #include "luat_debug.h"

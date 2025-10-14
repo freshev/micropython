@@ -69,6 +69,10 @@ option("11 Include DHT module")
     set_description("Include DHT module")
     set_default(false)
     set_showmenu(true)
+option("12 Include CC1101 module")
+    set_description("Include CC1101 module")
+    set_default(false)
+    set_showmenu(true)
 
 option("1 RS485_UART1_USE")
     set_description("UART1 connected to RS-485")
@@ -551,6 +555,7 @@ if get_config("08 Acknowledge SMS on reset") then table.insert(DEFINES, "SMSRESE
 if get_config("09 Configiration by SMS") then table.insert(DEFINES, "SMSCONFIG") end
 if get_config("10 Dump and halt on core exception") then table.insert(DEFINES, "HALTONEXC") end
 if get_config("11 Include DHT module") then table.insert(DEFINES, "CONFIG_DHT_MODULE") end
+if get_config("12 Include CC1101 module") then table.insert(DEFINES, "CONFIG_CC1101_MODULE") end
 
 if get_config("1 Use FOTA routines") then table.insert(DEFINES, "FOTA_USE") end
 if get_config("2 FOTA URL") then 
@@ -766,7 +771,7 @@ CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
 SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", 
-          "modgps.c", "moddht.c", "machine_rtc.c", "machine_hw_spi.c" }
+          "modgps.c", "moddht.c", "machine_rtc.c", "machine_hw_spi.c", "modcc1101.c" }
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 

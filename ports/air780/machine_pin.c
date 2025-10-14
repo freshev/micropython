@@ -36,11 +36,22 @@
 #include "extmod/modmachine.h"
 #include "extmod/virtpin.h"
 #include "mphalport.h"
-#include "modmachine.h"
 
 #include "platform_define.h"
 #include "luat_gpio.h"
 #include "luat_debug.h"
+
+typedef struct _machine_pin_irq_obj_t {
+    mp_obj_base_t base;
+    uint8_t trigger;
+} machine_pin_irq_obj_t;
+
+typedef struct _machine_pin_obj_t {
+    mp_obj_base_t base;
+    uint8_t pin;
+    uint8_t phys;
+    machine_pin_irq_obj_t irq;
+} machine_pin_obj_t;
 
 const mp_obj_type_t machine_pin_irq_type;
 const mp_obj_type_t machine_pin_type;

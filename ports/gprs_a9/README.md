@@ -115,6 +115,7 @@ blink.blink(1)
 - [x] Calls: `cellular`
 - [x] CC1101: `CC1101`
 - [x] DHT: `DHT`
+- [x] CC1101: `CC1101`
 
 ## Examples
 
@@ -200,12 +201,10 @@ The purpose of this module is to have an access to high-level networking (SMS, G
 TCP/IP stack over GPRS based on lwIP.
 See [micropython docs](https://docs.micropython.org/en/latest/library/usocket.html) for details.
 
-### `ssl` ###
-
-*Alias: `ussl`*
+### `tls` ###
 
 TCP/IP stack over GPRS based on AXTLS .
-See [micropython docs](https://docs.micropython.org/en/latest/library/ussl.html) for details.
+See [micropython docs](https://docs.micropython.org/en/latest/library/ssl.html) for details.
 
 
 ### `gps` ###
@@ -236,8 +235,6 @@ This is only available in the A9G module where GPS is a separate chip connected 
   For more info (units, etc) please consult the [minmea](https://github.com/kosma/minmea) project.
 
 ### `machine`
-
-Provides power-related functions: power, watchdogs.
 
 #### Constants
 
@@ -282,7 +279,7 @@ Originally written by Michael [www.elechouse.com](www.elechouse.com)
 Version: November 12, 2010 for Arduino platform.
 
 #### Methods
-* `cc1101(id=1, cs=0, baudrate=10000000, dma_delay=2, debug=False, debug_hst=False)`: initialize CC1101 module.
+* `cc1101(id=1, cs=0, baudrate=10000000, dma_delay=4, debug=False, debug_hst=True)`: initialize CC1101 module.
   * `id`: SPI ID. Can be 1 or 2;
   * `cs`: SPI CS. Can be 0 or 1;
   * `baudrate`: SPI frequency. Less or equal to 11000000. Default 10000000;

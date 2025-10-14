@@ -28,7 +28,6 @@
 // This file is never compiled standalone, it's included directly from
 // extmod/machine_wdt.c via MICROPY_PY_MACHINE_WDT_INCLUDEFILE.
 
-#include "modmachine.h"
 #include "luat_wdt.h"
 
 // https://doc.openluat.com/wiki/37?wiki_page_id=4586

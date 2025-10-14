@@ -33,8 +33,6 @@
 
 #include "luat_gpio.h"
 #include "luat_debug.h"
-
-#include "modmachine.h"
 #include "mphalport.h"
 
 #ifdef CONFIG_DHT_MODULE
@@ -149,7 +147,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             case DHT21:
                 // data sheet says "at least 1ms"
                 // luat_rtos_task_sleep(1); 
-                luat_timer_us_delay(1100);
+                mp_hal_delay_us_fast(1100);
                 break;
 
             case DHT11:
