@@ -147,7 +147,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
             case DHT21:
                 // data sheet says "at least 1ms"
                 // luat_rtos_task_sleep(1); 
-                mp_hal_delay_us_fast(1100);
+                mp_hal_delay_us(1100);
                 break;
 
             case DHT11:
@@ -165,7 +165,7 @@ static uint8_t moddht_read(dht_obj_t *self, uint8_t force) {
         luat_gpio_mode(self->_pin, LUAT_GPIO_INPUT, LUAT_GPIO_DEFAULT, LUAT_GPIO_HIGH);
 
         // Delay a moment to let sensor pull data line low.
-        mp_hal_delay_us_fast(self->pullTime);
+        mp_hal_delay_us(self->pullTime);
 
         // uint32_t status = MICROPY_BEGIN_ATOMIC_SECTION();
         // Now start reading the data line to get the value from the DHT sensor.

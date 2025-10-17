@@ -101,11 +101,14 @@ typedef struct _machine_hw_spi_obj_t {
 extern int32_t soc_unilog_callback(void *pdata, void *param);
 bool soc_init_unilog_uart(uint8_t port, uint32_t baudrate, bool startRecv)
 {
+    
 	soc_get_unilog_br(&baudrate);
-	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 3, 0, 0);  // UART0_RXD -> GPIO16
-	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_17, 0), 3, 0, 0);  // UART0_TXD -> GPIO17
+	// this should be rewritten if using SPI1_CS1 (HAL_GPIO_16)
+	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 3, 0, 0); // UART0_RXD -> GPIO16
 	GPIO_PullConfig(GPIO_ToPadEC618(HAL_GPIO_16, 0), 1, 1);
-	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 0, 0, 0);	//The original UART0 TXRX changes back to GPIO function
+	//
+	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_17, 0), 3, 0, 0);   // UART0_TXD -> GPIO17
+	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_14, 0), 0, 0, 0);	 //The original UART0 TXRX changes back to GPIO function
 	GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_15, 0), 0, 0, 0);
 	Uart_BaseInitEx(port, baudrate, 0, 256, UART_DATA_BIT8, UART_PARITY_NONE, UART_STOP_BIT1, soc_unilog_callback);
 	return true;
@@ -156,10 +159,13 @@ static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t *self) {
     if(luat_spi_close(self->id) != 0) {
        mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("invalid configuration"));
     }
+    // SPI0_SSn1 and SPI1_SSn1 currently not supported by luatos SDK
+    // dead code
     if(self->cs == 1) {
     	if(self->id == 0) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_3, 0), 0, 0, 0);
     	if(self->id == 1) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 0, 0, 0);
   	}
+  	// end of dead code
 }
 
 static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_t args[]) {
@@ -174,6 +180,7 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         self->cs = args[ARG_cs].u_int;
         changed = true;
     }
+    if(self->cs != 0) mp_raise_ValueError(MP_ERROR_TEXT("CS value not supported"));
 
     if (args[ARG_baudrate].u_int != -1) {
         uint32_t baudrate = args[ARG_baudrate].u_int;
@@ -236,10 +243,13 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         return; // no changes
     }
 
+    // SPI0_SSn1 and SPI1_SSn1 currently not supported by luatos SDK
+    // dead code
     if(self->cs == 1) {
-    	if(self->id == 0) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_3, 0), 4, 0, 0);
-    	if(self->id == 1) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 4, 0, 0);
+    	if(self->id == 0) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_3, 0), 4, 1, 0);
+    	if(self->id == 1) GPIO_IomuxEC618(GPIO_ToPadEC618(HAL_GPIO_16, 0), 4, 1, 0);
   	}
+  	// end of dead code
 
     // LUAT_DEBUG_PRINT("SPI id=%d, cs=%d, CPHA=%d, CPOL=%d, dataw=%d, baudrate=%d, sck=%d, mosi=%d, miso=%d", self->id, self->cs, self->phase, self->polarity, self->bits, self->baudrate, self->sck, self->mosi, self->miso);
     luat_spi_t spi_conf = {
@@ -393,7 +403,7 @@ response: b'\x00\x14'
 s0.deinit()
 
 from machine import SPI
-s1 = SPI(1, phase=1, polarity=1, baudrate=5000000)
+s1 = SPI(0, phase=1, polarity=1, baudrate=5000000)
 s1.read(2, 0x31 | 0xC0)
 s1.deinit()
 */

@@ -113,17 +113,15 @@ void mp_hal_delay_ms(uint32_t ms) {
 }
 
 void mp_hal_delay_us(uint32_t us) {
-    uint64_t start = luat_mcu_ticks() / luat_mcu_us_period();
-    while (((uint64_t)luat_mcu_ticks() / luat_mcu_us_period() - start) < us) {
+    // Attention: luat_mcu_tick64() is very unaccurate, so use luat_timer_us_delay()
+    /*uint64_t start = luat_mcu_tick64() / luat_mcu_us_period();
+    while (((uint64_t)luat_mcu_tick64() / luat_mcu_us_period() - start) < us) {
         MICROPY_EVENT_POLL_HOOK
-    }
+    }*/
+    luat_timer_us_delay(us);
 }
 
 void mp_hal_delay_us_fast(uint32_t us) {
-    /*uint64_t start = luat_mcu_ticks() / luat_mcu_us_period();
-    while (((uint64_t)luat_mcu_ticks() / luat_mcu_us_period() - start) < us) {
-        asm ("nop");        
-    }*/
     luat_timer_us_delay(us);
 }
 

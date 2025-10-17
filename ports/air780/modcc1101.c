@@ -1151,7 +1151,7 @@ static mp_obj_t cc1101_check_receive_flag(mp_obj_t self_in) {
     if (val) {
         while (val && counter < timeout) {
            val = _cc1101_digital_read_gdo0(self, 1);
-           mp_hal_delay_us_fast(1);
+           mp_hal_delay_us(1);
            counter++;
         }
         self->gdo0_state = val;
@@ -1712,7 +1712,7 @@ void _cc1101_split_MDMCFG4(cc1101_obj_t * self) {
 uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self, uint8_t need_debug) {
     int rbyte =_cc1101_spi_read_status(self, CC1101_PKTSTATUS, 0) & 0x01;
     if(need_debug) _cc1101_debug(self, "CC1101 read_gdo0() -> 0x%02X (%lu)", rbyte, clock());
-    mp_hal_delay_us(5); // Do not touch !!!
+    mp_hal_delay_us(5); 
     return rbyte;
 }
 
