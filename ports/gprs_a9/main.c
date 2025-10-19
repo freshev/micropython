@@ -152,7 +152,10 @@ soft_reset:
 #if MICROPY_ENABLE_GC
     gc_sweep_all();
 #endif
+
+    modmachine_deinit0();
     mp_deinit();
+
     OS_Free(heap);
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
     mp_hal_delay_us(10000); // allow UART to flush output

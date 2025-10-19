@@ -153,10 +153,10 @@ typedef struct _machine_hw_spi_obj_t {
         MACHINE_HW_SPI_STATE_INIT,
         MACHINE_HW_SPI_STATE_DEINIT
     } state;
+    uint8_t mode;
     uint8_t dma_delay;
     uint8_t debug;
     uint8_t debug_hst;
-    uint8_t mode;
 } machine_hw_spi_obj_t;
 
 typedef struct _cc1101_obj_t {
@@ -197,6 +197,9 @@ typedef struct _cc1101_obj_t {
     uint8_t clb2[2];
     uint8_t clb3[2];
     uint8_t clb4[2];
+
+    uint8_t mode;
+    uint8_t dma_delay;
     uint8_t debug;
     uint8_t debug_hst;
 
@@ -297,7 +300,7 @@ extern const mp_obj_type_t cc1101_type;
 extern mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
-    enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_dma_delay, ARG_debug, ARG_debug_hst};
+    enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_mode, ARG_dma_delay, ARG_debug, ARG_debug_hst};
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_id, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = SPI1 } },
         { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
@@ -309,7 +312,8 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
+        { MP_QSTR_mode,     MP_ARG_INT, {.u_int = 1 }},
+        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 25 } },
         { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
     };
@@ -353,6 +357,18 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     self->gdo0_state = 0;
 
+    switch (args[ARG_mode].u_int) {
+        case 0: self->mode = 0; break;
+        case 1: self->mode = 1; break;
+        default: mp_raise_ValueError("Unknown mode argument"); return mp_const_none;
+    }
+
+    if (args[ARG_dma_delay].u_int < 2 || args[ARG_dma_delay].u_int > 100000) {
+    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 2 and 100000"));
+    } else {
+    	self->dma_delay = args[ARG_dma_delay].u_int;
+  	}
+
     switch (args[ARG_debug].u_int) {
         case 0: self->debug = 0; break;
         case 1: self->debug = 1; break;
@@ -363,6 +379,8 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         case 1: self->debug_hst = 1; break;
         default: mp_raise_ValueError("Unknown debug_hst argument"); return mp_const_none;
     }
+
+    // Trace(1, "CC1101: id:%d, cs:%d, br: %d, mode: %d, dma_delay: %d", args[ARG_id].u_int, args[ARG_cs].u_int, args[ARG_baudrate].u_int, args[ARG_mode].u_int, args[ARG_dma_delay].u_int);
 
     mp_obj_t spi_args[] = {
         mp_obj_new_int(args[ARG_id].u_int),
@@ -383,10 +401,16 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         mp_obj_new_int(args[ARG_mosi].u_int),
         MP_OBJ_NEW_QSTR(MP_QSTR_miso),
         mp_obj_new_int(args[ARG_miso].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_mode),
+        mp_obj_new_int(args[ARG_mode].u_int),
         MP_OBJ_NEW_QSTR(MP_QSTR_dma_delay),
         mp_obj_new_int(args[ARG_dma_delay].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_debug),
+        mp_obj_new_int(args[ARG_debug].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_debug_hst),
+        mp_obj_new_int(args[ARG_debug_hst].u_int),
     };
-    self->spi = MP_OBJ_TO_PTR(machine_hw_spi_make_new(&machine_spi_type, 3, 8, spi_args));
+    self->spi = MP_OBJ_TO_PTR(machine_hw_spi_make_new(&machine_spi_type, 3, 11, spi_args));
 
     _cc1101_debug(self, "CC1101 object created");
     return MP_OBJ_FROM_PTR(self);
@@ -1728,7 +1752,7 @@ uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self, uint8_t need_debug) {
 }
 
 void _cc1101_debug(cc1101_obj_t * self, char * message, ...) {
-    char mess[1024];
+    char mess[256];
     if(self->debug == 1 || self->debug_hst == 1) {
         memset(mess, 0, sizeof(mess));
         va_list args;
@@ -1852,3 +1876,13 @@ const mp_obj_module_t cc1101_module = {
 MP_REGISTER_MODULE(MP_QSTR_cc1101, cc1101_module);
 
 #endif
+
+/*
+Test cases
+import cc1101
+c1 = cc1101.cc1101(1)
+c1 = cc1101.cc1101(1, baudrate=10000000, dma_delay=25)
+c1.get_cc1101()
+c1.set_sres()
+c1.ba2hex(c1.spi_read_burst_reg(0x0, 0x30))
+*/

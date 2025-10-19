@@ -1717,7 +1717,7 @@ uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self, uint8_t need_debug) {
 }
 
 void _cc1101_debug(cc1101_obj_t * self, char * message, ...) {
-    char mess[1024];
+    char mess[256];
     if(self->debug == 1 || self->debug_hst == 1) {
         memset(mess, 0, sizeof(mess));
         va_list args;
@@ -1843,11 +1843,10 @@ MP_REGISTER_MODULE(MP_QSTR_cc1101, cc1101_module);
 #endif
 
 /*
-
+Test cases
 import cc1101
 c1 = cc1101.cc1101(0)
 c1.get_cc1101()
 c1.set_sres()
-c1.spi_read_burst_reg(0x0, 30)
-
+c1.ba2hex(c1.spi_read_burst_reg(0x0, 0x30))
 */

@@ -57,10 +57,10 @@ typedef struct _machine_hw_spi_obj_t {
         MACHINE_HW_SPI_STATE_INIT,
         MACHINE_HW_SPI_STATE_DEINIT
     } state;
+    uint8_t mode;
     uint8_t dma_delay;
     uint8_t debug;
     uint8_t debug_hst;
-    uint8_t mode;
 } machine_hw_spi_obj_t;
 
 // ----------
@@ -87,7 +87,7 @@ const char * SPI_NOT_INITED = "SPI NOT inited";
 const char * SPI_MALLOC_FAILED = "SPI memory allocation failed";
 
 // Common arguments for init() and make new
-enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_cs, ARG_dma_delay, ARG_debug, ARG_debug_hst };
+enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_mode, ARG_dma_delay, ARG_debug, ARG_debug_hst };
 static const mp_arg_t spi_allowed_args[] = {
     { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = -1} },
     { MP_QSTR_cs,       MP_ARG_INT, {.u_int = 0 } },
@@ -99,7 +99,8 @@ static const mp_arg_t spi_allowed_args[] = {
     { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },    
-	{ MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 4 } },
+    { MP_QSTR_mode,     MP_ARG_INT, {.u_int = 1 } },
+	{ MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 25 } },
     { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
     { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
 };
@@ -107,7 +108,7 @@ static const mp_arg_t spi_allowed_args[] = {
 // ---------
 // Internals
 // ---------
-static const int8_t machine_hw_spi_default_pins[SPI_CS_MAX * 2][3] = {
+static const int8_t machine_hw_spi_default_pins[SPI_CS_MAX * 2][5] = {
     { 8, 12, 13 },
     { 8, 12, 13 },
     { 0, 3, 4 },
@@ -115,7 +116,7 @@ static const int8_t machine_hw_spi_default_pins[SPI_CS_MAX * 2][3] = {
 };
 
 void _spi_debug(machine_hw_spi_obj_t * self, char * message, ...) {
-    char mess[1024];
+    char mess[256];
     if(self->debug == 1 || self->debug_hst == 1) {
         memset(mess, 0, sizeof(mess));
         va_list args;
@@ -133,7 +134,7 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     SPI_ID_t id = self->id;
 
-    if(self->state == MACHINE_HW_SPI_STATE_INIT) {
+    if (self->state == MACHINE_HW_SPI_STATE_DEINIT) {
         Trace(1, SPI_NOT_INITED);
         mp_raise_SPIError(SPI_NOT_INITED);
         return;
@@ -160,6 +161,7 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
        }
        newrb = 1;
     }
+    // Trace(1, "SPI: transfer mode %d, dma_delay: %d", self->mode, self->dma_delay);
 
     // SPI direct mode
     if(self->mode == 0) {
@@ -214,6 +216,8 @@ uint32_t _get_SPI_FREQ(mp_int_t _frequency) {
 }
 
 static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
+    // Trace(1, "SPI: self->id = %d", self->id);
+    // Trace(1, "SPI: self->cs = %d", self->cs);
 	if(!SPI_Close(self->id)) mp_raise_SPIError("SPI deinit failure");
 }
 
@@ -278,6 +282,11 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         changed = true;
     }    
 
+    if (args[ARG_mode].u_int != -1 && args[ARG_mode].u_int != self->mode) {
+        self->mode = args[ARG_mode].u_int;
+        changed = true;
+    }
+
     if (args[ARG_dma_delay].u_int != -1 && args[ARG_dma_delay].u_int != self->dma_delay) {
         self->dma_delay = args[ARG_dma_delay].u_int;
         changed = true;
@@ -302,7 +311,6 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         return; // no changes
     }
 
-    
     if(self->mode == 0) {
         SPI_Config_t config = {
             .cs = self->cs,
@@ -384,7 +392,7 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
     if ((spi_id == SPI1 || spi_id == SPI2) && (spi_cs == 0 || spi_cs == 1)) {
         machine_hw_spi_argcheck(args, machine_hw_spi_default_pins[(spi_id - 1) * 2 + spi_cs]);
     } else {
-        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist"), spi_id);
+        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI%d_CS%d doesn't exist"), spi_id, spi_cs);
     }
 
     // Replace -1 non-pin args with default values
@@ -394,9 +402,12 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
             args[i].u_int = defaults[i - ARG_baudrate];
         }
     }
+    if (args[ARG_dma_delay].u_int < 2 || args[ARG_dma_delay].u_int > 100000) {
+    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 2 and 100000"));
+    }
 
     machine_hw_spi_obj_t *self = &machine_hw_spi_obj[spi_id];
-    // self->host = spi_id;
+    self->id = spi_id;
 
     self->base.type = &machine_spi_type;
 
@@ -440,3 +451,20 @@ MP_DEFINE_CONST_OBJ_TYPE(
     protocol, &machine_hw_spi_p,
     locals_dict, &mp_machine_spi_locals_dict
     );
+
+/* 
+# Test cases
+from machine import SPI
+s1 = SPI(1)
+
+from machine import SPI
+s1 = SPI(1, phase=1, polarity=1, baudrate=5000000)
+s1.read(2, 0x31 | 0xC0)
+response: b'\x00\x14'
+s1.deinit()
+
+from machine import SPI
+s2 = SPI(2, phase=1, polarity=1, baudrate=5000000)
+s2.read(2, 0x31 | 0xC0)
+s2.deinit()
+*/
