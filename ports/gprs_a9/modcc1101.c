@@ -1769,13 +1769,11 @@ uint8_t _cc1101_map(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_m
   return (uint8_t)((x - in_min) * (out_max - out_min) / ((float)(in_max - in_min)) + out_min);
 }
 
-
 // -------
 // Locals
 // -------
 static const mp_rom_map_elem_t cc1101_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&cc1101_deinit_obj) },
-
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&cc1101_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_burst), MP_ROM_PTR(&cc1101_read_burst_obj) },
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&cc1101_write_obj) },

@@ -152,8 +152,6 @@ soft_reset:
 #if MICROPY_ENABLE_GC
     gc_sweep_all();
 #endif
-
-    modmachine_deinit0();
     mp_deinit();
 
     OS_Free(heap);
