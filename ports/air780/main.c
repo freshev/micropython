@@ -80,7 +80,7 @@ void* mp_allocate_heap(uint32_t* size) {
     void* ptr = NULL;
     int counter = 0;
     while (!ptr) {
-        // LUAT_DEBUG_PRINT("try %d heap size", h_size);
+        // LUAT_DEBUG_PRINT("Try %d heap size", h_size);
         if (h_size < MICROPY_HEAP_MIN_SIZE) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
         ptr = luat_heap_malloc(h_size);
         if (!ptr) {
@@ -101,7 +101,7 @@ void* mp_allocate_heap(uint32_t* size) {
 
     size[0] = h_size;
     if(counter == 0) LUAT_DEBUG_PRINT("MICROPY_HEAP_MAX_SIZE can be increased!");
-    LUAT_DEBUG_PRINT("finally: %d heap size", h_size);
+    LUAT_DEBUG_PRINT("Final heap size: %d ", h_size);
     return ptr;
 }
 
@@ -132,30 +132,30 @@ soft_reset:
     luat_uart_pre_setup(0, 1);
 
 
-    mp_init();           LUAT_DEBUG_PRINT("micropython inited");
-    modmachine_init0();  LUAT_DEBUG_PRINT("machine inited");
-    readline_init0();    LUAT_DEBUG_PRINT("readline inited");
-    modcellular_init0(); LUAT_DEBUG_PRINT("cellular inited");
+    mp_init();           // LUAT_DEBUG_PRINT("micropython inited");
+    modmachine_init0();  // LUAT_DEBUG_PRINT("machine inited");
+    readline_init0();    // LUAT_DEBUG_PRINT("readline inited");
+    modcellular_init0(); // LUAT_DEBUG_PRINT("cellular inited");
 #ifdef GPS_MODULE
-    modgps_init0(); LUAT_DEBUG_PRINT("GPS inited");
+    //modgps_init0(); LUAT_DEBUG_PRINT("GPS inited");
 #endif
 
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_));
     mp_obj_list_init(mp_sys_argv, 0);
-    LUAT_DEBUG_PRINT("sys path inited");
+    // LUAT_DEBUG_PRINT("sys path inited");
 
     // Startup scripts
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
 #ifdef MAINRUN
-        LUAT_DEBUG_PRINT("execute main.py");
+        // LUAT_DEBUG_PRINT("execute main.py");
         pyexec_file_if_exists("main.py");
 #endif
     }
-    LUAT_DEBUG_PRINT("start REPL");
+    // LUAT_DEBUG_PRINT("start REPL");
     while (1) {
         if (pyexec_mode_kind == PYEXEC_MODE_RAW_REPL) {
             if (pyexec_raw_repl() != 0) break;
@@ -174,7 +174,7 @@ soft_reset:
     luat_heap_free(mp_task_heap);
     mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
     mp_hal_delay_ms(10);// allow UART to flush output
-    LUAT_DEBUG_PRINT("soft reset");
+    // LUAT_DEBUG_PRINT("soft reset");
 
     goto soft_reset;
 }

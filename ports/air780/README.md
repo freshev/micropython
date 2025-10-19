@@ -131,7 +131,7 @@ blink.blink(1)
 - [x] PWM: `machine.PWM`
 - [x] UART: `machine.UART` 
 - [x] SPI: `machine.SPI`
-- [ ] I2C: `machine.I2C` (NOT TESTED)
+- [x] I2C: `machine.I2C`
 - [x] RTC: `machine.RTC` 
 - [x] 4G networking (IMEI, ICCID, SMS, ...): `cellular`
 - [x] GPS: `gps`

@@ -80,22 +80,6 @@ typedef struct _machine_hw_spi_obj_t {
 #define MICROPY_HW_SPI1_CS_0 12
 #define MICROPY_HW_SPI1_CS_1 16
 
-// Number of available hardware SPI peripherals.
-#if defined(RTE_SPI0) && defined(RTE_SPI1)
-#define MICROPY_HW_SPI_MAX (2)
-#endif
-#if (defined(RTE_SPI0) && !defined(RTE_SPI1)) || (defined(RTE_SPI1) && !defined(RTE_SPI0))
-#define MICROPY_HW_SPI_MAX (1)
-#endif
-#if !defined(RTE_SPI0) && !defined(RTE_SPI1)
-#define MICROPY_HW_SPI_MAX (0)
-#endif
-
-
-#define MP_HW_SPI_MAX_XFER_BYTES (4092)
-#define MP_HW_SPI_MAX_XFER_BITS (MP_HW_SPI_MAX_XFER_BYTES * 8) // Has to be an even multiple of 8
-
-
 #ifdef RTE_SPI1
 /** If you want to maintain the unilog function and use SPI1, you need to multiplex the IO of UART0 to other places. See the following operation.*/
 extern int32_t soc_unilog_callback(void *pdata, void *param);
@@ -128,13 +112,9 @@ typedef struct _machine_hw_spi_default_pins_t {
 } machine_hw_spi_default_pins_t;
 
 // Default pin mappings for the hardware SPI instances
-static const machine_hw_spi_default_pins_t machine_hw_spi_default_pins[MICROPY_HW_SPI_MAX] = {
-    #ifdef RTE_SPI0
+static const machine_hw_spi_default_pins_t machine_hw_spi_default_pins[SPI_MAX] = {
     { .pins = { .sck = MICROPY_HW_SPI0_SCLK, .mosi = MICROPY_HW_SPI0_MOSI, .miso = MICROPY_HW_SPI0_MISO }},
-    #endif
-    #ifdef RTE_SPI1
     { .pins = { .sck = MICROPY_HW_SPI1_SCLK, .mosi = MICROPY_HW_SPI1_MOSI, .miso = MICROPY_HW_SPI1_MISO }},
-    #endif
 };
 
 // Common arguments for init() and make new
@@ -153,7 +133,7 @@ static const mp_arg_t spi_allowed_args[] = {
 };
 
 // Static objects mapping to SPI0 & SPI1 hardware peripherals.
-static machine_hw_spi_obj_t machine_hw_spi_obj[MICROPY_HW_SPI_MAX];
+static machine_hw_spi_obj_t machine_hw_spi_obj[SPI_MAX];
 
 static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t *self) {
     if(luat_spi_close(self->id) != 0) {
@@ -350,10 +330,16 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(spi_allowed_args), spi_allowed_args, args);
 
     const mp_int_t spi_id = args[ARG_id].u_int;
-    if (spi_id >= 0 && spi_id < MICROPY_HW_SPI_MAX) {
+    if (spi_id >= 0 && spi_id < SPI_MAX) {
         machine_hw_spi_argcheck(args, &machine_hw_spi_default_pins[spi_id]);
+        #if !defined(RTE_SPI0)
+        if(spi_id == 0) mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist (not configured)"), spi_id);
+        #endif
+        #if !defined(RTE_SPI1)
+        if(spi_id == 1) mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist (not configured)"), spi_id);
+        #endif
     } else {
-        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist"), spi_id);
+        mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("SPI(%d) doesn't exist (SoC unsupported)"), spi_id);
     }
     // Replace -1 non-pin args with default values
     //                                   baudrate, polarity, phase, bits, firstbit  

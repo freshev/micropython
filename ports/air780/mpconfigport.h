@@ -102,8 +102,8 @@
 #define MICROPY_PY_MACHINE_PWM_DUTY         (1)
 #define MICROPY_PY_MACHINE_PWM_INCLUDEFILE  "ports/air780/machine_pwm.c"
 
-//#define MICROPY_PY_MACHINE_I2C              (1)
-//#define MICROPY_PY_MACHINE_SOFTI2C          (1)
+#define MICROPY_PY_MACHINE_I2C              (1)
+#define MICROPY_PY_MACHINE_SOFTI2C          (0)
 
 #define MICROPY_PY_MACHINE_ADC              (1)
 #define MICROPY_PY_MACHINE_ADC_READ_UV      (1)
@@ -111,8 +111,6 @@
 
 #define MICROPY_PY_MACHINE_SPI              (1)
 #define MICROPY_PY_MACHINE_SOFTSPI          (0)
-//#define MICROPY_HW_SOFTSPI_MIN_DELAY        (0)
-//#define MICROPY_HW_SOFTSPI_MAX_BAUDRATE     (500000)
 
 #define MICROPY_PY_MACHINE_UART                         (1)
 #define MICROPY_PY_MACHINE_UART_INCLUDEFILE             "ports/air780/machine_uart.c"

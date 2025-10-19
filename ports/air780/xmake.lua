@@ -323,6 +323,7 @@ add_cxflags("-g3",
             "-Wno-missing-field-initializers",
             "-Wno-cast-function-type",
             "-Wno-discarded-qualifiers",
+            "-Wno-array-bounds", 
             --"-Wno-int-conversion",
             --"-Wno-switch",
             --"-Wno-incompatible-pointer-types",
@@ -771,7 +772,7 @@ CFLAGS = CFLAGS .. " -D" .. table.concat(DEFINES, " -D")
 CXXFLAGS = ""
 
 SRC_C = { "main.c", "gccollect.c", "mphalport.c", "modair.c", "help.c", "machine_pin.c", "modsocket.c", "modcellular.c", "httpclient.c", 
-          "modgps.c", "moddht.c", "machine_rtc.c", "machine_hw_spi.c", "modcc1101.c" }
+          "modgps.c", "moddht.c", "machine_rtc.c", "machine_hw_spi.c", "machine_i2c.c", "modcc1101.c" }
 
 SHARED_SRC_C = {    "netutils/netutils.c", 
                     "timeutils/timeutils.c", 
