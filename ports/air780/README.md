@@ -311,7 +311,7 @@ Version: November 12, 2010 for Arduino platform.
 #### Methods
 * `cc1101(id=0, cs=0)`: initialize CC1101 module.
   * `id`: SPI ID. Can be 0 or 1;
-  * `cs`: SPI CS. Can be 0 or 1;
+  * `cs`: SPI CS. Can be 0;
   * `baudrate`: SPI frequency. Less or equal to 5000000. Default 4000000;
   * `dma_delay`: delay in us after writing and before reading SPI interface. Default 4us;
   * `debug`: print debug messages to MPY;
