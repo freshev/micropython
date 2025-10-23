@@ -1,5 +1,8 @@
 /*
+
  * This file is part of the MicroPython project, http://micropython.org/
+ *
+ * Development of the code in this file was sponsored by Microbric Pty Ltd
  *
  * The MIT License (MIT)
  *
@@ -25,72 +28,22 @@
  */
 
 #include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-
+#include "time.h"
+#include "py/nlr.h"
+#include "py/obj.h"
 #include "py/runtime.h"
-#include "py/stream.h"
-#include "py/mphal.h"
-// #include "extmod/machine_spi.h"
-#include "modmachine.h"
+#include "py/binary.h"
 
-#include "driver/spi_master.h"
-//#include "components/esp_hw_support/include/esp_private/spi_share_hw_ctrl.h"
-#include "esp_private/spi_share_hw_ctrl.h"
-#include "hal/spi_hal.h"
-#include "driver/gpio.h"
-#include "soc/gpio_sig_map.h"
-#include "soc/spi_pins.h"
+#include "extmod/modmachine.h"
+#include "esp_log.h"
 
-// SPI mappings by device, naming used by IDF old/new
-// upython   | ESP32     | ESP32S2   | ESP32S3 | ESP32C3
-// ----------+-----------+-----------+---------+---------
-// SPI(id=1) | HSPI/SPI2 | FSPI/SPI2 | SPI2    | SPI2
-// SPI(id=2) | VSPI/SPI3 | HSPI/SPI3 | SPI3    | err
-
-// Number of available hardware SPI peripherals.
-#if SOC_SPI_PERIPH_NUM > 2
-#define MICROPY_HW_SPI_MAX (2)
-#else
-#define MICROPY_HW_SPI_MAX (1)
-#endif
-
-// Default pins for SPI(id=1) aka IDF SPI2, can be overridden by a board
-#ifndef MICROPY_HW_SPI1_SCK
-// Use IO_MUX pins by default.
-// If SPI lines are routed to other pins through GPIO matrix
-// routing adds some delay and lower limit applies to SPI clk freq
-#define MICROPY_HW_SPI1_SCK SPI2_IOMUX_PIN_NUM_CLK // pin 12
-#define MICROPY_HW_SPI1_CS   SPI2_IOMUX_PIN_NUM_CS  // pin 10
-#define MICROPY_HW_SPI1_MOSI SPI2_IOMUX_PIN_NUM_MOSI // pin 11
-#define MICROPY_HW_SPI1_MISO SPI2_IOMUX_PIN_NUM_MISO // pin 13
-#endif
-
-// Default pins for SPI(id=2) aka IDF SPI3, can be overridden by a board
-#ifndef MICROPY_HW_SPI2_SCK
-#if CONFIG_IDF_TARGET_ESP32
-// ESP32 has IO_MUX pins for VSPI/SPI3 lines, use them as defaults
-#define MICROPY_HW_SPI2_SCK SPI3_IOMUX_PIN_NUM_CLK      // pin 18
-#define MICROPY_HW_SPI2_CS  SPI3_IOMUX_PIN_NUM_CS       // pin 5
-#define MICROPY_HW_SPI2_MOSI SPI3_IOMUX_PIN_NUM_MOSI    // pin 23
-#define MICROPY_HW_SPI2_MISO SPI3_IOMUX_PIN_NUM_MISO    // pin 19
-#elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
-// ESP32S2 and S3 uses GPIO matrix for SPI3 pins, no IO_MUX possible
-// Set defaults to the pins used by SPI2 in Octal mode
-#define MICROPY_HW_SPI2_SCK (36)
-#define MICROPY_HW_SPI2_MOSI (35)
-#define MICROPY_HW_SPI2_MISO (37)
-#endif
-#endif
-
-#define MP_HW_SPI_MAX_XFER_BYTES (4092)
-#define MP_HW_SPI_MAX_XFER_BITS (MP_HW_SPI_MAX_XFER_BYTES * 8) // Has to be an even multiple of 8
-
+//#ifdef CONFIG_CC1101_MODULE
 
 #define   WRITE_BURST       0x40 // write burst mask
 #define   READ_SINGLE       0x80 // read single mask
 #define   READ_BURST        0xC0 // read burst mask
-#define   BYTES_IN_RXFIFO   0x7F // byte number in RXfifo
+#define   BYTES_IN_RXFIFO   0x7F // byte count mask in RXfifo
+#define   BYTES_IN_TXFIFO   0x7F // byte count mask in TXfifo
 #define   max_modul 6
 
 #define CC1101_IOCFG2       0x00 // GDO2 output pin configuration
@@ -178,28 +131,30 @@
 #define CC1101_TXFIFO       0x3F
 #define CC1101_RXFIFO       0x3F
 
-
-// ------------------
-// CC1101
-// ------------------
-typedef struct _cc1101_obj_t {
+typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
-    spi_host_device_t host;
-    uint32_t freq;
+    int id;
+    int cs;
+    uint32_t baudrate;
     uint8_t polarity;
     uint8_t phase;
     uint8_t bits;
     uint8_t firstbit;
     int8_t sck;
-    int8_t csn;
     int8_t mosi;
     int8_t miso;
-    spi_device_handle_t spi;
     enum {
-        cc1101_STATE_NONE,
-        cc1101_STATE_INIT,
-        cc1101_STATE_DEINIT
+        MACHINE_HW_SPI_STATE_NONE,
+        MACHINE_HW_SPI_STATE_INIT,
+        MACHINE_HW_SPI_STATE_DEINIT
     } state;
+} machine_hw_spi_obj_t;
+
+
+typedef struct _cc1101_obj_t {
+    mp_obj_base_t base;
+    machine_hw_spi_obj_t *spi;
+    uint8_t gdo0_state;
 
     float MHz;
     int32_t power; // dBm
@@ -235,11 +190,9 @@ typedef struct _cc1101_obj_t {
     uint8_t clb3[2];
     uint8_t clb4[2];
     uint8_t debug;
+    uint8_t debug_hst;
 
 } cc1101_obj_t;
-
-// singleton CC1101 objects
-static cc1101_obj_t *cc1101_obj[2] = {NULL, NULL};
 
 uint8_t P_INIT[8]       = {0x00,0xC0,0x00,0x00,0x00,0x00,0x00,0x00};
 // power, dBm              -30  -20  -15  -10  0    5    7    10
@@ -251,18 +204,13 @@ uint8_t P_TABLE_868[10] = {0x03,0x17,0x1D,0x26,0x37,0x50,0x86,0xCD,0xC5,0xC0}; /
 // power, dBm              -30  -20  -15  -10  -6   0    5    7    10   11
 uint8_t P_TABLE_915[10] = {0x03,0x0E,0x1E,0x27,0x38,0x8E,0x84,0xCC,0xC3,0xC0,};//900 - 928 MHz
 
-const char * CC1101_WRITE_FAILED = "SPI write failed";
-const char * CC1101_READ_FAILED = "SPI read failed";
-const char * CC1101_WRITE_BURST_FAILED = "SPI write burst failed";
-const char * CC1101_READ_BURST_FAILED = "SPI read burst failed";
-const char * CC1101_NOT_OPENED = "SPI NOT opened";
-const char * CC1101_MALLOC_FAILED = "SPI memory allocation failed";
+const char * CC1101_MALLOC_FAILED = "CC1101 memory allocation failed";
 
 // ----------
 // Exceptions
 // ----------
 
-MP_DEFINE_EXCEPTION(CC1101Error, OSError)
+MP_DEFINE_EXCEPTION(CC1101Error, Exception)
 
 NORETURN void mp_raise_CC1101Error(const char *msg) {
     mp_raise_msg(&mp_type_CC1101Error, MP_ERROR_TEXT(msg));
@@ -279,308 +227,27 @@ void _cc1101_split_PKTCTRL1(cc1101_obj_t * self);
 void _cc1101_split_MDMCFG1(cc1101_obj_t * self);
 void _cc1101_split_MDMCFG2(cc1101_obj_t * self);
 void _cc1101_split_MDMCFG4(cc1101_obj_t * self);
-uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self);
+uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self, uint8_t need_debug);
 void _cc1101_debug(cc1101_obj_t * self, char * message, ...);
 uint8_t _cc1101_map(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_min, uint32_t out_max);
 
-// --------------------
-// Internals
-// --------------------
+// ------------------------
+// SPI related functions
+// ------------------------
 
-static void _cc1101_deinit_internal(cc1101_obj_t *self) {
-    switch (spi_bus_remove_device(self->spi)) {
-        case ESP_ERR_INVALID_ARG:
-            mp_raise_CC1101Error("CC1101 invalid configuration (bus_remove_device)");
-            return;
+void _cc1101_transfer_addr_burst(cc1101_obj_t *self, uint8_t addr, uint8_t* wbuffer,  uint8_t* rbuffer, uint32_t length) {
+    machine_hw_spi_obj_t *spi = self->spi;
 
-        case ESP_ERR_INVALID_STATE:
-            mp_raise_CC1101Error("SPI already closed");
-            return;
-    }
-
-    switch (spi_bus_free(self->host)) {
-        case ESP_ERR_INVALID_ARG:
-            mp_raise_CC1101Error("CC1101 invalid configuration (bus_free)");
-            return;
-
-        case ESP_ERR_INVALID_STATE:
-            mp_raise_CC1101Error("CC1101 invalid state");
-            return;
-    }
-
-    int8_t pins[4] = {self->miso, self->csn, self->mosi, self->sck};
-
-    for (int i = 0; i < sizeof(pins); i++) {
-        if (pins[i] != -1) {
-            esp_rom_gpio_pad_select_gpio(pins[i]);
-            esp_rom_gpio_connect_out_signal(pins[i], SIG_GPIO_OUT_IDX, false, false);
-            gpio_set_direction(pins[i], GPIO_MODE_INPUT);
-        }
-    }
-
-    self->state = cc1101_STATE_DEINIT;
-}
-
-static void _cc1101_init_internal(
-    cc1101_obj_t *self,
-    int8_t host,
-    int32_t freq,
-    int8_t polarity,
-    int8_t phase,
-    int8_t bits,
-    int8_t firstbit,
-    int8_t sck,
-    int8_t csn,
-    int8_t mosi,
-    int8_t miso) {
-
-    // if we're not initialized, then we're
-    // implicitly 'changed', since this is the init routine
-    bool changed = self->state != cc1101_STATE_INIT;
-
-    esp_err_t ret;
-
-    cc1101_obj_t old_self = *self;
-
-    if (host != -1 && host != self->host) {
-        self->host = host;
-        changed = true;
-    }
-
-    if (freq != -1) {
-        // calculate the actual clock frequency that the SPI peripheral can produce
-        freq = spi_get_actual_clock(APB_CLK_FREQ, freq, 0);
-        if (freq != self->freq) {
-            self->freq = freq;
-            changed = true;
-        }
-    }
-
-    if (polarity != -1 && polarity != self->polarity) {
-        self->polarity = polarity;
-        changed = true;
-    }
-
-    if (phase != -1 && phase != self->phase) {
-        self->phase = phase;
-        changed = true;
-    }
-
-    if (bits != -1 && bits != self->bits) {
-        self->bits = bits;
-        changed = true;
-    }
-
-    if (firstbit != -1 && firstbit != self->firstbit) {
-        self->firstbit = firstbit;
-        changed = true;
-    }
-
-    if (sck != -2 && sck != self->sck) {
-        self->sck = sck;
-        changed = true;
-    }
-
-    if (csn != -1 && csn != self->csn) {
-        self->csn = csn;
-        changed = true;
-    }
-
-    if (mosi != -2 && mosi != self->mosi) {
-        self->mosi = mosi;
-        changed = true;
-    }
-
-    if (miso != -2 && miso != self->miso) {
-        self->miso = miso;
-        changed = true;
-    }
-
-    if (changed) {
-        if (self->state == cc1101_STATE_INIT) {
-            self->state = cc1101_STATE_DEINIT;
-            _cc1101_deinit_internal(&old_self);
-        }
-    } else {
-        return; // no changes
-    }
-
-    gpio_reset_pin(self->csn);
-    gpio_set_direction(self->csn, GPIO_MODE_OUTPUT);
-    gpio_set_level(self->csn, 1);
-
-
-    spi_bus_config_t buscfg = {
-        .miso_io_num = self->miso,
-        .mosi_io_num = self->mosi,
-        .sclk_io_num = self->sck,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1
-    };
-
-    spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = self->freq,
-        .mode = self->phase | (self->polarity << 1),
-        .spics_io_num = self->csn, // -1: No CS pin, was self->csn
-        .queue_size = 2, // was 2, 7
-        .flags = self->firstbit == MICROPY_PY_MACHINE_SPI_LSB ? SPI_DEVICE_TXBIT_LSBFIRST | SPI_DEVICE_RXBIT_LSBFIRST : 0,
-        //.flags = SPI_DEVICE_NO_DUMMY,
-        .pre_cb = NULL
-    };
-
-    // Initialize the SPI bus
-
-    // Select DMA channel based on the hardware SPI id
-    int dma_chan = 0;
-    #if CONFIG_IDF_TARGET_ESP32
-    if (self->host == SPI2_HOST) {
-        dma_chan = 1;
-    } else {
-        dma_chan = 2;
-    }
-    #else
-    dma_chan = SPI_DMA_CH_AUTO;
-    #endif
-
-    if(spicommon_periph_in_use(self->host)) {
-         mp_printf(&mp_plat_print, "trying to free SPI\n");
-         //spi_host_t * host = bus_driver_ctx[self->host];
-         //spi_device_t * dev = get_acquiring_dev(host);
-         //spi_bus_remove_device(dev);
-         //spi_bus_remove_device(host->device_acquiring_lock);
-         spi_bus_free(self->host);
-    }
-
-    ret = spi_bus_initialize(self->host, &buscfg, dma_chan);
-    switch (ret) {
-        case ESP_ERR_INVALID_ARG:
-            mp_raise_CC1101Error("CC1101 invalid configuration (bus_initialize)");
-            return;
-
-        case ESP_ERR_INVALID_STATE:
-            mp_raise_CC1101Error("CC1101 SPI ID already in use");
-            return;
-    }
-
-    ret = spi_bus_add_device(self->host, &devcfg, &self->spi);
-    switch (ret) {
-        case ESP_ERR_INVALID_ARG:
-            spi_bus_free(self->host);
-            mp_raise_CC1101Error("CC1101 invalid configuration (bus_add_device)");
-            return;
-
-        case ESP_ERR_NO_MEM:
-            spi_bus_free(self->host);
-            mp_raise_CC1101Error("CC1101 out of memory");
-            return;
-
-        case ESP_ERR_NOT_FOUND:
-            spi_bus_free(self->host);
-            mp_raise_CC1101Error("CC1101 no free slots");
-            return;
-    }
-    self->state = cc1101_STATE_INIT;
-}
-
-static mp_uint_t _cc1101_gcd(mp_uint_t x, mp_uint_t y) {
-    while (x != y) { if (x > y) x -= y; else y -= x; }
-    return x;
-}
-
-static void _spi_transfer_main(cc1101_obj_t *self_in, size_t len, const uint8_t *src, uint8_t *dest) {
-    cc1101_obj_t *self = MP_OBJ_TO_PTR(self_in);
-
-    if (self->state == cc1101_STATE_DEINIT) {
-        mp_raise_CC1101Error("CC1101 SPI not opened");
-        return;
-    }
-
-    // Round to nearest whole set of bits
-    int bits_to_send = len * 8 / self->bits * self->bits;
-
-    if (!bits_to_send) {
-        mp_raise_CC1101Error("buffer too short");
-    }
-
-
-    if (len <= 0) { // if (len <= 4) {
-        spi_transaction_t transaction = { 0 };
-
-        if (src != NULL) {
-            memcpy(&transaction.tx_data, src, len);
-        }
-
-        transaction.flags = SPI_TRANS_USE_TXDATA | SPI_TRANS_USE_RXDATA;
-        transaction.length = bits_to_send;
-        spi_device_transmit(self->spi, &transaction);
-
-        if (dest != NULL) {
-            memcpy(dest, &transaction.rx_data, len);
-        }
-    } else {
-        int offset = 0;
-        int bits_remaining = bits_to_send;
-        int optimum_word_size = 8 * self->bits / _cc1101_gcd(8, self->bits);
-        int max_transaction_bits = MP_HW_SPI_MAX_XFER_BITS / optimum_word_size * optimum_word_size;
-        spi_transaction_t *transaction, *result, transactions[2];
-        int i = 0;
-
-        spi_device_acquire_bus(self->spi, portMAX_DELAY);
-
-        while (bits_remaining) {
-            transaction = transactions + i++ % 2;
-            memset(transaction, 0, sizeof(spi_transaction_t));
-
-            transaction->length =
-                bits_remaining > max_transaction_bits ? max_transaction_bits : bits_remaining;
-
-            if (src != NULL) transaction->tx_buffer = src + offset;
-            if (dest != NULL) transaction->rx_buffer = dest + offset;
-
-            spi_device_queue_trans(self->spi, transaction, portMAX_DELAY);
-            bits_remaining -= transaction->length;
-
-            if (offset > 0) {
-                // wait for previously queued transaction
-                MP_THREAD_GIL_EXIT();
-                spi_device_get_trans_result(self->spi, &result, portMAX_DELAY);
-                MP_THREAD_GIL_ENTER();
-            }
-
-            // doesn't need ceil(); loop ends when bits_remaining is 0
-            offset += transaction->length / 8;
-        }
-
-        // wait for last transaction
-        MP_THREAD_GIL_EXIT();
-        spi_device_get_trans_result(self->spi, &result, portMAX_DELAY);
-        MP_THREAD_GIL_ENTER();
-        spi_device_release_bus(self->spi);
-    }
-}
-
-static uint8_t _spi_transfer_addr(cc1101_obj_t *self_in, uint8_t addr, uint8_t wbyte) {
-    uint8_t m_wbyte[2] = {addr, wbyte};
-    uint8_t m_rbyte[2] = {0, 0};
-    _spi_transfer_main(self_in, 2, m_wbyte, m_rbyte);
-    return m_rbyte[1];
-}
-
-static uint8_t _spi_transfer(cc1101_obj_t *self_in, uint8_t addr) {
-    uint8_t m_wbyte[1] = { addr };
-    uint8_t m_rbyte[1] = { 0 };
-    _spi_transfer_main(self_in, 1, m_wbyte, m_rbyte);
-    return m_rbyte[0];
-}
-
-
-void _spi_transfer_addr_burst(cc1101_obj_t *self_in, uint8_t addr, uint8_t* wbuffer,  uint8_t* rbuffer, uint32_t length) {
     uint8_t* m_wbuffer = malloc(length + 1);
     uint8_t* m_rbuffer = malloc(length + 1);
     if(m_wbuffer != NULL && m_rbuffer != NULL) {
         *m_wbuffer = addr;
         memcpy(m_wbuffer + 1, wbuffer, length);
-        _spi_transfer_main(self_in, length + 1, m_wbuffer, m_rbuffer);
+
+        mp_obj_base_t *s = (mp_obj_base_t *)MP_OBJ_TO_PTR(spi);
+        mp_machine_spi_p_t *spi_p = (mp_machine_spi_p_t *)MP_OBJ_TYPE_GET_SLOT(s->type, protocol);
+        spi_p->transfer(s, length + 1, m_wbuffer, m_rbuffer);
+
         memset(rbuffer, 0, length);
         memcpy(rbuffer, m_rbuffer + 1, length);
         free(m_rbuffer);
@@ -588,94 +255,65 @@ void _spi_transfer_addr_burst(cc1101_obj_t *self_in, uint8_t addr, uint8_t* wbuf
     } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
 }
 
+uint8_t _cc1101_transfer_byte(cc1101_obj_t *self, uint8_t wbyte) {
+    machine_hw_spi_obj_t *spi = self->spi;
 
-// -----------
-// Constructor
-// -----------
+    uint8_t rbyte = 0;
+    mp_obj_base_t *s = (mp_obj_base_t *)MP_OBJ_TO_PTR(spi);
+    mp_machine_spi_p_t *spi_p = (mp_machine_spi_p_t *)MP_OBJ_TYPE_GET_SLOT(s->type, protocol);
+    spi_p->transfer(s, 1, &wbyte, &rbyte);
 
+    return rbyte;
+}
+
+uint8_t _cc1101_transfer_addr_byte(cc1101_obj_t *self, uint8_t addr, uint8_t wbyte) {
+    machine_hw_spi_obj_t *spi = self->spi;
+
+    uint8_t m_wbyte[2];
+    uint8_t m_rbyte[2];
+    m_wbyte[0] = addr;
+    m_wbyte[1] = wbyte;
+    m_rbyte[1] = 0;
+
+    mp_obj_base_t *s = (mp_obj_base_t *)MP_OBJ_TO_PTR(spi);
+    mp_machine_spi_p_t *spi_p = (mp_machine_spi_p_t *)MP_OBJ_TYPE_GET_SLOT(s->type, protocol);
+    spi_p->transfer(s, 2, m_wbyte, m_rbyte);
+
+    return m_rbyte[1];
+}
+
+// ------------------------
+// Constructor & Destructor
+// ------------------------
+
+extern const mp_obj_type_t cc1101_type;
+extern mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 
-    enum { ARG_id, ARG_freq, ARG_sck, ARG_csn, ARG_mosi, ARG_miso, ARG_debug };
+    enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso, ARG_debug, ARG_debug_hst};
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_id,       MP_ARG_INT, {.u_int = 1} },
-        { MP_QSTR_freq,     MP_ARG_INT, {.u_int = 10000000} },
-        { MP_QSTR_sck,      MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_csn,      MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_mosi,     MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_miso,     MP_ARG_INT, {.u_int = -1} },
-        { MP_QSTR_debug,    MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_id, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0 } }, // SPI_ID = 0
+        { MP_QSTR_cs,       MP_ARG_INT, {.u_int = -1 } },
+        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000 } }, // 10MHz (more - unstable)
+        { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_bits,     MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
+        { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
+        { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
     };
+
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);    
 
-    uint8_t temp_id = 0;
-    switch (args[ARG_id].u_int) {
-        case 1: temp_id = 1; break;
-        case 2: temp_id = 2; break;
-        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'CC1101 SPI ID' argument value")); return mp_const_none;
+    if (args[ARG_baudrate].u_int > 11000000) {
+       mp_raise_ValueError(MP_ERROR_TEXT("CC1101 baudrate should be <= 11 MHz")); return mp_const_none;
     }
 
-    cc1101_obj_t *self = NULL;
-    if(cc1101_obj[temp_id - 1] == NULL) {
-        // self = m_new_obj_with_finaliser(cc1101_obj_t);
-        self = m_new_obj(cc1101_obj_t);
-        self->host = temp_id;
-        cc1101_obj[temp_id - 1] = self;
-    } else self = cc1101_obj[temp_id - 1];
-
-    self->base.type = type;
-
-    uint32_t freq;
-    uint8_t sck, csn, mosi, miso;
-
-    if(args[ARG_freq].u_int < 100000) freq = 100000;
-    else if(args[ARG_freq].u_int > 80000000) freq = 80000000;
-    else freq = args[ARG_freq].u_int;
-
-    if(args[ARG_sck].u_int == -1) {
-        switch (args[ARG_id].u_int) {
-            case 1: sck = MICROPY_HW_SPI1_SCK; break;
-            case 2: sck = MICROPY_HW_SPI2_SCK; break;
-            default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'CC1101 SPI ID' argument value")); return mp_const_none;
-        }
-    } else sck = args[ARG_sck].u_int;
-
-    if(args[ARG_csn].u_int == -1) {
-        switch (args[ARG_id].u_int) {
-            case 1: csn = MICROPY_HW_SPI1_CS; break;
-            case 2: csn = -1; break;
-            default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'CC1101 SPI ID' argument value")); return mp_const_none;
-        }
-    } else csn = args[ARG_csn].u_int;
-
-    if(args[ARG_mosi].u_int == -1) {
-        switch (args[ARG_id].u_int) {
-            case 1: mosi = MICROPY_HW_SPI1_MOSI; break;
-            case 2: mosi = MICROPY_HW_SPI2_MOSI; break;
-            default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'CC1101 SPI ID' argument value")); return mp_const_none;
-        }
-    } else mosi = args[ARG_mosi].u_int;
-
-    if(args[ARG_miso].u_int == -1) {
-        switch (args[ARG_id].u_int) {
-            case 1: miso = MICROPY_HW_SPI1_MISO; break;
-            case 2: miso = MICROPY_HW_SPI2_MISO; break;
-            default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'CC1101 SPI ID' argument value")); return mp_const_none;
-        }
-    } else miso = args[ARG_miso].u_int;
-
-
-    switch (args[ARG_debug].u_int) {
-        case 0: self->debug = 0; break;
-        case 1: self->debug = 1; break;
-        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown debug argument")); return mp_const_none;
-    }
-
-    self->freq = freq;
-    self->sck = sck;
-    self->csn = csn;
-    self->mosi = mosi;
-    self->miso = miso;
+    cc1101_obj_t * self = mp_obj_malloc(cc1101_obj_t, &cc1101_type);
 
     self->MHz = 433.92;
     self->modulation = 2; // ASK
@@ -704,72 +342,74 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     self->clb3[0] = 65; self->clb3[1] = 76;
     self->clb4[0] = 77; self->clb4[1] = 79;
 
-    _cc1101_debug(self, "CC1101 object created");
+    self->gdo0_state = 0;
 
+    switch (args[ARG_debug].u_int) {
+        case 0: self->debug = 0; break;
+        case 1: self->debug = 1; break;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown debug argument")); return mp_const_none;
+    }
+    switch (args[ARG_debug_hst].u_int) {
+        case 0: self->debug_hst = 0; break;
+        case 1: self->debug_hst = 1; break;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown debug_hst argument")); return mp_const_none;
+    }
+
+    mp_obj_t spi_args[] = {
+        mp_obj_new_int(args[ARG_id].u_int),
+        mp_obj_new_int(args[ARG_cs].u_int),
+        mp_obj_new_int(args[ARG_baudrate].u_int),
+
+        MP_OBJ_NEW_QSTR(MP_QSTR_polarity),
+        mp_obj_new_int(args[ARG_polarity].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_phase),
+        mp_obj_new_int(args[ARG_phase].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_bits),
+        mp_obj_new_int(args[ARG_bits].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_firstbit),
+        mp_obj_new_int(args[ARG_firstbit].u_int),
+        MP_OBJ_NEW_QSTR(MP_QSTR_sck),
+        args[ARG_sck].u_obj,
+        MP_OBJ_NEW_QSTR(MP_QSTR_mosi),
+        args[ARG_mosi].u_obj,
+        MP_OBJ_NEW_QSTR(MP_QSTR_miso),
+        args[ARG_miso].u_obj,
+    };
+    self->spi = MP_OBJ_TO_PTR(machine_hw_spi_make_new(&machine_spi_type, 3, 7, spi_args));
+
+    _cc1101_debug(self, "CC1101 object created");
     return MP_OBJ_FROM_PTR(self);
 }
 
-// ------------------
-// CC1101 Open & Close
-// ------------------
+static mp_obj_t cc1101_deinit(mp_obj_t self_in) {
+    cc1101_obj_t * self = MP_OBJ_TO_PTR(self_in);
+    machine_hw_spi_obj_t *spi = self->spi;
 
-static mp_obj_t cc1101_open(mp_obj_t self_in) {
-    cc1101_obj_t * self = self_in;
+    mp_obj_base_t *s = (mp_obj_base_t *)MP_OBJ_TO_PTR(spi);
+    mp_machine_spi_p_t *spi_p = (mp_machine_spi_p_t *)MP_OBJ_TYPE_GET_SLOT(s->type, protocol);
+    spi_p->deinit(s);
 
-    _cc1101_init_internal(
-        self,
-        self->host,
-        self->freq,
-        0, // polarity
-        0, // phase
-        8, // bits
-        MICROPY_PY_MACHINE_SPI_MSB, // firstbit
-        self->sck,
-        self->csn,
-        self->mosi,
-        self->miso);
-
-    _cc1101_debug(self, "CC1101 inited");
-
-    _cc1101_reset(self);
-    _cc1101_reg_config_settings(self);
-
+    _cc1101_debug(self, "CC1101 object deinited");
     return mp_const_none;
 }
-
-static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_open_obj, &cc1101_open);
-
-static mp_obj_t cc1101_close(mp_obj_t self_in) {
-    cc1101_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    if (self->state == cc1101_STATE_INIT) {
-        _cc1101_deinit_internal(self);
-        _cc1101_debug(self, "CC1101 closed");
-    } else mp_printf(&mp_plat_print, "CC1101 already closed");
-    return mp_const_none;
-}
-
-static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_close_obj, &cc1101_close);
-
+static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_deinit_obj, cc1101_deinit);
 
 // ----------------
 // CC1101 SPI Read
 // ----------------
-uint8_t _cc1101_read(mp_obj_t self_in,  uint8_t m_addr) {
+uint8_t _cc1101_read(mp_obj_t self_in,  uint8_t m_addr, uint8_t need_debug) {
     cc1101_obj_t * self = self_in;
-    if (self->state == cc1101_STATE_INIT) {
-        _cc1101_debug(self, "SPI%d read at 0x%02X", self->host, m_addr);
-        byte rbyte = _spi_transfer_addr(self, m_addr, 0); // The written value is ignored, reg value is read
-        _cc1101_debug(self, "SPI%d read at 0x%02X -> 0x%02X", self->host, m_addr, rbyte);
-        return rbyte;
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    //_cc1101_debug(self, "CC1101 read at 0x%02X", m_addr);
+    byte rbyte = _cc1101_transfer_addr_byte(self, m_addr, 0); // The written value is ignored, reg value is read
+    if(need_debug) _cc1101_debug(self, "CC1101 read at 0x%02X -> 0x%02X (%lu)", m_addr, rbyte, clock());
+    return rbyte;
 }
 static mp_obj_t cc1101_read(mp_obj_t self_in,  mp_obj_t addr) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
-    return mp_obj_new_int(_cc1101_read(self, m_addr));
+    return mp_obj_new_int(_cc1101_read(self, m_addr, self->debug_hst));
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_read_obj, &cc1101_read);
-
 
 
 static mp_obj_t cc1101_read_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t length) {
@@ -780,18 +420,15 @@ static mp_obj_t cc1101_read_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t leng
     vstr_t vstr;
     vstr_init_len(&vstr, m_length);
 
-    if (self->state == cc1101_STATE_INIT) {
-        uint8_t * m_write_buffer = malloc(m_length);
-        if(m_write_buffer != NULL) {
-             memset(m_write_buffer, 0, m_length);
-            _cc1101_debug(self, "SPI%d read at 0x%02X 0x%02X bytes", self->host, m_addr, m_length);
-            _spi_transfer_addr_burst(self, m_addr, m_write_buffer, (uint8_t*)vstr.buf, m_length);
-            free(m_write_buffer);
-            //return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
-            //return mp_obj_new_str_from_vstr(&vstr);
-            return mp_obj_new_bytes_from_vstr(&vstr);
-        } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    uint8_t * m_write_buffer = malloc(m_length);
+    if(m_write_buffer != NULL) {
+         memset(m_write_buffer, 0, m_length);
+        _cc1101_debug(self, "CC1101 read at 0x%02X 0x%02X bytes (%lu)", m_addr, m_length, clock());
+        _cc1101_transfer_addr_burst(self, m_addr, m_write_buffer, (uint8_t*)vstr.buf, m_length);
+        free(m_write_buffer);
+        return mp_obj_new_bytes_from_vstr(&vstr);
+        //return mp_obj_new_bytes_from_vstr(&vstr);
+    } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
 }
 static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_read_burst_obj, &cc1101_read_burst);
 
@@ -801,11 +438,9 @@ static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_read_burst_obj, &cc1101_read_burst);
 // ---------
 uint8_t _cc1101_write(mp_obj_t self_in, uint8_t m_addr, uint8_t m_wbyte) {
     cc1101_obj_t * self = self_in;
-    if (self->state == cc1101_STATE_INIT) {
-        _cc1101_debug(self, "SPI%d write at 0x%02X: 0x%02X", self->host, m_addr, m_wbyte);
-        uint8_t rbyte = _spi_transfer_addr(self, m_addr, m_wbyte);
-        return rbyte;
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    _cc1101_debug(self, "CC1101 write at 0x%02X: 0x%02X (%lu)", m_addr, m_wbyte, clock());
+    uint8_t rbyte = _cc1101_transfer_addr_byte(self, m_addr, m_wbyte);
+    return rbyte;
 }
 
 static mp_obj_t cc1101_write(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbyte) {
@@ -819,14 +454,12 @@ static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_obj, &cc1101_write);
 
 void _cc1101_write_burst(mp_obj_t self_in, uint8_t w_addr, uint8_t* m_write_buffer, uint32_t m_length) {
     cc1101_obj_t * self = self_in;
-    if (self->state == cc1101_STATE_INIT) {
-        uint8_t * m_read_buffer = malloc(m_length);
-        if(m_read_buffer != NULL) {
-            _cc1101_debug(self, "SPI%d write at 0x%02X 0x%02X bytes", self->host, w_addr, m_length);
-            _spi_transfer_addr_burst(self, w_addr, (uint8_t *)m_write_buffer, m_read_buffer, m_length);
-            free(m_read_buffer);
-        } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    uint8_t * m_read_buffer = malloc(m_length);
+    if(m_read_buffer != NULL) {
+        _cc1101_debug(self, "CC1101 write at 0x%02X 0x%02X bytes (%lu)", w_addr, m_length, clock());
+        _cc1101_transfer_addr_burst(self, w_addr, (uint8_t *)m_write_buffer, m_read_buffer, m_length);
+        free(m_read_buffer);
+    } else mp_raise_CC1101Error(CC1101_MALLOC_FAILED);
 }
 static mp_obj_t cc1101_write_burst(mp_obj_t self_in, mp_obj_t addr, mp_obj_t wbuffer) {
     cc1101_obj_t * self = self_in;
@@ -843,11 +476,28 @@ static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_write_burst_obj, &cc1101_write_burst);
 
 uint8_t _cc1101_command(mp_obj_t self_in, uint8_t m_wbyte) {
     cc1101_obj_t * self = self_in;
-    if (self->state == cc1101_STATE_INIT) {
-        byte rbyte = _spi_transfer(self, m_wbyte);
-        _cc1101_debug(self, "SPI%d command 0x%02X -> 0x%02X", self->host, m_wbyte, rbyte);
-        return rbyte;
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    byte rbyte = _cc1101_transfer_byte(self, m_wbyte);
+    if(self->debug_hst) {
+        char name[10];
+        switch(m_wbyte) {
+             case 0x30: strcpy(name, "set_sres");break;
+             case 0x31: strcpy(name, "set_scalw");break;
+             case 0x32: strcpy(name, "turn_off");break;
+             case 0x33: strcpy(name, "set_scal");break;
+             case 0x34: strcpy(name, "set_rx");break;
+             case 0x35: strcpy(name, "set_tx");break;
+             case 0x36: strcpy(name, "set_idle");break;
+             case 0x38: strcpy(name, "start_WoR");break;
+             case 0x39: strcpy(name, "set_PwD");break;
+             case 0x3A: strcpy(name, "flush_rx");break;
+             case 0x3B: strcpy(name, "flush_tx");break;
+             case 0x3C: strcpy(name, "rst_clock");break;
+             case 0x3D: strcpy(name, "no_op");break;
+             default: strcpy(name, "unknown");
+        }
+        _cc1101_debug(self, "CC1101 command 0x%02X (%s) -> 0x%02X (%lu)", m_wbyte, name, rbyte, clock());
+    }
+    return rbyte;
 }
 static mp_obj_t cc1101_command(mp_obj_t self_in, mp_obj_t wbyte) {
     cc1101_obj_t * self = self_in;
@@ -866,12 +516,9 @@ static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_strobe_obj, &cc1101_strobe);
 
 static mp_obj_t cc1101_flush(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
-
-    if (self->state == cc1101_STATE_INIT) {
-        // Dumb
-        _cc1101_debug(self, "SPI%d flush FIFO buffers", self->host);
-        return mp_const_none;
-    } else mp_raise_CC1101Error(CC1101_NOT_OPENED);
+    // Nothing to do
+    _cc1101_debug(self, "CC1101 flush FIFO buffers");
+    return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_obj, &cc1101_flush);
 
@@ -882,11 +529,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_flush_obj, &cc1101_flush);
 
 void cc1101_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     cc1101_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SPI%u(freq=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, csn=%d, mosi=%d, miso=%d) : %s",
-        self->host, self->freq, self->polarity,
-        self->phase, self->bits, self->firstbit,
-        self->sck, self->csn, self->mosi, self->miso,
-        self->state == cc1101_STATE_INIT ? "inited" : "closed");
+    mp_printf(print, "CC1101 SPI%d_CS%d(baudrate:%d, spi_mode:%s)", self->spi->id, self->spi->cs, self->spi->baudrate, "FULL_DUPLEX");
 }
 
 // ---------------
@@ -894,17 +537,17 @@ void cc1101_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kin
 // ---------------
 
 // byte SpiReadStatus(byte addr);
-uint8_t _cc1101_spi_read_status(mp_obj_t self_in, uint8_t addr) {
+uint8_t _cc1101_spi_read_status(mp_obj_t self_in, uint8_t addr, uint8_t need_debug) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = addr | READ_BURST;
-    byte rbyte = _cc1101_read(self,  m_addr);
-    _cc1101_debug(self, "CC1101 read status at 0x%02X: 0x%02X", addr, rbyte);
+    byte rbyte = _cc1101_read(self,  m_addr, need_debug);
+    if(need_debug) _cc1101_debug(self, "CC1101 read status at 0x%02X: 0x%02X (%lu)", addr, rbyte, clock());
     return rbyte;
 }
 static mp_obj_t cc1101_spi_read_status(mp_obj_t self_in, mp_obj_t addr) {
     cc1101_obj_t * self = self_in;
     uint8_t m_addr = mp_obj_get_int(addr);
-    return mp_obj_new_int(_cc1101_spi_read_status(self,  m_addr));
+    return mp_obj_new_int(_cc1101_spi_read_status(self,  m_addr, self->debug_hst));
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_spi_read_status_obj, &cc1101_spi_read_status);
 
@@ -1107,9 +750,9 @@ static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_mhz_obj, &cc1101_set_mhz);
 // void getMHZ(float mhz);
 static mp_obj_t cc1101_get_mhz(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
-    uint8_t freq2 = _cc1101_read(self, CC1101_FREQ2 | READ_SINGLE);
-    uint8_t freq1 = _cc1101_read(self, CC1101_FREQ1 | READ_SINGLE);
-    uint8_t freq0 = _cc1101_read(self, CC1101_FREQ0 | READ_SINGLE);
+    uint8_t freq2 = _cc1101_read(self, CC1101_FREQ2 | READ_SINGLE, self->debug_hst);
+    uint8_t freq1 = _cc1101_read(self, CC1101_FREQ1 | READ_SINGLE, self->debug_hst);
+    uint8_t freq0 = _cc1101_read(self, CC1101_FREQ0 | READ_SINGLE, self->debug_hst);
     float mhz = 26 * freq2 + 26/256.0 * freq1 + 26/256.0/256.0 * freq0;
     self->MHz = mhz;
 
@@ -1125,7 +768,7 @@ void _cc1101_calibrate(cc1101_obj_t * self) {
         if (self->MHz < 322.88) _cc1101_write(self, CC1101_TEST0, 0x0B);
         else {
             _cc1101_write(self, CC1101_TEST0, 0x09);
-            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2);
+            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2, self->debug_hst);
             if (s < 32) _cc1101_write(self, CC1101_FSCAL2, s + 32);
             if (self->last_power != 1) cc1101_set_pa(self, mp_obj_new_int(self->power));
         }
@@ -1135,7 +778,7 @@ void _cc1101_calibrate(cc1101_obj_t * self) {
         if (self->MHz < 430.5) _cc1101_write(self, CC1101_TEST0, 0x0B);
         else {
             _cc1101_write(self, CC1101_TEST0, 0x09);
-            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2);
+            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2, self->debug_hst);
             if (s < 32) _cc1101_write(self, CC1101_FSCAL2, s + 32);
             if (self->last_power != 2) cc1101_set_pa(self, mp_obj_new_int(self->power));
         }
@@ -1145,7 +788,7 @@ void _cc1101_calibrate(cc1101_obj_t * self) {
         if (self->MHz < 861) _cc1101_write(self, CC1101_TEST0,0x0B);
         else {
             _cc1101_write(self, CC1101_TEST0,0x09);
-            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2);
+            int s = _cc1101_spi_read_status(self, CC1101_FSCAL2, self->debug_hst);
             if (s < 32) _cc1101_write(self, CC1101_FSCAL2, s + 32);
             if (self->last_power != 3) cc1101_set_pa(self, mp_obj_new_int(self->power));
         }
@@ -1153,7 +796,7 @@ void _cc1101_calibrate(cc1101_obj_t * self) {
     else if (self->MHz >= 900 && self->MHz <= 928) {
         _cc1101_write(self, CC1101_FSCTRL0, _cc1101_map(self->MHz, 900, 928, self->clb4[0], self->clb4[1]));
         _cc1101_write(self, CC1101_TEST0, 0x09);
-        int s = _cc1101_spi_read_status(self, CC1101_FSCAL2);
+        int s = _cc1101_spi_read_status(self, CC1101_FSCAL2, self->debug_hst);
         if (s < 32) _cc1101_write(self, CC1101_FSCAL2, s+32);
         if (self->last_power != 4) cc1101_set_pa(self, mp_obj_new_int(self->power));
     }
@@ -1174,7 +817,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_set_channel_obj, &cc1101_set_channel);
 // void getChannel(byte chnl);
 static mp_obj_t cc1101_get_channel(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
-    uint8_t m_chan = _cc1101_read(self, CC1101_CHANNR | READ_SINGLE);
+    uint8_t m_chan = _cc1101_read(self, CC1101_CHANNR | READ_SINGLE, self->debug_hst);
     self->chan = m_chan;
     return mp_obj_new_int(self->chan);
 }
@@ -1351,7 +994,7 @@ static mp_obj_t cc1101_get_rssi(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     int rssi;
     _cc1101_debug(self, "CC1101 get_rssi()");
-    rssi = _cc1101_spi_read_status(self, CC1101_RSSI);
+    rssi = _cc1101_spi_read_status(self, CC1101_RSSI, self->debug_hst);
     if (rssi >= 128) rssi = (rssi - 256) / 2 - 74;
     else rssi = (rssi / 2) - 74;
     return mp_obj_new_int(rssi);
@@ -1363,7 +1006,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_rssi_obj, &cc1101_get_rssi);
 static mp_obj_t cc1101_get_lqi(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 get_lqi()");
-    uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI);
+    uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI, self->debug_hst);
     return mp_obj_new_int(lqi);
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_get_lqi_obj, &cc1101_get_lqi);
@@ -1482,8 +1125,8 @@ static mp_obj_t cc1101_send_data(mp_obj_t self_in, mp_obj_t wbuffer, mp_obj_t ti
     _cc1101_command(self, CC1101_STX);   // 0x35
 
     if(m_timeout == 0) {
-        while(!_cc1101_digital_read_gdo0(self)); // Wait for GDO0 to be set -> sync transmitted
-        while(_cc1101_digital_read_gdo0(self));  // Wait for GDO0 to be cleared -> end of packet
+        while(!_cc1101_digital_read_gdo0(self, 1)); // Wait for GDO0 to be set -> sync transmitted
+        while(_cc1101_digital_read_gdo0(self, 1));  // Wait for GDO0 to be cleared -> end of packet
     } else {
        if(m_timeout / portTICK_PERIOD_MS == 0) vTaskDelay(1);
        else vTaskDelay(m_timeout / portTICK_PERIOD_MS);
@@ -1498,14 +1141,24 @@ static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_send_data_obj, &cc1101_send_data);
 // byte CheckReceiveFlag(void);
 static mp_obj_t cc1101_check_receive_flag(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
+    uint32_t counter = 0;
+    uint32_t timeout = 100000; // delay 100ms
+
     if (self->trxstate != 2) cc1101_set_rx(self);
-    if (_cc1101_digital_read_gdo0(self)) {
-        while (_cc1101_digital_read_gdo0(self)); // No delay
+    uint8_t val = _cc1101_digital_read_gdo0(self, 1);
+    if(self->gdo0_state == 1 && val == 0) return mp_obj_new_int(1); // reentered with changed GDO0
+
+    if (val) {
+        while (val && counter < timeout) {
+           val = _cc1101_digital_read_gdo0(self, 1);
+           mp_hal_delay_us(1);
+           counter++;
+        }
+        self->gdo0_state = val;
+        if(counter == timeout) return mp_obj_new_int(0);
         return mp_obj_new_int(1);
     }
-    else {
-        return mp_obj_new_int(0);
-    }
+    else return mp_obj_new_int(0);
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_receive_flag_obj, &cc1101_check_receive_flag);
 
@@ -1513,13 +1166,15 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_receive_flag_obj, &cc1101_check_re
 static mp_obj_t cc1101_receive_data(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
 
-    if(_cc1101_spi_read_status(self, CC1101_RXBYTES) & BYTES_IN_RXFIFO)
+    if(_cc1101_spi_read_status(self, CC1101_RXBYTES, self->debug_hst) & BYTES_IN_RXFIFO)
     {
-        uint8_t size = _cc1101_read(self, CC1101_RXFIFO | READ_SINGLE);
+        uint8_t size = _cc1101_read(self, CC1101_RXFIFO | READ_SINGLE, self->debug_hst);
         mp_hal_delay_us(5); // do not touch !!!
 
+        //SpiReadBurstReg(CC1101_RXFIFO,rxBuffer,size);
         mp_obj_t rxbuffer = cc1101_read_burst(self, mp_obj_new_int(CC1101_RXFIFO | READ_BURST), mp_obj_new_int(size));
 
+        //SpiReadBurstReg(CC1101_RXFIFO,status,2);
         mp_obj_t status = cc1101_read_burst(self, mp_obj_new_int(CC1101_RXFIFO | READ_BURST), mp_obj_new_int(2));
         uint8_t m_status[2];
         memset(m_status, 0, sizeof(m_status));
@@ -1528,20 +1183,32 @@ static mp_obj_t cc1101_receive_data(mp_obj_t self_in) {
         if (m_status_buffer.len == 2) {
             m_status[0] = *((uint8_t*)m_status_buffer.buf);
             m_status[1] = *((uint8_t*)m_status_buffer.buf + 1);
-            _cc1101_debug(self, "CC1101 receive_data() -> 0x%02X, 0x%02X", m_status[0], m_status[1]);
+            _cc1101_debug(self, "CC1101 receive_data() -> 0x%02X, 0x%02X (%lu)", m_status[0], m_status[1], clock());
         }
 
+        //_cc1101_command(self, CC1101_SFRX);
+        //_cc1101_command(self, CC1101_SRX);
+
+        // Rearm RX
         _cc1101_command(self, CC1101_SFRX);
+        _cc1101_command(self, CC1101_SIDLE);
         _cc1101_command(self, CC1101_SRX);
+        self->trxstate = 2;
+
         return rxbuffer;
     } else {
+        //_cc1101_command(self, CC1101_SFRX);
+        //_cc1101_command(self, CC1101_SRX);
+
+        // Rearm RX
         _cc1101_command(self, CC1101_SFRX);
+        _cc1101_command(self, CC1101_SIDLE);
         _cc1101_command(self, CC1101_SRX);
+        self->trxstate = 2;
+
         vstr_t vstr;
         vstr_init_len(&vstr, 0);
         _cc1101_debug(self, "CC1101 receive_data() -> NODATA");
-        //return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
-        //return mp_obj_new_str_from_vstr(&vstr);
         return mp_obj_new_bytes_from_vstr(&vstr);
     }
 
@@ -1553,7 +1220,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_receive_data_obj, &cc1101_receive_data);
 // bool CheckCRC(void);
 static mp_obj_t cc1101_check_crc(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
-    uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI);
+    uint8_t lqi = _cc1101_spi_read_status(self, CC1101_LQI, self->debug_hst);
     uint8_t crc_ok = (lqi & 0x80) >> 7;
     if (crc_ok == 1) {
          _cc1101_debug(self, "CC1101 check_crc() -> 0x01");
@@ -1570,7 +1237,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cc1101_check_crc_obj, &cc1101_check_crc);
 // void setClb(byte b, byte s, byte e);
 static mp_obj_t cc1101_set_clb(size_t n_args, const mp_obj_t *arg) {
     if (n_args != 4) {
-        mp_raise_CC1101Error("4 arguments required");
+        mp_raise_CC1101Error("4 arguments required\n");
     } else {
         cc1101_obj_t * self = MP_OBJ_TO_PTR(arg[0]);
         uint8_t b = mp_obj_get_int(arg[1]);
@@ -1603,7 +1270,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cc1101_set_clb_obj, 4, 4, &cc1101_set
 static mp_obj_t cc1101_get_cc1101(mp_obj_t self_in) {
     cc1101_obj_t * self = self_in;
     _cc1101_debug(self, "CC1101 get_cc1101()");
-    uint8_t status = _cc1101_spi_read_status(self, CC1101_VERSION);
+    uint8_t status = _cc1101_spi_read_status(self, CC1101_VERSION, self->debug_hst);
     if (status != 0 && status != 0xFF) return mp_obj_new_int(1);
     else return mp_obj_new_int(0);
 }
@@ -1829,7 +1496,7 @@ static mp_obj_t cc1101_check_rx_fifo(mp_obj_t self_in, mp_obj_t t) {
     cc1101_obj_t * self = self_in;
     uint8_t m_t = mp_obj_get_int(t);
     if (self->trxstate != 2) cc1101_set_rx(self);
-    if (_cc1101_spi_read_status(self, CC1101_RXBYTES) & BYTES_IN_RXFIFO) {
+    if (_cc1101_spi_read_status(self, CC1101_RXBYTES, self->debug_hst) & BYTES_IN_RXFIFO) {
         _cc1101_debug(self, "CC1101 check_rx_fifo(0x%02X) -> 0x01", m_t);
         if(m_t / portTICK_PERIOD_MS == 0) vTaskDelay(1); // About 10 ms
         else vTaskDelay(m_t / portTICK_PERIOD_MS);
@@ -1842,8 +1509,7 @@ static mp_obj_t cc1101_check_rx_fifo(mp_obj_t self_in, mp_obj_t t) {
 static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_check_rx_fifo_obj, &cc1101_check_rx_fifo);
 
 
-
-static mp_obj_t cc1101_crc8(mp_obj_t self_in, mp_obj_t data, mp_obj_t polynome) {
+mp_obj_t cc1101_crc8(mp_obj_t self_in, mp_obj_t data, mp_obj_t polynome) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(data, &bufinfo, MP_BUFFER_READ);
     uint8_t poly = mp_obj_get_int(polynome);
@@ -1861,10 +1527,9 @@ static mp_obj_t cc1101_crc8(mp_obj_t self_in, mp_obj_t data, mp_obj_t polynome) 
     }
     return MP_OBJ_NEW_SMALL_INT(crc);
 }
-static MP_DEFINE_CONST_FUN_OBJ_3(cc1101_crc8_obj, &cc1101_crc8);
+MP_DEFINE_CONST_FUN_OBJ_3(cc1101_crc8_obj, cc1101_crc8);
 
-
-static mp_obj_t cc1101_ba2hex(mp_obj_t self_in, mp_obj_t data) {
+mp_obj_t cc1101_ba2hex(mp_obj_t self_in, mp_obj_t data) {
     char mess[1024];
     memset(mess, 0, sizeof(mess));
 
@@ -1879,7 +1544,7 @@ static mp_obj_t cc1101_ba2hex(mp_obj_t self_in, mp_obj_t data) {
     if(length > 0 && length < sizeof(mess)) mess[length - 1] = 0; // trim last space
     return mp_obj_new_str(mess, strlen(mess));
 }
-static MP_DEFINE_CONST_FUN_OBJ_2(cc1101_ba2hex_obj, &cc1101_ba2hex);
+MP_DEFINE_CONST_FUN_OBJ_2(cc1101_ba2hex_obj, cc1101_ba2hex);
 
 
 // ---------
@@ -1925,7 +1590,7 @@ void _cc1101_reg_config_settings(cc1101_obj_t * self) {
 
 void _cc1101_split_PKTCTRL0(cc1101_obj_t * self) {
     _cc1101_debug(self, "CC1101 split_PKTCTRL0");
-    int calc = _cc1101_spi_read_status(self, CC1101_PKTCTRL0);
+    int calc = _cc1101_spi_read_status(self, CC1101_PKTCTRL0, self->debug_hst);
     self->pc0WDATA = 0;
     self->pc0PktForm = 0;
     self->pc0CRC_EN = 0;
@@ -1952,7 +1617,7 @@ void _cc1101_split_PKTCTRL0(cc1101_obj_t * self) {
 
 void _cc1101_split_PKTCTRL1(cc1101_obj_t * self) {
     _cc1101_debug(self, "CC1101 split_PKTCTRL1");
-    int calc = _cc1101_spi_read_status(self, CC1101_PKTCTRL1);
+    int calc = _cc1101_spi_read_status(self, CC1101_PKTCTRL1, self->debug_hst);
     self->pc1PQT = 0;
     self->pc1CRC_AF = 0;
     self->pc1APP_ST = 0;
@@ -1978,7 +1643,7 @@ void _cc1101_split_PKTCTRL1(cc1101_obj_t * self) {
 }
 void _cc1101_split_MDMCFG1(cc1101_obj_t * self) {
     _cc1101_debug(self, "CC1101 split_MDMCFG1");
-    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG1);
+    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG1, self->debug_hst);
     self->m1FEC = 0;
     self->m1PRE = 0;
     self->m1CHSP = 0;
@@ -1999,7 +1664,7 @@ void _cc1101_split_MDMCFG1(cc1101_obj_t * self) {
 }
 void _cc1101_split_MDMCFG2(cc1101_obj_t * self) {
     _cc1101_debug(self, "CC1101 split_MDMCFG2");
-    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG2);
+    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG2, self->debug_hst);
     self->m2DCOFF = 0;
     self->m2MODFM = 0;
     self->m2MANCH = 0;
@@ -2026,7 +1691,7 @@ void _cc1101_split_MDMCFG2(cc1101_obj_t * self) {
 
 void _cc1101_split_MDMCFG4(cc1101_obj_t * self) {
     _cc1101_debug(self, "CC1101 split_MDMCFG4");
-    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG4);
+    int calc = _cc1101_spi_read_status(self, CC1101_MDMCFG4, self->debug_hst);
     self->m4RxBw = 0;
     self->m4DaRa = 0;
     while(1) {
@@ -2045,21 +1710,23 @@ void _cc1101_split_MDMCFG4(cc1101_obj_t * self) {
     }
 }
 
-uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self) {
-    int rbyte =_cc1101_spi_read_status(self, CC1101_PKTSTATUS) & 0x01;
-    _cc1101_debug(self, "CC1101 read_gdo0() -> 0x%02X", rbyte);
+uint8_t _cc1101_digital_read_gdo0(cc1101_obj_t * self, uint8_t need_debug) {
+    int rbyte =_cc1101_spi_read_status(self, CC1101_PKTSTATUS, 0) & 0x01;
+    if(need_debug) _cc1101_debug(self, "CC1101 read_gdo0() -> 0x%02X (%lu)", rbyte, clock());
+    mp_hal_delay_us(5); 
     return rbyte;
 }
 
 void _cc1101_debug(cc1101_obj_t * self, char * message, ...) {
-    char mess[1024];
-    if(self->debug == 1) {
+    char mess[256];
+    if(self->debug == 1 || self->debug_hst == 1) {
         memset(mess, 0, sizeof(mess));
         va_list args;
         va_start(args, message);
         vsnprintf(mess, sizeof(mess), message, args);
         va_end(args);
-        mp_printf(&mp_plat_print, "%s\n", mess);
+        if(self->debug_hst == 1) ESP_LOGE("CC1101","%s", mess);
+        if(self->debug == 1) mp_printf(&mp_plat_print, "%s\n", mess);
     }
 }
 
@@ -2069,16 +1736,12 @@ uint8_t _cc1101_map(uint32_t x, uint32_t in_min, uint32_t in_max, uint32_t out_m
 }
 
 
-
-
 // -------
 // Locals
 // -------
-
 static const mp_rom_map_elem_t cc1101_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_open), MP_ROM_PTR(&cc1101_open_obj) },
-    //{ MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&cc1101__del__obj) },
-    { MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&cc1101_close_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&cc1101_deinit_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&cc1101_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_read_burst), MP_ROM_PTR(&cc1101_read_burst_obj) },
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&cc1101_write_obj) },
@@ -2154,7 +1817,7 @@ static MP_DEFINE_CONST_DICT(cc1101_locals_dict, cc1101_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
     cc1101_type,
-    MP_QSTR_CC1101,
+    MP_QSTR_cc1101,
     MP_TYPE_FLAG_NONE,
     make_new, cc1101_make_new,
     print, cc1101_print,
@@ -2164,7 +1827,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
 // -------
 // Modules
 // -------
-
 static const mp_map_elem_t mp_module_cc1101_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_cc1101) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_cc1101), (mp_obj_t)MP_ROM_PTR(&cc1101_type) },
@@ -2172,10 +1834,20 @@ static const mp_map_elem_t mp_module_cc1101_globals_table[] = {
 
 static MP_DEFINE_CONST_DICT(mp_module_cc1101_globals, mp_module_cc1101_globals_table);
 
-const mp_obj_module_t mp_module_cc1101 = {
+const mp_obj_module_t cc1101_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&mp_module_cc1101_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR__cc1101, mp_module_cc1101);
+MP_REGISTER_MODULE(MP_QSTR_cc1101, cc1101_module);
 
+//#endif
+
+/*
+Test cases
+import cc1101
+c1 = cc1101.cc1101(1)
+c1.get_cc1101()
+c1.set_sres()
+c1.ba2hex(c1.spi_read_burst_reg(0x0, 0x30))
+*/

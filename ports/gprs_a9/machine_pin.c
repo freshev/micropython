@@ -159,7 +159,7 @@ mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self = (machine_pin_obj_t*)&machine_pin_obj[wanted_pin];
     }
     if (self == NULL || self->base.type == NULL) {
-        mp_raise_ValueError("Invalid pin");
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid pin"));
     }
 
     mp_map_t kw_args;
@@ -312,7 +312,7 @@ void mp_hal_pin_write(mp_hal_pin_obj_t pin_id, int value) {
 
 mp_hal_pin_obj_t mp_hal_get_pin_obj(mp_obj_t pin_in) {
     if (mp_obj_get_type(pin_in) != &machine_pin_type) {
-        mp_raise_ValueError("expecting a pin");
+        mp_raise_ValueError(MP_ERROR_TEXT("expecting a pin"));
     }
     machine_pin_obj_t *self = MP_OBJ_TO_PTR(pin_in);
     return self->phys_port;

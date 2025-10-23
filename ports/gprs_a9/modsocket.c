@@ -147,7 +147,7 @@ mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
             self->domain = AF_INET6;
             break;
         default:
-            mp_raise_ValueError("Unknown 'af' argument value");
+            mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'af' argument value"));
             break;
     }
 
@@ -159,7 +159,7 @@ mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
             self->type = SOCK_DGRAM;
             break;
         default:
-            mp_raise_ValueError("Unknown 'type' argument");
+            mp_raise_ValueError(MP_ERROR_TEXT("Unknown 'type' argument"));
             break;
     }
 
@@ -171,7 +171,7 @@ mp_obj_t socket_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
             self->proto = IPPROTO_UDP;
             break;
         default:
-            mp_raise_ValueError("Unknown protocol");
+            mp_raise_ValueError(MP_ERROR_TEXT("Unknown protocol"));
             return mp_const_none;
     }
 
@@ -635,7 +635,7 @@ static mp_obj_t get_local_ip(void) {
     // ========================================
     char ip[16];
     if (!Network_GetIp(ip, sizeof(ip))) {
-        mp_raise_ValueError("Failed to retrieve the local IP address");
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to retrieve the local IP address"));
         return mp_const_none;
     }
     return mp_obj_new_str(ip, strlen(ip));
@@ -681,10 +681,10 @@ static mp_obj_t getaddrinfo(size_t n_args, const mp_obj_t *pos_args, mp_map_t *k
             af = AF_INET;
             break;
         case AF_INET6:
-            mp_raise_ValueError("TODO argument #3: af=AF_INET6 is not implemented");
+            mp_raise_ValueError(MP_ERROR_TEXT("TODO argument #3: af=AF_INET6 is not implemented"));
             break;
         default:
-            mp_raise_ValueError("argument #3: 'af' should be one of AF_INET, AF_INET6");
+            mp_raise_ValueError(MP_ERROR_TEXT("argument #3: 'af' should be one of AF_INET, AF_INET6"));
             return mp_const_none;
     }
 
@@ -700,7 +700,7 @@ static mp_obj_t getaddrinfo(size_t n_args, const mp_obj_t *pos_args, mp_map_t *k
             type = SOCK_DGRAM;
             break;
         default:
-            mp_raise_ValueError("Argument #4: 'type' should be one of SOCK_STREAM, SOCK_DGRAM");
+            mp_raise_ValueError(MP_ERROR_TEXT("Argument #4: 'type' should be one of SOCK_STREAM, SOCK_DGRAM"));
             return mp_const_none;
     }
 
@@ -716,7 +716,7 @@ static mp_obj_t getaddrinfo(size_t n_args, const mp_obj_t *pos_args, mp_map_t *k
             proto = IPPROTO_UDP;
             break;
         default:
-            mp_raise_ValueError("Argument #5: 'proto' should be one of IPPROTO_TCP, IPPROTO_UDP");
+            mp_raise_ValueError(MP_ERROR_TEXT("Argument #5: 'proto' should be one of IPPROTO_TCP, IPPROTO_UDP"));
             return mp_const_none;
     }
 

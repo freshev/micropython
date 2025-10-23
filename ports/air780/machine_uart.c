@@ -137,7 +137,7 @@ void luat_uart_recv_callback(int uart_num, uint32_t data_len) {
         // uart_debug(uart_num, "rcb", (const char*)&c, 1);
 
         int uart = (uart_num == LUAT_VUART_ID_0) ? 2 : uart_num - 1;
-        
+
         if (uart_attached_to_dupterm[uart]) {
             if (c == mp_interrupt_char) {
                 // if(uart_num == HW_UART_REPL) LUAT_DEBUG_PRINT("UART%d INTERRUPT", uart_num);
@@ -358,12 +358,12 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         }
         uart_set_rxbuf(self->uart_num, buf, len);
     }
-    
+
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         self->baudrate = uart.baud_rate = args[ARG_baudrate].u_int;     
-    }    
-    
+    }
+
     // set data bits
     switch (args[ARG_bits].u_int) {
         case 0:
@@ -395,7 +395,7 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
             }
         }
     }
-    
+
     // set stop bits
     switch (args[ARG_stop].u_int) {
         case 1:
@@ -410,11 +410,11 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
             mp_raise_ValueError(MP_ERROR_TEXT("invalid stop bits"));
             break;
     }
-    
+
     // set timeout (in ms)
     self->timeout = args[ARG_timeout].u_int;
-    
-    
+
+
     self->timeout_char = args[ARG_timeout_char].u_int;
 
     // set timeout_char
@@ -440,13 +440,13 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
 
 static mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, MP_OBJ_FUN_ARGS_MAX, true);
-    
+
     // get uart id
     mp_int_t uart_num = mp_obj_get_int(args[0]);
     if (!luat_uart_exist(uart_num) || uart_num < 1) { // Currently only supports UART1, UART2, LUAT_VUART_ID_0 (from "luat_uart_ec618.c" = 0x20)
         mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("UART(%d) does not exist"), uart_num);
     }
-    
+
     // create instance
     machine_uart_obj_t *self = mp_obj_malloc(machine_uart_obj_t, &machine_uart_type);
     self->uart_num = uart_num;
@@ -524,7 +524,7 @@ static mp_uint_t mp_machine_uart_write(mp_obj_t self_in, const void *buf_in, mp_
     uart_tx_done[uart] = 0;
 
     int ret = luat_uart_write(self->uart_num, (uint8_t*) buf_in, size);
-    
+
     if(self->uart_num == 1) {
 #if RS485_UART1_WAIT_TX
         uart_wait_tx_done(1, size * self->timeout_char);

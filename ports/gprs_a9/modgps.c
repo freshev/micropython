@@ -112,7 +112,7 @@ static mp_obj_t modgps_get_firmware_version(void) {
     // ========================================
     char buffer[300];
     if (!GPS_GetVersion(buffer, 150)) {
-        mp_raise_ValueError("No firmware info");
+        mp_raise_ValueError(MP_ERROR_TEXT("No firmware info"));
         return mp_const_none;
     }
     return mp_obj_new_str(buffer, strlen(buffer));

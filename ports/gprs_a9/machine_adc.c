@@ -84,7 +84,7 @@ static mp_obj_t mp_machine_adc_make_new(const mp_obj_type_t *type,    size_t n_a
 static mp_int_t mp_machine_adc_read_u16(machine_adc_obj_t *self) {
     uint16_t value, value_mV;
     if (!ADC_Read(self->channel, &value, &value_mV)) {
-        mp_raise_msg(&mp_type_RuntimeError, "Failed to read ADC");
+        mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Failed to read ADC"));
         return 0;
     }
     return value;

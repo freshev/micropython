@@ -55,9 +55,10 @@
 // Use IO_MUX pins by default.
 // If SPI lines are routed to other pins through GPIO matrix
 // routing adds some delay and lower limit applies to SPI clk freq
-#define MICROPY_HW_SPI1_SCK SPI2_IOMUX_PIN_NUM_CLK
-#define MICROPY_HW_SPI1_MOSI SPI2_IOMUX_PIN_NUM_MOSI
-#define MICROPY_HW_SPI1_MISO SPI2_IOMUX_PIN_NUM_MISO
+#define MICROPY_HW_SPI1_SCK  SPI2_IOMUX_PIN_NUM_CLK  // pin 12
+#define MICROPY_HW_SPI1_CS   SPI2_IOMUX_PIN_NUM_CS   // pin 10
+#define MICROPY_HW_SPI1_MOSI SPI2_IOMUX_PIN_NUM_MOSI // pin 11
+#define MICROPY_HW_SPI1_MISO SPI2_IOMUX_PIN_NUM_MISO // pin 13
 #endif
 
 // Default pins for SPI(id=2) aka IDF SPI3, can be overridden by a board
@@ -65,11 +66,13 @@
 #if CONFIG_IDF_TARGET_ESP32
 // ESP32 has IO_MUX pins for VSPI/SPI3 lines, use them as defaults
 #define MICROPY_HW_SPI2_SCK SPI3_IOMUX_PIN_NUM_CLK      // pin 18
+#define MICROPY_HW_SPI2_CS  SPI3_IOMUX_PIN_NUM_CS       // pin 5
 #define MICROPY_HW_SPI2_MOSI SPI3_IOMUX_PIN_NUM_MOSI    // pin 23
 #define MICROPY_HW_SPI2_MISO SPI3_IOMUX_PIN_NUM_MISO    // pin 19
 #elif CONFIG_IDF_TARGET_ESP32S2 || CONFIG_IDF_TARGET_ESP32S3
 // ESP32S2 and S3 uses GPIO matrix for SPI3 pins, no IO_MUX possible
 // Set defaults to the pins used by SPI2 in Octal mode
+#define MICROPY_HW_SPI2_CS (-1)
 #define MICROPY_HW_SPI2_SCK (36)
 #define MICROPY_HW_SPI2_MOSI (35)
 #define MICROPY_HW_SPI2_MISO (37)
@@ -94,6 +97,7 @@ typedef struct _machine_hw_spi_default_pins_t {
 typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
     spi_host_device_t host;
+    int8_t cs;
     uint32_t baudrate;
     uint8_t polarity;
     uint8_t phase;
@@ -119,9 +123,10 @@ static const machine_hw_spi_default_pins_t machine_hw_spi_default_pins[MICROPY_H
 };
 
 // Common arguments for init() and make new
-enum { ARG_id, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
+enum { ARG_id, ARG_cs, ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits, ARG_firstbit, ARG_sck, ARG_mosi, ARG_miso };
 static const mp_arg_t spi_allowed_args[] = {
     { MP_QSTR_id,       MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = -1} },
+    { MP_QSTR_cs,       MP_ARG_INT, {.u_int = -1 } },
     { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = -1} },
     { MP_QSTR_polarity, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
     { MP_QSTR_phase,    MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
@@ -176,6 +181,16 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
     esp_err_t ret;
 
     machine_hw_spi_obj_t old_self = *self;
+
+    if (args[ARG_cs].u_int == -1) {
+        self->cs = args[ARG_id].u_int == 1 ? MICROPY_HW_SPI1_CS : MICROPY_HW_SPI2_CS;
+        changed = true;
+    }
+
+    if (args[ARG_cs].u_int != -1 && args[ARG_cs].u_int != self->cs) {
+        self->cs = args[ARG_cs].u_int;
+        changed = true;
+    }
 
     if (args[ARG_baudrate].u_int != -1) {
         // calculate the actual clock frequency that the SPI peripheral can produce
@@ -245,7 +260,7 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
     spi_device_interface_config_t devcfg = {
         .clock_speed_hz = self->baudrate,
         .mode = self->phase | (self->polarity << 1),
-        .spics_io_num = -1, // No CS pin
+        .spics_io_num = self->cs, // Was -1 (No CS pin)
         .queue_size = 2,
         .flags = self->firstbit == MICROPY_PY_MACHINE_SPI_LSB ? SPI_DEVICE_TXBIT_LSBFIRST | SPI_DEVICE_RXBIT_LSBFIRST : 0,
         .pre_cb = NULL
@@ -395,8 +410,8 @@ static void machine_hw_spi_transfer(mp_obj_base_t *self_in, size_t len, const ui
 
 static void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     machine_hw_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "SPI(id=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
-        self->host, self->baudrate, self->polarity,
+    mp_printf(print, "SPI%d(cs=%u, baudrate=%u, polarity=%u, phase=%u, bits=%u, firstbit=%u, sck=%d, mosi=%d, miso=%d)",
+        self->host, self->cs, self->baudrate, self->polarity,
         self->phase, self->bits, self->firstbit,
         self->sck, self->mosi, self->miso);
 }
@@ -406,7 +421,7 @@ static void machine_hw_spi_print(const mp_print_t *print, mp_obj_t self_in, mp_p
 // The behavior is slightly different for a new call vs an init method on an existing object.
 // Unspecified arguments for new will use defaults, for init they keep the existing value.
 static void machine_hw_spi_argcheck(mp_arg_val_t args[], const machine_hw_spi_default_pins_t *default_pins) {
-// A non-NULL default_pins argument will trigger the "use default" behavior.
+    // A non-NULL default_pins argument will trigger the "use default" behavior.
     // Replace pin args with default/current values for new vs init call, respectively
     for (int i = ARG_sck; i <= ARG_miso; i++) {
         if (args[i].u_obj == MP_OBJ_NULL) {

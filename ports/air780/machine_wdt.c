@@ -63,7 +63,7 @@ static machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
                 replTimeoutTaskFlag = 0;
             }
             return &machine_wdt_default;
-        default: mp_raise_ValueError("Watchdog id should be 0");
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Watchdog id should be 0"));
     }
 }
 
@@ -81,9 +81,9 @@ static void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t t
                 luat_wdt_setup(timeout_ms / 1000);
             }
             else if(timeout_ms == 0) luat_wdt_close();
-            else mp_raise_ValueError("Watchdog timeout should be >= 0");
+            else mp_raise_ValueError(MP_ERROR_TEXT("Watchdog timeout should be >= 0"));
             break;
-        default: mp_raise_ValueError("Watchdog id should be 0");
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Watchdog id should be 0"));
             break;
     }
 }

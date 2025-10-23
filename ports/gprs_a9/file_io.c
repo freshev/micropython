@@ -181,7 +181,7 @@ static mp_obj_t internal_flash_file_open(const char* file_name, const mp_obj_typ
                 type = &mp_type_internal_flash_textio;
                 break;
             default:
-                mp_raise_ValueError("Mode must be one or more of 'rwabt+'");
+                mp_raise_ValueError(MP_ERROR_TEXT("Mode must be one or more of 'rwabt+'"));
         }
     }
     //internal_flash_file_obj_t *o = m_new_obj_with_finaliser(internal_flash_file_obj_t);

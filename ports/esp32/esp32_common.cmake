@@ -329,20 +329,19 @@ add_custom_command(
     VERBATIM
     COMMAND_EXPAND_LISTS
 )
-
 if(NOT CONFIG_DEPLOY_FW_FOLDER STREQUAL "")
     if(CONFIG_DEPLOY_FW_COMPRESS STREQUAL "y")
         add_custom_target(deploy ALL
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < merged-binary.bin > ${CONFIG_DEPLOY_FW_FOLDER}/firmware_compressed.bin
-            COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < micropython.elf > ${CONFIG_DEPLOY_FW_FOLDER}/micropython_compressed.elf
+            COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < merged-binary.bin > ${CONFIG_DEPLOY_FW_FOLDER}/micropython_${MICROPY_BOARD}_compressed.bin
+            COMMAND ${MICROPY_DIR}/lib/luatos-soc-2022/tools/dtools/dep/zlib-flate -compress < micropython.elf > ${CONFIG_DEPLOY_FW_FOLDER}/micropython_${MICROPY_BOARD}_compressed.elf
             DEPENDS merge-bin
         )
     else()
         add_custom_target(deploy ALL
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMAND ${CMAKE_COMMAND} -E copy merged-binary.bin ${CONFIG_DEPLOY_FW_FOLDER}/firmware.bin
-            COMMAND ${CMAKE_COMMAND} -E copy micropython.elf ${CONFIG_DEPLOY_FW_FOLDER}/micropython.elf
+            COMMAND ${CMAKE_COMMAND} -E copy merged-binary.bin ${CONFIG_DEPLOY_FW_FOLDER}/micropython_${MICROPY_BOARD}.bin
+            COMMAND ${CMAKE_COMMAND} -E copy micropython.elf ${CONFIG_DEPLOY_FW_FOLDER}/micropython_${MICROPY_BOARD}.elf
             DEPENDS merge-bin
         )
     endif()

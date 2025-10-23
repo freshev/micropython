@@ -32,7 +32,7 @@ CONFIG_LOG_MAXIMUM_LEVEL_INFO=y
 
 # Main XTAL Config
 # Only on: ESP32
-CONFIG_XTAL_FREQ_AUTO=y
+# CONFIG_XTAL_FREQ_AUTO=y
 
 # ESP System Settings
 # Only on: ESP32, ESP32S3

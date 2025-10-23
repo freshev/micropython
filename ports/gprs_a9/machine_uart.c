@@ -135,12 +135,12 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         } else if (tx == 4 && rx == 5) {
             self->uart_id = 1;
         } else {
-            mp_raise_ValueError("invalid tx/rx");
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid tx/rx"));
         }
     }
 
     UART_Config_t *config = uart_dev + self->uart_id;
-    
+
     // set baudrate
     if (args[ARG_baudrate].u_int > 0) {
         switch (args[ARG_baudrate].u_int) {
@@ -166,7 +166,7 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
             case 0:
                 break;
             default:
-                mp_raise_ValueError("unsupported baud rate");
+                mp_raise_ValueError(MP_ERROR_TEXT("unsupported baud rate"));
                 break;
         }
     }
@@ -180,7 +180,7 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         case 0:
              break;
         default:
-            mp_raise_ValueError("invalid data bits");
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid data bits"));
             break;
     }
     self->bits = config->dataBits;
@@ -211,7 +211,7 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
         case 0:
             break;
         default:
-            mp_raise_ValueError("invalid stop bits");
+            mp_raise_ValueError(MP_ERROR_TEXT("invalid stop bits"));
             break;
     }
     self->stop = config->stopBits; // was + 1
@@ -258,7 +258,7 @@ static void mp_machine_uart_init_helper(machine_uart_obj_t *self, size_t n_args,
 
     // setup
     if (!uart_setup(self->uart_id))
-        mp_raise_ValueError("failed to setup uart");
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to setup uart"));
 }
 
 static mp_obj_t mp_machine_uart_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {

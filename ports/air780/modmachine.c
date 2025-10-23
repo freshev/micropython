@@ -319,7 +319,7 @@ static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t
             }
             else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection and URL.\n");
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
-    } else mp_raise_ValueError("FOTA requested version should be string.");
+    } else mp_raise_ValueError(MP_ERROR_TEXT("FOTA requested version should be string."));
     return mp_obj_new_int(0);
 #else
     mp_printf(&mp_plat_print, "FOTA disabled.\n");

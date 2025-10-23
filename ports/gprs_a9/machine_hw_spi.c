@@ -70,7 +70,7 @@ typedef struct _machine_hw_spi_obj_t {
 MP_DEFINE_EXCEPTION(SPIError, Exception)
 
 NORETURN void mp_raise_SPIError(const char *msg) {
-    mp_raise_msg(&mp_type_SPIError, msg);
+    mp_raise_msg(&mp_type_SPIError, MP_ERROR_TEXT(msg));
 }
 
 // ----------
@@ -218,7 +218,7 @@ uint32_t _get_SPI_FREQ(mp_int_t _frequency) {
 static void machine_hw_spi_deinit_internal(machine_hw_spi_obj_t* self) {
     // Trace(1, "SPI: self->id = %d", self->id);
     // Trace(1, "SPI: self->cs = %d", self->cs);
-	if(!SPI_Close(self->id)) mp_raise_SPIError("SPI deinit failure");
+    if(!SPI_Close(self->id)) mp_raise_SPIError("SPI deinit failure");
 }
 
 static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_t args[]) {
@@ -280,7 +280,7 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
     if (args[ARG_miso].u_int != -2 && args[ARG_miso].u_int != self->miso) {
         self->miso = args[ARG_miso].u_int;
         changed = true;
-    }    
+    }
 
     if (args[ARG_mode].u_int != -1 && args[ARG_mode].u_int != self->mode) {
         self->mode = args[ARG_mode].u_int;

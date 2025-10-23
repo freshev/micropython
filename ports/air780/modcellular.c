@@ -42,7 +42,7 @@ static int8_t activate_flag = 0;
 static int8_t deactivate_flag = 0;
 
 
-#define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError("Network is not available: is SIM card inserted?"); return mp_const_none;}} while(0)
+#define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError(MP_ERROR_TEXT("Network is not available: is SIM card inserted?")); return mp_const_none;}} while(0)
 
 #include "modcellsms.c"
 
@@ -442,7 +442,7 @@ static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     int res = luat_mobile_get_iccid(index, iccid, sizeof(iccid));
     if(res > 0) return mp_obj_new_str(iccid, strlen(iccid));
     else {
-        mp_raise_RuntimeError("No ICCID data available");
+        mp_raise_RuntimeError(MP_ERROR_TEXT("No ICCID data available"));
         return mp_const_none;
     }
 }
@@ -465,7 +465,7 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     int res = luat_mobile_get_imsi(index, imsi, sizeof(imsi));
     if(res > 0) return mp_obj_new_str(imsi, strlen(imsi));
     else {
-        mp_raise_RuntimeError("No IMSI data available");
+        mp_raise_RuntimeError(MP_ERROR_TEXT("No IMSI data available"));
         return mp_const_none;
     }
 }
@@ -474,7 +474,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imsi_obj, 0, 1, modce
 
 bool get_flight_mode(int index) {
     int res = luat_mobile_get_flymode(index);
-    if (res < 0) mp_raise_RuntimeError("Failed to retrieve flight mode status");
+    if (res < 0) mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to retrieve flight mode status"));
     return res == 0;
 }
 
@@ -494,7 +494,7 @@ static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
         mp_int_t set_flag = mp_obj_get_int(args[0]);
         int res = luat_mobile_set_flymode(index, set_flag);
         if(res != 0){
-            mp_raise_RuntimeError("Failed to set flight mode status");
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set flight mode status"));
             return mp_const_none;
         }
         WAIT_UNTIL(set_flag == get_flight_mode(index), TIMEOUT_FLIGHT_MODE, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -549,7 +549,7 @@ static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
         // set all bands
         int res = luat_mobile_set_band(default_bands, sizeof(default_bands));
         if(res != 0) {
-            mp_raise_RuntimeError("Failed to reset bands");
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to reset bands"));
             return mp_const_none;
         }
     } else if (n_args == 1) {
@@ -557,7 +557,7 @@ static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
         bands[0] = mp_obj_get_int(args[0]);
         int res = luat_mobile_set_band(bands, 1);
         if(res != 0) {
-            mp_raise_RuntimeError("Failed to set bands");
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set bands"));
             return mp_const_none;
         }
     }
@@ -620,7 +620,7 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
     if (n_args == 1 || n_args == 2) {
         mp_int_t flag = mp_obj_get_int(args[0]);
         if (flag != 0) {
-            mp_raise_ValueError("Unkown integer argument supplied, zero (or False) expected");
+            mp_raise_ValueError(MP_ERROR_TEXT("Unkown integer argument supplied, zero (or False) expected"));
             return mp_const_none;
         }
         mp_int_t timeout = TIMEOUT_NETWORK_ACTIVATION;
@@ -644,10 +644,9 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         // mp_printf(&mp_plat_print, "network_check_ready(1): %d\n", ret);
 
         if (network_status & NTW_ACT_BIT) {
-            mp_raise_ValueError("Network is already on");
+            mp_raise_ValueError(MP_ERROR_TEXT("Network is already on"));
             return mp_const_none;
         } else {
-            
             /*
             deactivate_flag = 1;
             activate_flag = 1;
@@ -661,13 +660,13 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             modcellular_poll_network_exception();
 
             if (!(network_status & NTW_ACT_BIT)) {
-                mp_raise_RuntimeError("Failed to activate network");
+                mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to activate network"));
             }
         }
         // mp_printf(&mp_plat_print, "network_check_ready(2): %d\n", ret);
     } else if (n_args != 0) {
-        mp_raise_ValueError("Unexpected number of argument: 0, 1 or 3 required");
-    }     
+        mp_raise_ValueError(MP_ERROR_TEXT("Unexpected number of argument: 0, 1 or 3 required"));
+    }
     return mp_obj_new_bool(network_status & NTW_ACT_BIT);
 }
 
@@ -744,7 +743,7 @@ static mp_obj_t modcellular_stations(void) {
     // ========================================
     luat_mobile_cell_info_t info = {0};
     if (luat_mobile_get_cell_info(&info) != 0) {
-        // mp_raise_RuntimeError("Failed to poll base stations");
+        // mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll base stations"));
         // return mp_const_none;
         luat_mobile_get_last_notify_cell_info(&info);
     }

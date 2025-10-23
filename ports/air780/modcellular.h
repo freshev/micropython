@@ -156,7 +156,7 @@ typedef struct _sms_obj_t {
     uint8_t tzSign;     /* '+'/'-' */
 } sms_obj_t;
 
-NORETURN void mp_raise_RuntimeError(const char *msg) { mp_raise_msg(&mp_type_RuntimeError, msg); }
+NORETURN void mp_raise_RuntimeError(const char *msg) { mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT(msg)); }
 
 
 #endif

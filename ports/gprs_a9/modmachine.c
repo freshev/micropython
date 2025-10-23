@@ -196,7 +196,7 @@ static void mp_machine_set_freq(size_t n_args, const mp_obj_t *args) {
             i != PM_SYS_FREQ_52M && i != PM_SYS_FREQ_78M && i != PM_SYS_FREQ_89M && i != PM_SYS_FREQ_104M &&
             i != PM_SYS_FREQ_113M && i != PM_SYS_FREQ_125M && i != PM_SYS_FREQ_139M && i != PM_SYS_FREQ_156M &&
             i != PM_SYS_FREQ_178M && i != PM_SYS_FREQ_208M && i != PM_SYS_FREQ_250M && i != PM_SYS_FREQ_312M)
-        mp_raise_ValueError("Unknown frequency");
+        mp_raise_ValueError(MP_ERROR_TEXT("Unknown frequency"));
     PM_SetSysMinFreq(i);
 }
 
@@ -328,7 +328,7 @@ static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t
                return mp_obj_new_int(_fota_result);
             } else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection.\n");
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
-    } else mp_raise_ValueError("FOTA requested version should be string.");
+    } else mp_raise_ValueError(MP_ERROR_TEXT("FOTA requested version should be string."));
     return mp_obj_new_int(0);
 #else
     mp_printf(&mp_plat_print, "FOTA disabled.\n");

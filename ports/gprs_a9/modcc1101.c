@@ -224,7 +224,7 @@ const char * CC1101_MALLOC_FAILED = "CC1101 memory allocation failed";
 MP_DEFINE_EXCEPTION(CC1101Error, Exception)
 
 NORETURN void mp_raise_CC1101Error(const char *msg) {
-    mp_raise_msg(&mp_type_CC1101Error, msg);
+    mp_raise_msg(&mp_type_CC1101Error, MP_ERROR_TEXT(msg));
 }
 
 // --------
@@ -322,7 +322,7 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     if (args[ARG_baudrate].u_int > 11000000) {
-       mp_raise_ValueError("CC1101 baudrate should be <= 11 MHz"); return mp_const_none;
+       mp_raise_ValueError(MP_ERROR_TEXT("CC1101 baudrate should be <= 11 MHz")); return mp_const_none;
     }
 
 
@@ -360,7 +360,7 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     switch (args[ARG_mode].u_int) {
         case 0: self->mode = 0; break;
         case 1: self->mode = 1; break;
-        default: mp_raise_ValueError("Unknown mode argument"); return mp_const_none;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown mode argument")); return mp_const_none;
     }
 
     if (args[ARG_dma_delay].u_int < 2 || args[ARG_dma_delay].u_int > 100000) {
@@ -372,12 +372,12 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     switch (args[ARG_debug].u_int) {
         case 0: self->debug = 0; break;
         case 1: self->debug = 1; break;
-        default: mp_raise_ValueError("Unknown debug argument"); return mp_const_none;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown debug argument")); return mp_const_none;
     }
     switch (args[ARG_debug_hst].u_int) {
         case 0: self->debug_hst = 0; break;
         case 1: self->debug_hst = 1; break;
-        default: mp_raise_ValueError("Unknown debug_hst argument"); return mp_const_none;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown debug_hst argument")); return mp_const_none;
     }
 
     // Trace(1, "CC1101: id:%d, cs:%d, br: %d, mode: %d, dma_delay: %d", args[ARG_id].u_int, args[ARG_cs].u_int, args[ARG_baudrate].u_int, args[ARG_mode].u_int, args[ARG_dma_delay].u_int);
@@ -396,11 +396,11 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         MP_OBJ_NEW_QSTR(MP_QSTR_firstbit),
         mp_obj_new_int(args[ARG_firstbit].u_int),
         MP_OBJ_NEW_QSTR(MP_QSTR_sck),
-        mp_obj_new_int(args[ARG_sck].u_int),
+        args[ARG_sck].u_obj,
         MP_OBJ_NEW_QSTR(MP_QSTR_mosi),
-        mp_obj_new_int(args[ARG_mosi].u_int),
+        args[ARG_mosi].u_obj,
         MP_OBJ_NEW_QSTR(MP_QSTR_miso),
-        mp_obj_new_int(args[ARG_miso].u_int),
+        args[ARG_miso].u_obj,
         MP_OBJ_NEW_QSTR(MP_QSTR_mode),
         mp_obj_new_int(args[ARG_mode].u_int),
         MP_OBJ_NEW_QSTR(MP_QSTR_dma_delay),

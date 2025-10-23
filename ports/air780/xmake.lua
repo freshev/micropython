@@ -7,7 +7,7 @@ set_defaultmode("debug")
 local VM_64BIT = nil
 SDK_TOP = "."
 local SDK_PATH
-local USER_PROJECT_NAME = "Air780_micropython"
+local USER_PROJECT_NAME = "micropython_Air780"
 USER_PROJECT_DIR  = ""
 local LUAT_SCRIPT_SIZE
 local LUAT_SCRIPT_OTA_SIZE
@@ -1641,9 +1641,9 @@ target(USER_PROJECT_NAME..".elf")
                 print("----------------------------------------------------")
                 print("Deploy BINPKG to " .. DEPLOY_BINPKG_FOLDER .. " (compressed)")
                 if is_plat("windows") then 
-                	os.exec(".\\binexport.bat " .. VERSION_PATH .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
+                    os.exec(".\\binexport.bat " .. VERSION_PATH .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "\\" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
                 elseif is_plat("macosx") then
-                	-- TODO
+                    -- TODO
                 else 
                     os.exec("./binexport.sh " .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg " .. DEPLOY_BINPKG_FOLDER .. "/" .. USER_PROJECT_NAME .. "_".. USER_PROJECT_NAME_VERSION .. ".binpkg")
                 end
@@ -1666,7 +1666,7 @@ target("ota")
         print("----------------------------------------------------")
         print("Make OTA pack(s) for " .. FW_VERSION .. " on " .. os.host():gsub("^%l", string.upper))
         print("----------------------------------------------------")
-        
+
         OUT_PATH = "./out"
         OUT_DEP_PATH = "./out/dep"
         FOTA_PATH = "./fota"
@@ -1736,29 +1736,28 @@ target("ota")
                             fota_file = string.gsub(fota_file, "NEWVERSION", FW_VERSION)
                             -- print(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
                             os.exec(ftk_exec .. " -d ../ec618.json BINPKG ../" .. FOTA_PATH .. "/" .. fota_file .. " ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  OLDVER .. ".binpkg ../" .. VERSION_PATH .. "/" .. USER_PROJECT_NAME .. "_" ..  FW_VERSION ..  ".binpkg")
+                            if fota_file ~= "" and DEPLOY_PACK_FOLDER ~= "" and os.exists(DEPLOY_PACK_FOLDER) then
+                                print("----------------------------------------------------")
+                                if DEPLOY_PACK_COMPRESS == true then
+                                    print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER .. " (compressed)")                
+                                    if is_plat("windows") then 
+                                        os.exec(".\\binexport.bat " .. FOTA_PATH .. "\\" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "\\" .. fota_file)
+                                    elseif is_plat("macosx") then
+                                        -- TODO
+                                    else 
+                                        os.exec("./binexport.sh " .. FOTA_PATH .. "/" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "/" .. fota_file)
+                                    end
+                                else
+                                    print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER)
+                                    os.cp(FOTA_PATH .. "/" .. fota_file,  DEPLOY_PACK_FOLDER .. "/" .. fota_file)
+                                end
+                                print("----------------------------------------------------")
+                            end
                         else
                             print("Can not parse FOTA URL")
                         end
                     end
                 end
-            end
-        end
-
-        if fota_file ~= "" and DEPLOY_PACK_FOLDER ~= "" and os.exists(DEPLOY_PACK_FOLDER) then
-            if DEPLOY_PACK_COMPRESS == true then
-                print("----------------------------------------------------")
-                print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER .. " (compressed)")                
-                if is_plat("windows") then 
-                	os.exec(".\\binexport.bat " .. FOTA_PATH .. "\\" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "\\" .. fota_file)
-                elseif is_plat("macosx") then
-                	-- TODO
-                else 
-                    os.exec("./binexport.sh " .. FOTA_PATH .. "/" .. fota_file .. " " .. DEPLOY_PACK_FOLDER .. "/" .. fota_file)
-                end
-            else
-                print("----------------------------------------------------")
-                print("Deploy FOTA pack to " .. DEPLOY_PACK_FOLDER)
-                os.cp(FOTA_PATH .. "/" .. fota_file,  DEPLOY_PACK_FOLDER .. "/" .. fota_file)
             end
         end
     end)

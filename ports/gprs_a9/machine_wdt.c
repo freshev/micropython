@@ -55,12 +55,12 @@ static machine_wdt_obj_t *mp_machine_wdt_make_new_instance(mp_int_t id, mp_int_t
                  WatchDog_Open(WATCHDOG_SECOND_TO_TICK(timeout_ms / 1000));
             }
             else if(timeout_ms == 0) WatchDog_Close();
-            else if(timeout_ms >= 512000) mp_raise_ValueError("Watchdog timeout should be in interval 0-512000");
+            else if(timeout_ms >= 512000) mp_raise_ValueError(MP_ERROR_TEXT("Watchdog timeout should be in interval 0-512000"));
             return &machine_wdt_default;
         case 1: // A9 hardware watchdog
             machine_hw_watchdog_active = (timeout_ms > 0);
             return &machine_hw_wdt_default;
-        default: mp_raise_ValueError("Watchdog id should be 0 (software wd) or 1 (hardware wd)");
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Watchdog id should be 0 (software wd) or 1 (hardware wd)"));
     }
 }
 
@@ -77,12 +77,12 @@ static void mp_machine_wdt_timeout_ms_set(machine_wdt_obj_t *self_in, mp_int_t t
                 WatchDog_Open(WATCHDOG_SECOND_TO_TICK(timeout_ms / 1000));
             }
             else if(timeout_ms == 0) WatchDog_Close();
-            else mp_raise_ValueError("Watchdog timeout should be in interval 0-512000");
+            else mp_raise_ValueError(MP_ERROR_TEXT("Watchdog timeout should be in interval 0-512000"));
             break;
         case 1: // A9 hardware watchdog
             machine_hw_watchdog_active = (timeout_ms > 0);
             break;
-        default: mp_raise_ValueError("Watchdog id should be 0 (software wd) or 1 (hardware wd)");
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Watchdog id should be 0 (software wd) or 1 (hardware wd)"));
             break;
     }
 }
