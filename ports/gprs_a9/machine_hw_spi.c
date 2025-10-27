@@ -40,6 +40,94 @@
 #include "modmachine.h"
 #include "extmod/modmachine.h"
 
+//------------------------------------------------------------------------------------
+// HAL definitions from RDA8955_W17.44_IDH-master\soft\platform\chip\hal\src\hal_spi.c
+//------------------------------------------------------------------------------------
+typedef uint32_t UINT32;
+typedef uint8_t UINT8;
+typedef void VOID;
+#define HAL_SPI_QTY (2)
+#define HAL_SPI_CS_MAX_QTY (4)
+
+typedef enum {
+    HAL_SPI_DIRECT_POLLING = 0,
+    HAL_SPI_DIRECT_IRQ,
+    HAL_SPI_DMA_POLLING,
+    HAL_SPI_DMA_IRQ,
+    HAL_SPI_OFF,
+    HAL_SPI_TM_QTY
+} HAL_SPI_TRANSFERT_MODE_T;
+
+typedef struct {
+    UINT32 rxOvf:1; /// receive FIFO overflow irq
+    UINT32 txTh:1; /// transmit FIFO threshold irq
+    UINT32 txDmaDone:1; /// transmit Dma Done irq
+    UINT32 rxTh:1; /// receive FIFO threshold irq    
+    UINT32 rxDmaDone:1; /// receive Dma Done irq
+} HAL_SPI_IRQ_STATUS_T;
+
+typedef VOID (*HAL_SPI_IRQ_HANDLER_T)(HAL_SPI_IRQ_STATUS_T);
+
+typedef struct {
+    UINT32       ctrl;
+    UINT32       cfg;
+    HAL_SPI_TRANSFERT_MODE_T rxMode; 	///< Reception transfer mode
+    HAL_SPI_TRANSFERT_MODE_T txMode; 	///< Emission transfer mode    
+    UINT32      freq; 					/// Desired freq    
+    UINT32      bytesPerFrame; 			/// Number of bytes per frame. Used to check that we only send complete frames.
+    HAL_SPI_IRQ_HANDLER_T irqHandler;    
+    UINT32      irqMask;				/// Image of the irq mask register
+} HAL_SPI_SETTINGS_T;
+
+typedef enum {
+    /// Active CS0 to CS3 are the first one to
+    /// keep compatibility with the HAL_SPI_CS_T type.
+    HAL_SPI_ACTIVE_CS_0,
+    HAL_SPI_ACTIVE_CS_1,
+    HAL_SPI_ACTIVE_CS_2,
+    HAL_SPI_ACTIVE_CS_3,
+    HAL_SPI_ACTIVE_NONE,    
+    HAL_SPI_OPERATION_IN_PROGRESS, /// To avoid race and several things done simultaneously.
+    HAL_SPI_ACTIVE_QTY
+} HAL_SPI_ACTIVE_T;
+
+typedef enum {
+    HAL_SYS_FREQ_32K     = 32768,
+    HAL_SYS_FREQ_13M     = 13000000,
+    HAL_SYS_FREQ_26M     = 26000000,
+    HAL_SYS_FREQ_39M     = 39000000,
+    HAL_SYS_FREQ_52M     = 52000000,
+    HAL_SYS_FREQ_78M     = 78000000,
+    HAL_SYS_FREQ_89M     = 89142857, //624M/7
+    HAL_SYS_FREQ_104M    = 104000000,
+    HAL_SYS_FREQ_113M    = 113454545, //624M/5.5
+    HAL_SYS_FREQ_125M    = 124800000,
+    HAL_SYS_FREQ_139M    = 138666667, //624M/4.5
+    HAL_SYS_FREQ_156M    = 156000000,
+    HAL_SYS_FREQ_178M    = 178285714, //624M/3.5
+    HAL_SYS_FREQ_208M    = 208000000,
+    HAL_SYS_FREQ_250M    = 249600000, //624M/2.5
+    HAL_SYS_FREQ_312M    = 312000000,
+    HAL_SYS_FREQ_UNKNOWN = 0,
+} HAL_SYS_FREQ_T;
+
+
+typedef struct {    
+    HAL_SPI_SETTINGS_T          cfg[HAL_SPI_CS_MAX_QTY]; 	/// Configuration per CS    
+    UINT32                      ctrl;						/// Control Register picture
+    UINT8              			rxIfcCh;
+    UINT8              			txIfcCh;
+    HAL_SPI_TRANSFERT_MODE_T    rxMode;
+    HAL_SPI_TRANSFERT_MODE_T    txMode;
+    HAL_SPI_ACTIVE_T            activeStatus;
+    HAL_SPI_IRQ_HANDLER_T       irqHandler;
+    HAL_SYS_FREQ_T              requiredSysFreq;
+} HAL_SPI_PROP_T;
+
+// #define errno (*((int *) 0x820a0cb0))
+HAL_SPI_PROP_T * g_halSpiPropArrayPtr = (HAL_SPI_PROP_T*)((int *) 0x8203dfe4); // 0x8203dfe4
+//------------------------------------------------------------------------------------
+
 typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
     SPI_ID_t id;
@@ -186,7 +274,7 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
     // SPI DMA mode
     if(self->mode == 1) {
         if(debug_hst) Trace(1, "SPI DMA transfer read %d bytes", length);
-        res = SPI_Read(id, rbuffer, length);
+        res = SPI_Read(id, rbuffer, length); // Actually hal_SpiGetData(...)
         if(debug_hst) Trace(1, "SPI DMA transfer read result %d", length);
         if(debug_hst && length == 1) Trace(1, "SPI DMA transfer read byte 0x%02X", rbuffer[0]);
         if(res != length) {
@@ -195,7 +283,7 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
             mp_raise_SPIError(SPI_READ_FAILED);
         }
         if(debug_hst) Trace(1, "SPI DMA transfer write %d bytes", length);
-        res = SPI_Write(id, wbuffer, length);
+        res = SPI_Write(id, wbuffer, length); // Actually hal_SpiSendData
         if(debug_hst) Trace(1, "SPI DMA transfer write result %d", res);
         if(debug_hst && length == 1) Trace(1, "SPI DMA transfer write byte 0x%02X", wbuffer[0]);
         if(res != length) {
@@ -203,7 +291,10 @@ void _spi_transfer_internal(machine_hw_spi_obj_t *self_in, const uint8_t* wbuffe
             Trace(1, "SPI DMA transfer write length %d, result length %d", length, res);
             mp_raise_SPIError(SPI_WRITE_FAILED);
         }
-        OS_SleepUs(self->dma_delay); // Without this sleep little length responses can be empty
+        //OS_SleepUs(self->dma_delay); // Without this sleep little length responses can be empty
+        OS_SleepUs(self->dma_delay * length); // Without this sleep little length responses can be empty
+        if(debug_hst) Trace(1, "SPI DMA OS_SleepUs: %d", self->dma_delay * length);
+
         while((!SPI_IsTxDmaDone(id))&&(!SPI_IsRxDmaDone(id)));
         SPI_ClearTxDmaDone(id);
         SPI_ClearRxDmaDone(id);
@@ -344,7 +435,93 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
             .irqMask = {0,0,0,0,0}
         };
         if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI DMA init failure");
-    }
+
+        /*
+        if(self->debug_hst) {
+            for(int i = 0; i < HAL_SPI_QTY; i++) {
+                HAL_SPI_PROP_T spi = g_halSpiPropArrayPtr[i];
+                Trace_MemBlock(1, (uint8_t*)(g_halSpiPropArrayPtr + i), sizeof(HAL_SPI_PROP_T), 16);
+                Trace(1, "SPI SPI%d start ===============================", i + 1);
+            	for(int j = 0; j < HAL_SPI_CS_MAX_QTY; j++) {
+                	HAL_SPI_SETTINGS_T cfg = spi.cfg[j];
+            		Trace(1, "SPI SPI%d_CS%d", i + 1, j);
+            		Trace(1, "SPI -------------------------");
+                	Trace(1, "SPI cfg ctrl");
+                	Trace(1, "SPI cfg ctrl ENABLE      : 0x%01X", (cfg.ctrl >> 0) & 1);
+                	Trace(1, "SPI cfg ctrl enabledCS   : 0x%01X", (cfg.ctrl >> 1) & 3);
+                	// skip bit ?
+                	Trace(1, "SPI cfg ctrl inputEn     : 0x%01X", (cfg.ctrl >> 4) & 1);
+                	Trace(1, "SPI cfg ctrl clkFallEdge : 0x%01X", (cfg.ctrl >> 5) & 1);
+                	Trace(1, "SPI cfg ctrl clkDelay    : 0x%01X", (cfg.ctrl >> 6) & 3);
+                	Trace(1, "SPI cfg ctrl doDelay     : 0x%01X", (cfg.ctrl >> 8) & 3);
+                	Trace(1, "SPI cfg ctrl diDelay     : 0x%01X", (cfg.ctrl >> 10) & 3);
+                	Trace(1, "SPI cfg ctrl csDelay     : 0x%01X", (cfg.ctrl >> 12) & 3);
+                	Trace(1, "SPI cfg ctrl csPulse     : 0x%01X", (cfg.ctrl >> 14) & 3);
+                	Trace(1, "SPI cfg ctrl frameSize   : 0x%01X", ((cfg.ctrl >> 16) & 0x1F) + 1);
+                	Trace(1, "SPI cfg ctrl oeRatio     : 0x%01X", (cfg.ctrl >> 24) & 0x1F);
+                	Trace(1, "SPI cfg ctrl inputSel    : 0x%01X", (cfg.ctrl >> 30) & 3);
+                	
+                	Trace(1, "SPI cfg cfg : 0x%08X", cfg.cfg);
+                	Trace(1, "SPI cfg rxMode: 0x%04X", cfg.rxMode);
+                	Trace(1, "SPI cfg txMode: 0x%04X", cfg.txMode);
+                	Trace(1, "SPI cfg freq: %d", cfg.freq);
+                	Trace(1, "SPI cfg bytesPerFrame: %d", cfg.bytesPerFrame);
+                	Trace(1, "SPI cfg irqHandler: %p", cfg.irqHandler);
+                	Trace(1, "SPI cfg irqMask: 0x%04X", cfg.irqMask);
+                	break; // comment if need more
+                }
+                Trace(1, "SPI -----------------------");
+                Trace(1, "SPI ctrl: 0x%08X", spi.ctrl);
+                Trace(1, "SPI rxIfcCh: 0x%02X", spi.rxIfcCh);
+                Trace(1, "SPI txIfcCh: 0x%02X", spi.txIfcCh);
+                Trace(1, "SPI rxMode: 0x%04X (%d)", spi.rxMode, sizeof(spi.rxMode));
+                Trace(1, "SPI txMode: 0x%04X (%d)", spi.txMode, sizeof(spi.txMode));
+                Trace(1, "SPI activeStatus: 0x%04X (%d)", spi.activeStatus, sizeof(spi.activeStatus));
+                Trace(1, "SPI irqHandler: %p", spi.irqHandler);
+                Trace(1, "SPI requiredSysFreq: %d (%d)", spi.requiredSysFreq, sizeof(spi.requiredSysFreq));
+                Trace(1, "SPI SPI%d end ===============================", i + 1);
+                break; // comment if need more
+           }
+       }*/
+
+       /*
+        Patch GPRS C SDK via patch-lod.py.
+        Attention: doing this patch leads to loosing SPI_DATA_BITS_16 config
+
+        In SPI_Init(...) make following changes:
+        ---------------------------- 1 ---------------------------
+        if (in_config.cpha != 0x0) {  hal_config.doDelay = 1; hal_config.diDelay = 1; }
+        replace with --------------->
+        if (in_config.cpha != 0x0) {  hal_config.doDelay = 0; hal_config.diDelay = 1; } // correct doDelay for cpha=1
+
+        8200876a 19  93           lw         v1,local_3c (sp)
+        8200876c 02  23           beqz       v1,LAB_82008772
+        8200876e 07  d2           sw         v0,hal_config.doDelay (sp)
+        82008770 08  d2           sw         v0,hal_config.diDelay (sp)
+        replace with --------------->
+        8200876a 19  93           lw         v1,local_3c (sp)
+        8200876c 02  23           beqz       v1,LAB_82008772
+        8200876e 00  65           nop
+        82008770 08  d2           sw         v0,hal_config.diDelay (sp)
+
+        ---------------------------- 2 ---------------------------
+  		if (config.dataBits == 16) hal_config.frameSize = 16; 
+  		replace with --------------->
+  		if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
+
+        820087d4 16  92           lw         dataBits ,hal_config +0x48 (sp)
+        820087d6 10  72           cmpi       dataBits ,16
+        820087d8 02  61           btnez      LAB_820087de
+        820087da 10  6c           li         in_id ,16
+        820087dc 0b  d4           sw         in_id ,hal_config.frameSize (sp)
+        replace with --------------->
+        820087d4 19  92           lw         dataBits ,0x64 (sp)
+        820087d6 00  72           cmpi       dataBits ,0x0
+        820087d8 02  61           btnez      LAB_820087de
+        820087da 02  6c           li         in_id ,0x2
+        820087dc 08  d4           sw         in_id ,0x20 (sp)
+       */
+    }    
 
     self->state = MACHINE_HW_SPI_STATE_INIT;
     _spi_debug(self, "SPI%d_CS%d inited", self->id, self->cs);
@@ -402,8 +579,8 @@ mp_obj_t machine_hw_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_
             args[i].u_int = defaults[i - ARG_baudrate];
         }
     }
-    if (args[ARG_dma_delay].u_int < 2 || args[ARG_dma_delay].u_int > 100000) {
-    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 2 and 100000"));
+    if (args[ARG_dma_delay].u_int < 1 || args[ARG_dma_delay].u_int > 100) {
+    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 1 and 100"));
     }
 
     machine_hw_spi_obj_t *self = &machine_hw_spi_obj[spi_id];

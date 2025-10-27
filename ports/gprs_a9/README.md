@@ -283,7 +283,7 @@ Version: November 12, 2010 for Arduino platform.
   * `id`: SPI ID. Can be 1 or 2;
   * `cs`: SPI CS. Can be 0 or 1;
   * `baudrate`: SPI frequency. Less or equal to 11000000. Default 10000000;
-  * `dma_delay`: delay in us after writing and before reading SPI interface. Default 4us;
+  * `dma_delay`: delay in us after writing and before reading SPI interface. Default 20us / per sending byte;
   * `debug`: print debug messages to MPY;
   * `debug_hst`: print debug messages to A9 diagnostic port;
   * `other parameters`: see [micropython docs](https://docs.micropython.org/en/latest/library/machine.SPI.html) for details;

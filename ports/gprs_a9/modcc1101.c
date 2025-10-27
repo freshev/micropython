@@ -304,16 +304,16 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_id, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = SPI1 } },
         { MP_QSTR_cs, MP_ARG_INT, {.u_int = SPI_CS_0 } },
-        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 10000000} }, // 10 MHz default
+        { MP_QSTR_baudrate, MP_ARG_INT, {.u_int = 5000000} }, // 5MHz default
         { MP_QSTR_polarity, MP_ARG_INT, {.u_int = 0 } },
-        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 1 } },  // not default!
+        { MP_QSTR_phase, MP_ARG_INT, {.u_int = 0 } },  
         { MP_QSTR_bits, MP_ARG_INT, {.u_int = SPI_DATA_BITS_8 } },
         { MP_QSTR_firstbit, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -1} },
         { MP_QSTR_sck,      MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_mode,     MP_ARG_INT, {.u_int = 1 }},
-        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 25 } },
+        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 70 } },
         { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
     };
@@ -363,8 +363,8 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         default: mp_raise_ValueError(MP_ERROR_TEXT("Unknown mode argument")); return mp_const_none;
     }
 
-    if (args[ARG_dma_delay].u_int < 2 || args[ARG_dma_delay].u_int > 100000) {
-    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 2 and 100000"));
+    if (args[ARG_dma_delay].u_int < 1 || args[ARG_dma_delay].u_int > 100) {
+    	mp_raise_msg_varg(&mp_type_ValueError, MP_ERROR_TEXT("dma_delay should be between 1 and 100"));
     } else {
     	self->dma_delay = args[ARG_dma_delay].u_int;
   	}

@@ -4,6 +4,7 @@ hex
 
 version/
 fota/
+old/
 modules/settings.py
 modules/filesys.py
 modules/uota.py

@@ -96,11 +96,12 @@ void mp_hal_delay_ms(uint32_t ms) {
 }
 
 void mp_hal_delay_us(uint32_t us) {
-    uint64_t start = clock();
+    /*uint64_t start = clock();
     while (((uint64_t)clock() - start) * 1000 < us * CLOCKS_PER_MSEC) {
         MICROPY_EVENT_POLL_HOOK
         OS_SleepUs(1);
-    }
+    }*/
+    OS_SleepUs(us);
 }
 
 void mp_hal_delay_us_fast(uint32_t us) {
