@@ -124,8 +124,7 @@ typedef struct {
     HAL_SYS_FREQ_T              requiredSysFreq;
 } HAL_SPI_PROP_T;
 
-// #define errno (*((int *) 0x820a0cb0))
-HAL_SPI_PROP_T * g_halSpiPropArrayPtr = (HAL_SPI_PROP_T*)((int *) 0x8203dfe4); // 0x8203dfe4
+HAL_SPI_PROP_T * g_halSpiPropArrayPtr = (HAL_SPI_PROP_T*)((int *) 0x8203dfe4); // for debug only
 //------------------------------------------------------------------------------------
 
 typedef struct _machine_hw_spi_obj_t {
@@ -436,8 +435,8 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         };
         if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI DMA init failure");
 
-        /*
-        if(self->debug_hst) {
+        //if(self->debug_hst) 
+        {
             for(int i = 0; i < HAL_SPI_QTY; i++) {
                 HAL_SPI_PROP_T spi = g_halSpiPropArrayPtr[i];
                 Trace_MemBlock(1, (uint8_t*)(g_halSpiPropArrayPtr + i), sizeof(HAL_SPI_PROP_T), 16);
@@ -482,14 +481,17 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
                 Trace(1, "SPI SPI%d end ===============================", i + 1);
                 break; // comment if need more
            }
-       }*/
+       }
 
        /*
         Patch GPRS C SDK via patch-lod.py.
         Attention: doing this patch leads to loosing SPI_DATA_BITS_16 config
+        Patch corrects SPI doDelay and diDelay for different SPI clock phase ("cpha" field in SPI_Config_t)
+        if cpha == 0 doDelay should be 0, diDelay = 2 
+        if cpha == 1 doDelay should be 0, diDelay = 1 
 
         In SPI_Init(...) make following changes:
-        ---------------------------- 1 ---------------------------
+        ---------------------------- first ---------------------------
         if (in_config.cpha != 0x0) {  hal_config.doDelay = 1; hal_config.diDelay = 1; }
         replace with --------------->
         if (in_config.cpha != 0x0) {  hal_config.doDelay = 0; hal_config.diDelay = 1; } // correct doDelay for cpha=1
@@ -504,7 +506,7 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
         8200876e 00  65           nop
         82008770 08  d2           sw         v0,hal_config.diDelay (sp)
 
-        ---------------------------- 2 ---------------------------
+        ---------------------------- second ---------------------------
   		if (config.dataBits == 16) hal_config.frameSize = 16; 
   		replace with --------------->
   		if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
