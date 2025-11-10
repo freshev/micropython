@@ -313,7 +313,7 @@ mp_obj_t cc1101_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_mode,     MP_ARG_INT, {.u_int = 1 }},
-        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 70 } },
+        { MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 2 } },
         { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
         { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
     };

@@ -40,6 +40,10 @@
 #include "modmachine.h"
 #include "extmod/modmachine.h"
 
+// Uncomment to see HAL SPI info when call SPI_Init(...)
+//#define DEBUG_HAL
+
+#ifdef DEBUG_HAL
 //------------------------------------------------------------------------------------
 // HAL definitions from RDA8955_W17.44_IDH-master\soft\platform\chip\hal\src\hal_spi.c
 //------------------------------------------------------------------------------------
@@ -124,8 +128,9 @@ typedef struct {
     HAL_SYS_FREQ_T              requiredSysFreq;
 } HAL_SPI_PROP_T;
 
-HAL_SPI_PROP_T * g_halSpiPropArrayPtr = (HAL_SPI_PROP_T*)((int *) 0x8203dfe4); // for debug only
+HAL_SPI_PROP_T * g_halSpiPropArrayPtr = (HAL_SPI_PROP_T*)((int *) 0x8203dfe4);
 //------------------------------------------------------------------------------------
+#endif
 
 typedef struct _machine_hw_spi_obj_t {
     mp_obj_base_t base;
@@ -187,7 +192,7 @@ static const mp_arg_t spi_allowed_args[] = {
     { MP_QSTR_mosi,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
     { MP_QSTR_miso,     MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },    
     { MP_QSTR_mode,     MP_ARG_INT, {.u_int = 1 } },
-	{ MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 25 } },
+	{ MP_QSTR_dma_delay, MP_ARG_INT, {.u_int = 2 } },
     { MP_QSTR_debug, MP_ARG_INT, {.u_int = 0 } },
     { MP_QSTR_debug_hst, MP_ARG_INT, {.u_int = 0 } },
 };
@@ -434,96 +439,97 @@ static void machine_hw_spi_init_internal(machine_hw_spi_obj_t *self, mp_arg_val_
             .irqMask = {0,0,0,0,0}
         };
         if(!SPI_Init(self->id, config)) mp_raise_SPIError("SPI DMA init failure");
+    }
+     
+#ifdef DEBUG_HAL
+    for(int i = 0; i < HAL_SPI_QTY; i++) {
+        HAL_SPI_PROP_T spi = g_halSpiPropArrayPtr[i];
+        Trace_MemBlock(1, (uint8_t*)(g_halSpiPropArrayPtr + i), sizeof(HAL_SPI_PROP_T), 16);
+        Trace(1, "SPI SPI%d start ===============================", i + 1);
+    	for(int j = 0; j < HAL_SPI_CS_MAX_QTY; j++) {
+        	HAL_SPI_SETTINGS_T cfg = spi.cfg[j];
+    		Trace(1, "SPI SPI%d_CS%d", i + 1, j);
+    		Trace(1, "SPI -------------------------");
+        	Trace(1, "SPI cfg ctrl");
+        	Trace(1, "SPI cfg ctrl ENABLE      : 0x%01X", (cfg.ctrl >> 0) & 1);
+        	Trace(1, "SPI cfg ctrl enabledCS   : 0x%01X", (cfg.ctrl >> 1) & 3);
+        	// skip bit ?
+        	Trace(1, "SPI cfg ctrl inputEn     : 0x%01X", (cfg.ctrl >> 4) & 1);
+        	Trace(1, "SPI cfg ctrl clkFallEdge : 0x%01X", (cfg.ctrl >> 5) & 1);
+        	Trace(1, "SPI cfg ctrl clkDelay    : 0x%01X", (cfg.ctrl >> 6) & 3);
+        	Trace(1, "SPI cfg ctrl doDelay     : 0x%01X", (cfg.ctrl >> 8) & 3);
+        	Trace(1, "SPI cfg ctrl diDelay     : 0x%01X", (cfg.ctrl >> 10) & 3);
+        	Trace(1, "SPI cfg ctrl csDelay     : 0x%01X", (cfg.ctrl >> 12) & 3);
+        	Trace(1, "SPI cfg ctrl csPulse     : 0x%01X", (cfg.ctrl >> 14) & 3);
+        	Trace(1, "SPI cfg ctrl frameSize   : 0x%01X", ((cfg.ctrl >> 16) & 0x1F) + 1);
+        	Trace(1, "SPI cfg ctrl oeRatio     : 0x%01X", (cfg.ctrl >> 24) & 0x1F);
+        	Trace(1, "SPI cfg ctrl inputSel    : 0x%01X", (cfg.ctrl >> 30) & 3);
+        	
+        	Trace(1, "SPI cfg cfg : 0x%08X", cfg.cfg);
+        	Trace(1, "SPI cfg rxMode: 0x%04X", cfg.rxMode);
+        	Trace(1, "SPI cfg txMode: 0x%04X", cfg.txMode);
+        	Trace(1, "SPI cfg freq: %d", cfg.freq);
+        	Trace(1, "SPI cfg bytesPerFrame: %d", cfg.bytesPerFrame);
+        	Trace(1, "SPI cfg irqHandler: %p", cfg.irqHandler);
+        	Trace(1, "SPI cfg irqMask: 0x%04X", cfg.irqMask);
+        	break; // comment if need more
+        }
+        Trace(1, "SPI -----------------------");
+        Trace(1, "SPI ctrl: 0x%08X", spi.ctrl);
+        Trace(1, "SPI rxIfcCh: 0x%02X", spi.rxIfcCh);
+        Trace(1, "SPI txIfcCh: 0x%02X", spi.txIfcCh);
+        Trace(1, "SPI rxMode: 0x%04X (%d)", spi.rxMode, sizeof(spi.rxMode));
+        Trace(1, "SPI txMode: 0x%04X (%d)", spi.txMode, sizeof(spi.txMode));
+        Trace(1, "SPI activeStatus: 0x%04X (%d)", spi.activeStatus, sizeof(spi.activeStatus));
+        Trace(1, "SPI irqHandler: %p", spi.irqHandler);
+        Trace(1, "SPI requiredSysFreq: %d (%d)", spi.requiredSysFreq, sizeof(spi.requiredSysFreq));
+        Trace(1, "SPI SPI%d end ===============================", i + 1);
+        break; // comment if need more
+    }
+    
+    /*
+    Patch GPRS C SDK via patch-lod.py.
+    Attention: doing this patch leads to loosing SPI_DATA_BITS_16 config
+    Patch corrects SPI doDelay and diDelay for different SPI clock phase ("cpha" field in SPI_Config_t)
+    if cpha == 0 doDelay should be 0, diDelay = 2 
+    if cpha == 1 doDelay should be 0, diDelay = 1 
 
-        //if(self->debug_hst) 
-        {
-            for(int i = 0; i < HAL_SPI_QTY; i++) {
-                HAL_SPI_PROP_T spi = g_halSpiPropArrayPtr[i];
-                Trace_MemBlock(1, (uint8_t*)(g_halSpiPropArrayPtr + i), sizeof(HAL_SPI_PROP_T), 16);
-                Trace(1, "SPI SPI%d start ===============================", i + 1);
-            	for(int j = 0; j < HAL_SPI_CS_MAX_QTY; j++) {
-                	HAL_SPI_SETTINGS_T cfg = spi.cfg[j];
-            		Trace(1, "SPI SPI%d_CS%d", i + 1, j);
-            		Trace(1, "SPI -------------------------");
-                	Trace(1, "SPI cfg ctrl");
-                	Trace(1, "SPI cfg ctrl ENABLE      : 0x%01X", (cfg.ctrl >> 0) & 1);
-                	Trace(1, "SPI cfg ctrl enabledCS   : 0x%01X", (cfg.ctrl >> 1) & 3);
-                	// skip bit ?
-                	Trace(1, "SPI cfg ctrl inputEn     : 0x%01X", (cfg.ctrl >> 4) & 1);
-                	Trace(1, "SPI cfg ctrl clkFallEdge : 0x%01X", (cfg.ctrl >> 5) & 1);
-                	Trace(1, "SPI cfg ctrl clkDelay    : 0x%01X", (cfg.ctrl >> 6) & 3);
-                	Trace(1, "SPI cfg ctrl doDelay     : 0x%01X", (cfg.ctrl >> 8) & 3);
-                	Trace(1, "SPI cfg ctrl diDelay     : 0x%01X", (cfg.ctrl >> 10) & 3);
-                	Trace(1, "SPI cfg ctrl csDelay     : 0x%01X", (cfg.ctrl >> 12) & 3);
-                	Trace(1, "SPI cfg ctrl csPulse     : 0x%01X", (cfg.ctrl >> 14) & 3);
-                	Trace(1, "SPI cfg ctrl frameSize   : 0x%01X", ((cfg.ctrl >> 16) & 0x1F) + 1);
-                	Trace(1, "SPI cfg ctrl oeRatio     : 0x%01X", (cfg.ctrl >> 24) & 0x1F);
-                	Trace(1, "SPI cfg ctrl inputSel    : 0x%01X", (cfg.ctrl >> 30) & 3);
-                	
-                	Trace(1, "SPI cfg cfg : 0x%08X", cfg.cfg);
-                	Trace(1, "SPI cfg rxMode: 0x%04X", cfg.rxMode);
-                	Trace(1, "SPI cfg txMode: 0x%04X", cfg.txMode);
-                	Trace(1, "SPI cfg freq: %d", cfg.freq);
-                	Trace(1, "SPI cfg bytesPerFrame: %d", cfg.bytesPerFrame);
-                	Trace(1, "SPI cfg irqHandler: %p", cfg.irqHandler);
-                	Trace(1, "SPI cfg irqMask: 0x%04X", cfg.irqMask);
-                	break; // comment if need more
-                }
-                Trace(1, "SPI -----------------------");
-                Trace(1, "SPI ctrl: 0x%08X", spi.ctrl);
-                Trace(1, "SPI rxIfcCh: 0x%02X", spi.rxIfcCh);
-                Trace(1, "SPI txIfcCh: 0x%02X", spi.txIfcCh);
-                Trace(1, "SPI rxMode: 0x%04X (%d)", spi.rxMode, sizeof(spi.rxMode));
-                Trace(1, "SPI txMode: 0x%04X (%d)", spi.txMode, sizeof(spi.txMode));
-                Trace(1, "SPI activeStatus: 0x%04X (%d)", spi.activeStatus, sizeof(spi.activeStatus));
-                Trace(1, "SPI irqHandler: %p", spi.irqHandler);
-                Trace(1, "SPI requiredSysFreq: %d (%d)", spi.requiredSysFreq, sizeof(spi.requiredSysFreq));
-                Trace(1, "SPI SPI%d end ===============================", i + 1);
-                break; // comment if need more
-           }
-       }
+    In SPI_Init(...) make following changes:
+    ---------------------------- first ---------------------------
+    if (in_config.cpha != 0x0) {  hal_config.doDelay = 1; hal_config.diDelay = 1; }
+    replace with --------------->
+    if (in_config.cpha != 0x0) {  hal_config.diDelay = 1; } // correct doDelay = 0 for cpha=1
 
-       /*
-        Patch GPRS C SDK via patch-lod.py.
-        Attention: doing this patch leads to loosing SPI_DATA_BITS_16 config
-        Patch corrects SPI doDelay and diDelay for different SPI clock phase ("cpha" field in SPI_Config_t)
-        if cpha == 0 doDelay should be 0, diDelay = 2 
-        if cpha == 1 doDelay should be 0, diDelay = 1 
+    8200876c 02  23           beqz       v1,LAB_82008772
+    8200876e 07  d2           sw         v0,hal_config.doDelay (sp)
+    82008770 08  d2           sw         v0,hal_config.diDelay (sp)
+    82008772 14  96           lw         in_config_txMode ,hal_config +0x40 (sp)
+    replace with --------------->
+    8200876c 02  23           beqz       v1,LAB_82008772
+    8200876e 00  65           nop
+    82008770 08  d2           sw         v0,hal_config.diDelay (sp)
+    82008772 14  96           lw         in_config_txMode ,hal_config +0x40 (sp)
 
-        In SPI_Init(...) make following changes:
-        ---------------------------- first ---------------------------
-        if (in_config.cpha != 0x0) {  hal_config.doDelay = 1; hal_config.diDelay = 1; }
-        replace with --------------->
-        if (in_config.cpha != 0x0) {  hal_config.doDelay = 0; hal_config.diDelay = 1; } // correct doDelay for cpha=1
+    ---------------------------- second ---------------------------
+  	if (config.dataBits == 16) hal_config.frameSize = 16; 
+  	replace with --------------->
+  	if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
 
-        8200876a 19  93           lw         v1,local_3c (sp)
-        8200876c 02  23           beqz       v1,LAB_82008772
-        8200876e 07  d2           sw         v0,hal_config.doDelay (sp)
-        82008770 08  d2           sw         v0,hal_config.diDelay (sp)
-        replace with --------------->
-        8200876a 19  93           lw         v1,local_3c (sp)
-        8200876c 02  23           beqz       v1,LAB_82008772
-        8200876e 00  65           nop
-        82008770 08  d2           sw         v0,hal_config.diDelay (sp)
-
-        ---------------------------- second ---------------------------
-  		if (config.dataBits == 16) hal_config.frameSize = 16; 
-  		replace with --------------->
-  		if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
-
-        820087d4 16  92           lw         dataBits ,hal_config +0x48 (sp)
-        820087d6 10  72           cmpi       dataBits ,16
-        820087d8 02  61           btnez      LAB_820087de
-        820087da 10  6c           li         in_id ,16
-        820087dc 0b  d4           sw         in_id ,hal_config.frameSize (sp)
-        replace with --------------->
-        820087d4 19  92           lw         dataBits ,0x64 (sp)
-        820087d6 00  72           cmpi       dataBits ,0x0
-        820087d8 02  61           btnez      LAB_820087de
-        820087da 02  6c           li         in_id ,0x2
-        820087dc 08  d4           sw         in_id ,0x20 (sp)
-       */
-    }    
+    820087d4 16  92           lw         dataBits ,hal_config +0x48 (sp)
+    820087d6 10  72           cmpi       dataBits ,16
+    820087d8 02  61           btnez      LAB_820087de
+    820087da 10  6c           li         in_id ,16
+    820087dc 0b  d4           sw         in_id ,hal_config.frameSize (sp)
+    820087de 28  37           sll        in_config_rxMode ,spi_id ,0x2
+    replace with --------------->
+    820087d4 19  92           lw         dataBits ,0x64 (sp)
+    820087d6 00  72           cmpi       dataBits ,0x0
+    820087d8 02  61           btnez      LAB_820087de
+    820087da 02  6c           li         in_id ,0x2
+    820087dc 08  d4           sw         in_id ,0x20 (sp)
+    820087de 28  37           sll        in_config_rxMode ,spi_id ,0x2
+    */
+#endif    
 
     self->state = MACHINE_HW_SPI_STATE_INIT;
     _spi_debug(self, "SPI%d_CS%d inited", self->id, self->cs);

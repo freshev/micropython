@@ -23,7 +23,7 @@ if proc_addr == "": print("\tChangeWDPinStateInBoot address %s not found"); sys.
 print ("\tChangeWDPinStateInBoot address = %s" % proc_addr)
 if len(proc_addr) != 8: print("\tChangeWDPinStateInBoot BAD address"); sys.exit(1)
 rev_proc_addr = proc_addr[6:8] + proc_addr[4:6] + proc_addr[2:4] + proc_addr[0:2]
-print ("\tReversed ChangeWDPinStateInBoot address = %s" % rev_proc_addr)
+# print ("\tReversed ChangeWDPinStateInBoot address = %s" % rev_proc_addr)
 
 nop = "0065"
 patch_list = {
@@ -95,6 +95,40 @@ patch_list = {
     0x08107174: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (branch new)", bytearray.fromhex('2104006F'), bytearray.fromhex('21047116')),
     0x08107178: ("Return from SMS_ListMessage_rsp SMS DCS in param1 (set zeros )", bytearray.fromhex('E1DCE2DC'), bytearray.fromhex('006FE2DC')),
 
+    # set correct SPI params doDelay and diDelay (see machine_hw_spi.c)
+    # Attention: doing this patch leads to loosing SPI_DATA_BITS_16 config
+    0x080234AC: ("Set correct SPI params doDelay = 0 for phase = 1 (part 1)", bytearray.fromhex('022307D2'), bytearray.fromhex('02230065')),
+    #    if (in_config.cpha != 0x0) {  hal_config.doDelay = 1; hal_config.diDelay = 1; }
+    #    replace with --------------->
+    #    if (in_config.cpha != 0x0) {  hal_config.diDelay = 1; } // set doDelay = 0 for cpha=1
+    #
+    #    8200876c 02  23           beqz       v1,LAB_82008772
+    #    8200876e 07  d2           sw         v0,hal_config.doDelay (sp)
+    #    replace with --------------->
+    #    8200876c 02  23           beqz       v1,LAB_82008772
+    #    8200876e 00  65           nop
+
+    0x08023514: ("Set correct SPI params diDelay = 2 for phase = 0 (part 1)", bytearray.fromhex('16921072'), bytearray.fromhex('19920072')),
+    0x08023518: ("Set correct SPI params diDelay = 2 for phase = 0 (part 2)", bytearray.fromhex('0261106C'), bytearray.fromhex('0261026C')),
+    0x0802351C: ("Set correct SPI params diDelay = 2 for phase = 0 (part 3)", bytearray.fromhex('0BD42837'), bytearray.fromhex('08D42837')),
+   	#	if (config.dataBits == 16) hal_config.frameSize = 16; 
+    #		replace with --------------->
+  	#	if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
+  	#
+    #    820087d4 16  92           lw         dataBits ,hal_config +0x48 (sp)
+    #    820087d6 10  72           cmpi       dataBits ,16
+    #    820087d8 02  61           btnez      LAB_820087de
+    #    820087da 10  6c           li         in_id ,16
+    #    820087dc 0b  d4           sw         in_id ,hal_config.frameSize (sp)
+    #    820087de 28  37           sll        in_config_rxMode ,spi_id ,0x2
+    #    replace with --------------->
+    #    820087d4 19  92           lw         dataBits ,0x64 (sp)
+    #    820087d6 00  72           cmpi       dataBits ,0x0
+    #    820087d8 02  61           btnez      LAB_820087de
+    #    820087da 02  6c           li         in_id ,0x2
+    #    820087dc 08  d4           sw         in_id ,0x20 (sp)
+    #    820087de 28  37           sll        in_config_rxMode ,spi_id ,0x2
+
 }
 keys_l = sorted(patch_list.keys())
 
@@ -124,7 +158,7 @@ with open(fname, 'r') as f:
                 if address_o < address_o_to:
                     if patching_in_progress is None:
                         patching_in_progress = address_p
-                        print("\tPatching %s" % name)
+                        print("\tPatching: %s" % name)
                     elif patching_in_progress != address_p:
                         raise RuntimeError("Failed to patch 0x{:08x}: overlapping addresses".format(patching_in_progress))
                     current_patch = line_bytes[address_o - address:address_o_to - address]
