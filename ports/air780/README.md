@@ -1,6 +1,7 @@
 # Micropython for Hezhou 4G Cat.1 Air780e (EC618) module
 
 Original module documentation at [OpenLuat](https://docs.openluat.com/air780e/)  
+Development board [Schematic and PCB](https://oshwhub.com/luat/evb_air780x_v1-6)  
 Translated module documentation at [Docs](docs/)
 
 ## Test board 
@@ -189,6 +190,8 @@ The purpose of this module is to have an access to high-level networking (SMS, n
 #### Methods
 
 * `get_imei()` (str): the International Mobile Equipment Identity (IMEI) number;
+* `get_ipv4()` (str): get local IPV4 address;
+* `get_ipv6()` (str): get local IPV6 address;
 * `get_iccid()` (str): the Integrated Circuit Card ID (ICCID) number of the inserted SIM card;
 * `get_imsi()` (str): the International Mobile Subscriber Identity (IMSI) number of the inserted SIM card;
 * `get_network_status()` (int): cellular network status encoded in an integer. **TODO**: Provide bit-wise specs;
@@ -603,7 +606,13 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 * Firmware removes *.py and *.txt files in SOC file system by SMS 'rmall' (configurable).
 * Firmware resets the module by SMS 'reset' (configurable).
 * You can configure module with auto respawned (after delete) `main.py` script from `examples` folder.
-* My Air780EG module often does not boot correctly due to insufficient power from USB.
+* My Air780EG (GPS) module often does not boot correctly due to insufficient power from USB.
 * To run FotaToolkit under Linux the bash script [FotaToolkit](../../lib/luatos-soc-2022/tools/dtools/FotaToolkit) and [deltagen](../../lib/luatos-soc-2022/tools/deltagen) were written.
 * You can deploy BINPKG and FOTA pack files to another folder in compressed or uncompressed form (configurable)
 * When REPL over USB feature used, writing special characters to UART over USB (or soft reboot in MP) conflicts with Luatools (module hangs). Close Luatools window or use REPL over UART1/UART2.
+
+## Known bugs ##
+
+Module freezes when use UART with Luatools running.  
+If build fails with `MP_QSTR_xxx` reason, remove `./build` directory and try again.  
+Feel free to debug and contribute.

@@ -942,6 +942,39 @@ static mp_obj_t modcellular_get_imei(void) {
 
 static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_imei_obj, modcellular_get_imei);
 
+static mp_obj_t modcellular_get_ipv4() {
+    // ========================================
+    // Retrieves the local IP address.
+    // Returns:
+    //     A string with the assigned IP address.
+    // ========================================
+    char ip[INET_ADDRSTRLEN];
+    if (!Network_GetIp(ip, sizeof(ip))) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to retrieve the local IP address"));
+        return mp_const_none;
+    }
+    return mp_obj_new_str(ip, strlen(ip));
+}
+
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv4_obj, modcellular_get_ipv4);
+
+static mp_obj_t modcellular_get_ipv6() {
+    // ========================================
+    // Retrieves the local IP address.
+    // Returns:
+    //     A string with the assigned IP address.
+    // ========================================
+    char ip[INET_ADDRSTRLEN];
+    if (!Network_GetIp(ip, sizeof(ip))) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to retrieve the local IP address"));
+        return mp_const_none;
+    }
+    return mp_obj_new_str(ip, strlen(ip));
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv6_obj, modcellular_get_ipv6);
+
+
+
 static mp_obj_t modcellular_is_sim_present(void) {
     // ========================================
     // Checks whether the SIM card is inserted and ICCID can be retrieved.
@@ -1658,6 +1691,8 @@ static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_SMS), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_type) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_imei), (mp_obj_t)&modcellular_get_imei_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_ipv4), (mp_obj_t)&modcellular_get_ipv4_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_ipv6), (mp_obj_t)&modcellular_get_ipv6_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_signal_quality), (mp_obj_t)&modcellular_get_signal_quality_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_poll_network_exception), (mp_obj_t)&modcellular_poll_network_exception_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_network_status), (mp_obj_t)&modcellular_get_network_status_obj },

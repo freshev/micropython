@@ -8,7 +8,7 @@ import cellular
 import socket
 
 cellular.gprs("internet", "", "")
-print("IP", socket.get_local_ip())
+print("IP", cellular.get_ipv4())
 
 host = "httpbin.org"
 port = 80

@@ -8,7 +8,7 @@ import socket
 import tls
 
 cellular.gprs("internet", "", "")
-print("IP", socket.get_local_ip())
+print("IP", cellular.get_ipv4())
 
 url = "https://httpbin.org/"
 proto, dummy, host, path = url.split('/', 3)

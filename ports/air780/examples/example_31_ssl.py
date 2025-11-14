@@ -7,7 +7,7 @@ import cellular
 import socket
 import ssl
 cellular.gprs("internet", "", "")
-print("IP", socket.get_local_ip())
+print("IP", cellular.get_ipv4())
 host = "httpstat.us"
 port = 443
 s = socket.socket()

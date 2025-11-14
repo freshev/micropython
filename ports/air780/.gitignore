@@ -23,3 +23,4 @@ modules/filesys.py
 modules/uota.py
 modules/boot.py
 examples/main.py
+BurnViaUART/

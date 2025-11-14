@@ -627,22 +627,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
 // Methods
 // -------
 
-static mp_obj_t get_local_ip(void) {
-    // ========================================
-    // Retrieves the local IP address.
-    // Returns:
-    //     A string with the assigned IP address.
-    // ========================================
-    char ip[16];
-    if (!Network_GetIp(ip, sizeof(ip))) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Failed to retrieve the local IP address"));
-        return mp_const_none;
-    }
-    return mp_obj_new_str(ip, strlen(ip));
-}
-
-static MP_DEFINE_CONST_FUN_OBJ_0(get_local_ip_obj, get_local_ip);
-
 static mp_obj_t getaddrinfo(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
     // Translates host/port into arguments to socket constructor.
@@ -799,8 +783,6 @@ static const mp_map_elem_t mp_module_socket_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_socket) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_socket), (mp_obj_t)MP_ROM_PTR(&socket_type) },
-
-    { MP_OBJ_NEW_QSTR(MP_QSTR_get_local_ip), (mp_obj_t)&get_local_ip_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_getaddrinfo), (mp_obj_t)&getaddrinfo_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_inet_ntop), (mp_obj_t)&modsocket_inet_ntop_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_inet_pton), (mp_obj_t)&modsocket_inet_pton_obj },

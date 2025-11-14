@@ -167,6 +167,8 @@ The purpose of this module is to have an access to high-level networking (SMS, G
 #### Methods
 
 * `get_imei()` (str): the International Mobile Equipment Identity (IMEI) number;
+* `get_ipv4()` (str): get local IPV4 address;
+* `get_ipv6()` (str): get local IPV6 address (same as IPV4);
 * `get_iccid()` (str): the Integrated Circuit Card ID (ICCID) number of the inserted SIM card;
 * `get_imsi()` (str): the International Mobile Subscriber Identity (IMSI) number of the inserted SIM card;
 * `get_network_status()` (int): cellular network status encoded in an integer. **TODO**: Provide bit-wise specs;

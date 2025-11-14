@@ -29,6 +29,7 @@
 
 
 #include "luat_network_adapter.h"
+#include "sockets.h"
 #include "ps_lib_api.h"
 #include "modcellular.h"
 
@@ -45,6 +46,9 @@ static int8_t deactivate_flag = 0;
 #define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError(MP_ERROR_TEXT("Network is not available: is SIM card inserted?")); return mp_const_none;}} while(0)
 
 #include "modcellsms.c"
+
+static ip_addr_t ipv4 = {0};
+static ip_addr_t ipv6 = {0};
 
 // Tracks the status on the network
 
@@ -63,9 +67,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
     uint8_t csq, i;
     char imsi[20];
     char iccid[24] = {0};
-    char apn[32] = {0};
-    ip_addr_t ipv4;
-    ip_addr_t ipv6;
+    char apn[32] = {0};    
 
     // if(event != LUAT_MOBILE_EVENT_CELL_INFO) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
     // if(event == 7) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
@@ -354,6 +356,27 @@ static mp_obj_t modcellular_get_imei(size_t n_args, const mp_obj_t *args) {
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imei_obj, 0, 1, modcellular_get_imei);
+
+static mp_obj_t modcellular_get_ipv4() {
+    // ========================================
+    // Retrieves IP v4.
+    // ========================================
+    char ip_string_buffer[INET_ADDRSTRLEN];     
+    inet_ntop(AF_INET, &ipv4.u_addr.ip4, ip_string_buffer, sizeof(ip_string_buffer));
+    return mp_obj_new_str(ip_string_buffer, strlen(ip_string_buffer));
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv4_obj, modcellular_get_ipv4);
+
+static mp_obj_t modcellular_get_ipv6() {
+    // ========================================
+    // Retrieves IP v6.
+    // ========================================
+    char ip_string_buffer[INET6_ADDRSTRLEN]; 
+    inet_ntop(AF_INET6, &ipv6.u_addr.ip6, ip_string_buffer, sizeof(ip_string_buffer));
+    return mp_obj_new_str(ip_string_buffer, strlen(ip_string_buffer));
+}
+static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv6_obj, modcellular_get_ipv6);
+
 
 static mp_obj_t modcellular_is_sim_present(size_t n_args, const mp_obj_t *args) {
     // ========================================
@@ -806,6 +829,8 @@ static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_SMS), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_type) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_imei), (mp_obj_t)&modcellular_get_imei_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_ipv4), (mp_obj_t)&modcellular_get_ipv4_obj },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_get_ipv6), (mp_obj_t)&modcellular_get_ipv6_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_signal_quality), (mp_obj_t)&modcellular_get_signal_quality_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_poll_network_exception), (mp_obj_t)&modcellular_poll_network_exception_obj },
     
