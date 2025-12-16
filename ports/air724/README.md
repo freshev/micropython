@@ -94,6 +94,7 @@ Note the COM port with description `LUAT USB Device 1 AT`
 
 Use [putty](https://www.putty.org/) with this COM.
 
+
 You should see `>>>` micropython prompt.
 
 
