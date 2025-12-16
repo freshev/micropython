@@ -1,0 +1,89 @@
+
+
+Input: base.binpkg, target.binpkg
+
+Processing:
+1) use fcelf to extract info from *.binpkg, producing ap.bin, ap_bootloader.bin, cp-demo-flash.bin, imagedata.json
+ex: fcelf.exe -E -info imagedata.json -input micropython.binpkg
+
+2) for each pair in *.bin files:
+    3) use sha256sum to get sha256
+       ex: sha256sum.exe base\ap.bin
+           sha256sum.exe target\ap.bin
+    4) use deltagen.exe (deltagen in linux - modified bsdiff) to get difference in BSDIFF40 format
+       ex: deltagen base\ap.bin target\ap.bin fota_delta_patch.tmp
+    5) use sha256sum to get sha256 from fota_delta_patch.tmp
+
+3) make delta.par file:
+
+Header part (CustFotaParHdr_t):
+00000000: EC DF            :  pmagic - Magic
+00000002: 20 40 00 00 00 80:  rsvd
+00000008: 47 7B 00 00      :  parLen - Total Par file length
+0000000C: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 : parHash - initially zeroes
+0000000C: AD A5 99 CD 81 FB EE F5 7E 8C C4 24 33 E5 1E 35 88 76 DD C8 44 9E 9A 44 53 38 1A D3 FD 72 D6 53 : parHash (modified) - SHA256 from whole file delta.par
+0000002C: FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF FF 
+0000004C: FF FF FF FF FF FF FF FF:  rsvd2 (0xFF constants)
+
+Patch Part (AP or CP):
+00000054: 
+AP_Normal   = 0x10 + ((f3 << 5) & 0xE0) = 0x40
+AP_Reversed = 0x10 + ((f3 << 5) & 0xE0) = 0x50
+CP_Normal   = 0x01 + ((f3 << 5) & 0xE0) = 0x61
+CP_Reversed = 0x11 + ((f3 << 5) & 0xE0) = 0x71
+
+00000055: 70 00 39   : headlen + 00 + blocks
+
+00000058: F3 7A 00 00: pkgLen - package length (0x70 + size(fota_delta_patch.tmp) )
+0000005C: 00 00 00 00: rsvd2 - always zero
+00000060: 00 40 02 00: AP loading address
+00000064: 7C 35 1C 00: next file size
+00000068: 8C 35 1C 00: base file size
+0000006C: C0 5F 2A 79 5E 8C B8 86 BA B2 29 0D E9 77 B1 9B AE 8B B6 B6 76 E8 94 F6 65 55 FC FF 55 D5 E9 6E : baseFwHash - Sha256 from base
+
+0000008C: 03 24 00 00: constant
+00000090: 27 78 79 03 72 13 43 DD 31 D1 5D E0 B5 1F 47 A0 20 8D 51 1B 3E BD F6 11 C4 D6 D9 44 18 E0 84 DB : Sha256 from next
+000000B0: 00 14      : constant (following max file name length = 18)
+000000B2: 45 43 36 31 38 5F 41 50 2E 70 61 72: "EC618_AP.par"
+000000BE: 00 00 00 00 00 00: "EC618_AP.par" padding zeroes (18 bytes total)
+000000C4: XX XX XX XX: "fota_delta_patch.tmp" content
+
+
+CP Part:
+Third part (CustFotaPkgHdr_t):
+00000054: 61         : [0-5] - rsvd0 [6-8] - fwAttr (=2). FOTA_convToZoneId(fwAttr) -> 4 (zid)
+00000055: 70 00 0F   : rsvd1
+00000058: 2F 05 00 00: pkgLen - package length 
+0000005C: 00 00 00 00: rsvd2 - always zero
+00000060: 00 00 00 00: CP loading address
+00000064: DC 2E 07 00: next file size
+00000068: DC 2E 07 00: base file size
+0000006C: C0 5F 2A 79 5E 8C B8 86 BA B2 29 0D E9 77 B1 9B AE 8B B6 B6 76 E8 94 F6 65 55 FC FF 55 D5 E9 6E : baseFwHash - Sha256 from base
+
+0000008C: 03 24 00 00: constant
+00000090: 27 78 79 03 72 13 43 DD 31 D1 5D E0 B5 1F 47 A0 20 8D 51 1B 3E BD F6 11 C4 D6 D9 44 18 E0 84 DB : Sha256 from next
+000000B0: 00 14      : constant (following max file name length = 18)
+000000B2: 45 43 36 31 38 5F 41 50 2E 70 61 72: "EC618_CP.par"
+000000BE: 00 00 00 00 00 00: "EC618_CP.par" padding zeroes (18 bytes total)
+000000C4: XX XX XX XX: "fota_delta_patch.tmp" content
+
+
+---------------------------------------------------------
+Internal FOTA Toolkit header parameters for AP and CP
+---------------------------------------------------------
+
+f1 f2 f3 f4   loading_addr   max_file_size   revFlag  blocks   headlen  flag0F   filename[0x108] filesize[4] filehash[0x20]
+0  1  2  3    4  5  6  7     8  9  10 11     12       13       14       15
+                                                              
+EC618_AP.par:                                  
+01 00 02 00   00 40 02 00    00 00 2E 00     00       00       70       0F       tmp\base\ap.bin            ... tmp\next/ap.bin            ... tmp\fota_delta_patch.tmp ... tmp\EC618_AP.par
+EC618_CP.par:                                  
+01 01 03 00   00 00 00 00    00 00 08 00     00       00       70       0F       tmp\base\cp-demo-flash.bin ... tmp\next/cp-demo-flash.bin ... tmp\fota_delta_patch.tmp ... tmp\EC618_CP.par
+
+f1 - usePCUFlag
+f2 - AP or CP part enum (from 0 to 15, 0 - AP, 1 - CP)
+f3 - ?
+f4 - ?
+flag0F - useBCUFlag
+
+

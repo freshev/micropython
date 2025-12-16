@@ -1,0 +1,8 @@
+python36.zip
+.
+..\..\..\tools
+..\..\..\..\..\tools
+..\..\..\..\..\py
+
+# Uncomment to run site.main() automatically
+#import site

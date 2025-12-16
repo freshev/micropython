@@ -1,0 +1,431 @@
+#!/usr/bin/bash
+
+#echo $1 # -d 
+#echo $2 # ../ec_618.json
+#echo $3 # BINPKG
+#echo $4 # .././fota/Air780_v1.0_to_v1.3.pack
+#echo $5 # .././version/Air780_micropython_v1.0.binpkg
+#echo $6 # .././version/Air780_micropython_v1.3.binpkg
+
+terminate() {
+    echo "Terminated..."
+    PFILE="./EC618_AP.par.done"
+    if [ ! -f ${PFILE} ]; then
+        touch ${PFILE};
+    fi
+    PFILE="./EC618_CP.par.done"
+    if [ ! -f ${PFILE} ]; then
+        touch ${PFILE};
+    fi
+    PFILE="./EC618_FINAL.pack.done"
+    if [ ! -f ${PFILE} ]; then
+        touch ${PFILE};
+    fi
+    exit
+}
+trap 'terminate' SIGINT SIGTERM
+
+
+le32() {
+  v=`awk -v n=$1 'BEGIN{printf "%08X", n;}'`
+  echo -n -e "\\x${v:6:2}\\x${v:4:2}\\x${v:2:2}\\x${v:0:2}" >> $2
+}
+
+be16() { 
+  v=`awk -v n=$1 'BEGIN{printf "%04X", n;}'`
+  echo -n -e "\\x${v:0:2}\\x${v:2:2}" >> $2
+}
+be32() { 
+  v=`awk -v n=$1 'BEGIN{printf "%08X", n;}'`
+  echo -n -e "\\x${v:0:2}\\x${v:2:2}\\x${v:4:2}\\x${v:6:2}" >> $2
+}
+
+lesha() {
+  #echo "lesha $1 to $2"
+  p=$1
+  (for i in {0..31}; do
+    v=$((${i}*2))
+    echo -n -e "\\x${p:v:2}" >> $2
+  done)
+}
+leshazero() {
+  (for i in {0..31}; do
+    echo -n -e "\\x00" >> $1
+  done)
+}
+leshaff() {
+  (for i in {0..31}; do
+    echo -n -e "\\xFF" >> $1
+  done)
+}
+
+
+# $1 - fota_delta_patch.tmp
+# $2 - EC618_AP.par or EC618_CP.par
+# $3 - base file name
+# $4 - next file name
+make_par() {
+    # EC DF :  pmagic - Magic
+    # 20 40 00 00 00 80:  rsvd
+    be32 3974045760 $2
+    be32 128 $2
+
+    # total par file length
+    PSIZE=$(stat -c%s "$1")
+    le32 $(($PSIZE + 196)) $2
+
+    # par Sha256sum - initially zeroes
+    leshazero $2
+    # reserved (not used) sha256sum
+    leshaff $2
+
+    # rsvd2
+    le32 4294967295 $2
+    le32 4294967295 $2
+
+    # get normal or reversed
+    FLAG=$(xxd -p -l1 -s 12 $1)
+    # echo "FLAG=${FLAG}"
+
+    # get block count
+    BLOCKS=$((16#$(xxd -p -l1 -s 4 $1)))
+    # echo "BLOCKS=${BLOCKS}"
+
+    FLAGDONE=0
+    if [[ "$2" == "EC618_AP.par" && "$FLAG" == "4e" ]]; then
+      le32 $(($BLOCKS * 16777216 + 28736)) $2 # AP Normal = 40 70 00 blocks
+      FLAGDONE=1
+    fi
+
+    if [[ "$2" == "EC618_AP.par" && "$FLAG" == "52" ]]; then
+      le32 $(($BLOCKS * 16777216 + 28752)) $2 # AP Reversed = 50 70 00 blocks
+      FLAGDONE=1
+    fi
+
+    if [[ "$2" == "EC618_CP.par" && "$FLAG" == "4e" ]]; then
+      le32 $(($BLOCKS * 16777216 + 28769)) $2 # CP Normal = 61 70 00 blocks
+      FLAGDONE=1
+    fi
+
+    if [[ "$2" == "EC618_CP.par" && "$FLAG" == "52" ]]; then
+      le32 $(($BLOCKS * 16777216 + 28785)) $2 # CP Reversed = 71 70 00 blocks
+      FLAGDONE=1
+    fi
+
+    if [[ ${FLAGDONE} -eq 0 ]]; then
+       echo "patch file not recognized. Terminating..."
+       return
+    fi
+
+    # package length (0x70 + size(fota_delta_patch.tmp) )
+    le32 $(($PSIZE + 112)) $2
+
+    # zeros
+    le32 0 $2
+
+    if [[ "$2" == "EC618_AP.par" ]]; then
+      le32 147456 $2 # AP loading address 00 40 02 00
+    fi
+
+    if [[ "$2" == "EC618_CP.par" ]]; then
+      le32 0 $2 # CP loading address 00 00 00 00
+    fi
+
+    BASEBINSIZE=$(stat -c%s $3)
+    NEXTBINSIZE=$(stat -c%s $4)
+
+    le32 $NEXTBINSIZE $2
+    le32 $BASEBINSIZE $2
+
+    BASESHA=$(../dep/sha256sum $3 )
+    BASESHA=$(echo "$BASESHA" | cut -d " " -f 1)
+    lesha $BASESHA $2
+
+    # 03 24 00 00
+    le32 9219 $2
+
+    NEXTSHA=$(../dep/sha256sum $4)
+    NEXTSHA=$(echo "$NEXTSHA" | cut -d " " -f 1)
+    lesha $NEXTSHA $2
+
+    # 00 14 EC618_XX.par 00 00 00 00 00 00
+    be16 20 $2
+    echo -n -e $2 >> $2
+    be16 0 $2
+    be32 0 $2
+
+    cat $1 >> $2
+    return ${BLOCKS}
+}
+
+update_par() {
+    PARSHA=$(../dep/sha256sum ./$1)
+    PARSHA=$(echo "$PARSHA" | cut -d " " -f 1)
+    echo " sha256: $PARSHA(64)"
+
+    dd if=./$1 of=./$1.p1 bs=1 count=12 2>/dev/null
+    dd if=./$1 of=./$1.p3 bs=1 skip=44 2>/dev/null
+    cat ./$1.p1 > ./$1.p0
+    lesha $PARSHA ./$1.p0
+    cat ./$1.p3 >> ./$1.p0
+    rm ./$1.p1
+    rm ./$1.p3
+    mv ./$1.p0 ./$1
+}
+
+# $1 - output pack file name
+make_pack() {
+    # total Pack file length
+    TSIZE=0
+    TCOUNT=0
+    for i in *.par; do
+        [ -f "$i" ] || break
+        PSIZE=$(stat -c%s "$i")
+        TSIZE=$((TSIZE + PSIZE - 84))
+        TCOUNT=$((TCOUNT + 1))
+        dd if=$i of=$i.tmp bs=1 skip=84 2>/dev/null
+    done
+
+    # EC DF :  pmagic - Magic
+    # 20 41 00 00 00 80:  rsvd
+    be32 $((3974045759 + TCOUNT)) $1
+    be32 128 $1
+
+    le32 $(($TSIZE + 84)) $1
+
+    # par Sha256sum - initially zeroes
+    leshazero $1
+    # reserved (not used) sha256sum
+    leshaff $1
+
+    # rsvd2
+    le32 4294967295 $1
+    le32 4294967295 $1
+
+    for i in *.par; do
+        [ -f "$i" ] || break
+        cat $i.tmp >> $1
+        rm $i.tmp
+    done
+    return $TCOUNT
+}
+
+
+echo "(E) Welcome to EiGENCOMM D-FOTA Toolkit, Today is " `date`
+echo "  ___      _____ ___ _____  _     "
+echo " | _ \    |  ___/ _ \_   _|/ \    "
+echo " || \| -- | |_  || || | | / _ \   "
+echo " ||_/| -- |  _| ||_|| | |/ ___ \  "
+echo " |___/    |_|   \___/ |_/_/   \_\ "
+echo ""
+echo " (C) Copyright 2025, All Rights Reserved. "
+echo " (V) Version(1.0), Built @Jul 13 2025"
+echo ""
+
+
+if [[ $1 != "-d" ]]; then
+   echo "Only -d parameter supported"; \
+   exit
+fi
+
+if [ ! -f $2 ]; then
+   echo "Config file not exists"; \
+   exit
+fi
+
+if [[ $3 != "BINPKG" ]]; then
+   echo "Only BINPKG parameter supported"; \
+   exit
+fi
+
+if [ -f $4 ]; then
+   rm $4
+fi
+
+if [ ! -f $5 ]; then
+   echo "Old file (baseBin file) not exists"; \
+   exit
+fi
+
+if [ ! -f $6 ]; then
+   echo "New file (targetBin file) not exists"; \
+   exit
+fi
+
+if [ ! -d ./tmp ]; then
+    mkdir ./tmp
+fi
+
+if [ ! -d ./tmp/base ]; then
+    mkdir ./tmp/base
+fi
+
+if [ ! -d ./tmp/next ]; then
+    mkdir ./tmp/next
+fi
+
+cp $5 ./tmp/base/base.binpkg
+cp $6 ./tmp/next/next.binpkg
+
+cd ./tmp/base
+../.././dep/fcelf -E -info imagedata.json -input ./base.binpkg
+rm ./base.binpkg
+cd ../next
+../.././dep/fcelf -E -info imagedata.json -input ./next.binpkg
+rm ./next.binpkg
+cd ../
+
+APFILE="EC618_AP.par"
+echo " <EC618 AP IMAGE>:"
+echo " target delta: ${APFILE}"
+echo " loading addr: 0x00024000"
+
+BASEAPBINSIZE=$(stat -c%s ./base/ap.bin)
+NEXTAPBINSIZE=$(stat -c%s ./next/ap.bin)
+echo " base/ap.bin size: $BASEAPBINSIZE bytes"
+echo " next/ap.bin size: $NEXTAPBINSIZE bytes"
+
+BASEAPSHA=$(../dep/sha256sum ./base/ap.bin)
+BASEAPSHA=$(echo "$BASEAPSHA" | cut -d " " -f 1)
+NEXTAPSHA=$(../dep/sha256sum ./next/ap.bin)
+NEXTAPSHA=$(echo "$NEXTAPSHA" | cut -d " " -f 1)
+
+echo " sha256: $BASEAPSHA(64)"
+echo " sha256: $NEXTAPSHA(64)"
+
+APBLOCKS=0
+CPBLOCKS=0
+
+if [[ "$BASEAPSHA" != "$NEXTAPSHA" ]]; then
+    echo " try creating \"${APFILE}\"..."
+    echo -n " "
+    if [ -f ./${APFILE} ] ; then
+        rm ./${APFILE}
+    fi
+    (for i in {1..100}; do
+        if [ -f ./${APFILE}.done ] ; then
+            rm ./${APFILE}.done
+            break
+        fi
+        echo -n "###"
+        sleep 1
+    done)&
+    ../dep/deltagen ./base/ap.bin ./next/ap.bin fota_delta_patch.tmp
+    make_par fota_delta_patch.tmp ${APFILE} ./base/ap.bin ./next/ap.bin
+    APBLOCKS=$?
+    touch ./${APFILE}.done
+    sleep 1
+    echo " "
+    PSIZE=$(stat -c%s "${APFILE}")
+    echo " done! -> ${APFILE} size: ${PSIZE} bytes"
+    update_par ${APFILE}
+else
+    echo " same images! no delta(*.par) will be created!"
+fi
+
+CPFILE="EC618_CP.par"
+echo " <EC618 СP IMAGE>:"
+echo " target delta: ${CPFILE}"
+echo " loading addr: 0x00000000"
+
+BASECPBINSIZE=$(stat -c%s ./base/cp-demo-flash.bin)
+NEXTCPBINSIZE=$(stat -c%s ./next/cp-demo-flash.bin)
+echo " base/cp-demo-flash.bin size: $BASECPBINSIZE bytes"
+echo " next/cp-demo-flash.bin size: $NEXTCPBINSIZE bytes"
+
+BASECPSHA=$(../dep/sha256sum ./base/cp-demo-flash.bin)
+BASECPSHA=$(echo "$BASECPSHA" | cut -d " " -f 1)
+NEXTCPSHA=$(../dep/sha256sum ./next/cp-demo-flash.bin)
+NEXTCPSHA=$(echo "$NEXTCPSHA" | cut -d " " -f 1)
+
+echo " sha256: $BASECPSHA(64)"
+echo " sha256: $NEXTCPSHA(64)"
+
+if [[ "$BASECPSHA" != "$NEXTCPSHA" ]]; then
+    echo " try creating \"${CPFILE}\"..."
+    echo -n " "
+    if [ -f ./${CPFILE} ] ; then
+        rm ./${CPFILE}
+    fi
+    (for i in {1..100}; do
+        if [ -f ./${CPFILE}.done ] ; then
+            rm ./${CPFILE}.done
+            break
+        fi
+        echo -n "###"
+        sleep 1
+    done)&
+    ../dep/deltagen ./base/cp-demo-flash.bin ./next/cp-demo-flash.bin fota_delta_patch.tmp
+    make_par fota_delta_patch.tmp ${CPFILE} ./base/cp-demo-flash.bin ./next/cp-demo-flash.bin
+    CPBLOCKS=$?
+    touch ./${CPFILE}.done
+    sleep 1
+    echo " "
+    PSIZE=$(stat -c%s "${CPFILE}")
+    echo " done! -> ${CPFILE} size: ${PSIZE} bytes"
+    update_par ${CPFILE}
+else
+    echo " same images! no delta(*.par) will be created!"
+fi
+
+PFILE="EC618_FINAL.pack"
+if [[ -f ${APFILE} || -f ${CPFILE} ]]; then
+    echo " try merging  all *.par..."
+    echo -n " "
+    if [ -f ./${PFILE} ] ; then
+        rm ./${PFILE}
+    fi
+    (for i in {1..100}; do
+        if [ -f ${PFILE}.done ] ; then
+            rm ${PFILE}.done
+            break
+        fi
+        echo -n "###"
+        sleep 1
+    done)&
+    make_pack ${PFILE}
+    TCOUNT=$?
+    touch ${PFILE}.done
+    sleep 1
+    echo " "
+    PSIZE=$(stat -c%s "${PFILE}")
+    echo " done! ->> $4 size: ${PSIZE} bytes"
+    update_par ${PFILE}
+
+    mv ${PFILE} ../$4
+
+    echo " "
+    echo " >>> ULTIMATE DELTA(*.par):"
+    echo " * $4"
+    echo " * ${PSIZE} bytes"
+    if [[ "${TCOUNT}" -eq 1 ]]; then
+        echo " * 1 image inside"
+    fi
+    if [[ "${TCOUNT}" -eq 2 ]]; then
+        echo " * 2 images inside"
+    fi
+    TC=1
+    if [[ -f ${APFILE} ]]; then
+       echo "   1> AP image(@0x00824000/${APBLOCKS})"
+       TC=$((TC+1))
+    fi
+    if [[ -f ${CPFILE} ]]; then
+       echo "   1> CP image(@0x00800000/${CPBLOCKS})"
+       TC=$((TC+1))
+    fi
+
+    cd ../
+    rm -f -R "./tmp"
+
+    echo " "
+    echo " >>>>>> SUCC <<<<<<"
+    echo " "
+else
+    cd ../
+    rm -f -R "./tmp"
+
+    echo " no delta(*.par) to be merged!"
+    echo " "
+    echo " >>>>>> FAILURE <<<<<<"
+    echo " "
+fi

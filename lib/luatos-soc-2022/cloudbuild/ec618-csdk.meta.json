@@ -1,0 +1,147 @@
+{
+    "version": 1,
+    "builder": {
+        "chip": {
+            "name": "air101",
+            "io": 18,
+            "memory": {
+                "min": 176,
+                "max": 176,
+                "dft": 176
+            },
+            "layout": {
+                "total": 1900,
+                "fs": {
+                    "min": 112,
+                    "max": 112,
+                    "dft": 112
+                },
+                "rom": {
+                    "min": 1830912,
+                    "max": 1830912,
+                    "dft": 1830912,
+                    "rsize": 271352
+                }
+            },
+            "script": {
+                "min": 64,
+                "max": 256,
+                "dft": 64,
+                "unit": 64
+            }
+        },
+        "sdk": {
+            "presets": [
+                {
+                    "name": "dev",
+                    "value": {
+                        "luatos": "head",
+                        "air101": "head"
+                    }
+                }
+            ]
+        },
+        "component": [
+            {
+                "icon": "zmdi-input-composite",
+                "name": "@CNF",
+                "content": "Configuration items",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "@comment",
+                        "content": "This build function takes more than 5 minutes. If it times out or fails, please try again later. If it continues to fail, please contact technical support.",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "rndis",
+                        "content": "CSDK with RNDIS function does not support low-speed mode",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    }
+                ]
+            },
+            {
+                "icon": "zmdi-input-composite",
+                "name": "@PGCNF",
+                "content": "You can only choose one partition scheme, or select none. Total allocable space 3744k",
+                "rsize": 0,
+                "children": [
+                    {
+                        "name": "PG_APP_2944_FOTA_512_FS_288",
+                        "content": "Default configuration, APP partition 2944k, fota area 512k, file system 288k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_2432_FOTA_512_FS_400",
+                        "content": "Solution 2 APP partition 2432k, fota area 512k, file system 400k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_2816_FOTA_512_FS_416",
+                        "content": "Solution 3 APP partition 2816k, fota area 512k, file system 416k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_2048_FOTA_1568_FS_128",
+                        "content": "Solution 4 APP partition 2048k, fota area 1568k, file system 128k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_3488_FOTA_128_FS_128",
+                        "content": "Solution 5 APP partition 3488k, fota area 128k, file system 128k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_2432_FOTA_512_FS_800",
+                        "content": "Solution 6 APP partition 2432k, fota area 512k, file system 800k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_2760_FOTA_384_FS_600",
+                        "content": "Solution 7 APP partition 2760k, fota area 384k, file system 800k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_3000_FOTA_128_FS_616",
+                        "content": "Solution 8 APP partition 3000k, fota area 128k, file system 616k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "PG_APP_1808_FOTA_1808_FS_128",
+                        "content": "Solution 9 APP partition 1808k, fota area 1808k, file system 128k",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    },
+                    {
+                        "name": "@pgcommet",
+                        "content": "If you need more solutions, please contact sales customization",
+                        "rsize": 3756,
+                        "fsize": 275108,
+                        "dft": false
+                    }
+                ]
+            }
+        ]
+    }
+}

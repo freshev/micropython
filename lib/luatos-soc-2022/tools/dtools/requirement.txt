@@ -1,0 +1,5 @@
+py7zr
+cos-python-sdk-v5
+requests
+cherrypy
+prometheus_client

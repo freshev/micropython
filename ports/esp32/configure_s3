@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# idf.py set-target esp32s3
+idf.py -D MICROPY_BOARD=ESP32_GENERIC_S3 menuconfig

@@ -1,0 +1,5 @@
+freeze("../modules")
+#freeze("$(MPY_DIR)/tools", ("upip.py", "upip_utarfile.py"))
+#freeze("$(MPY_DIR)/ports/gprs_a9/modules", "ntptime.py")
+#include("$(MPY_DIR)/extmod/uasyncio/manifest.py")
+#include("$(MPY_DIR)/extmod/asyncio")

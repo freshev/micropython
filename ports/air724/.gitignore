@@ -1,0 +1,26 @@
+# Other files and folders
+.settings/
+.vscode/
+
+hex/
+old/
+build/
+fota/
+version/
+.xmake/
+Log/
+__py_cache__/
+*.o
+a.bat
+b.bat
+c.bat
+test
+log*.*
+.config
+.config.old
+
+modules/settings.py
+modules/filesys.py
+modules/uota.py
+modules/boot.py
+examples/main.py

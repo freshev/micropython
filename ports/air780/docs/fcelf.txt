@@ -1,0 +1,29 @@
+1) fcelf check (-C or -c) ?
+fcelf -C [bin ] [cfg] [map] [out]
+
+1) extract from *.binpkg
+fcelf.exe -E [-info imagedata.json] [-dir output_dir] -input Air780_micropython.binpkg 
+
+2) merge bin files
+fcelf.exe -M [-input File.bin -addrname FileMacroAddr -flashsize FileMacroSize] -def macroDefFile [ -outfile Air780_micropython.binpkg ] [-SecBoot ?] [-pkgmode Number] [-cpflash ?] [-productname ProductName] [-banoldtool] [-baseaddr ?] [-basesize ?]
+fcelf.exe -m [-input File.bin -addrname FileMacroAddr -flashsize FileMacroSize] -def macroDefFile [ -outfile Air780_micropython.binpkg ] [-SecBoot ?] [-pkgmode Number] [-cpflash ?] [-productname ProductName] [-banoldtool] [-baseaddr ?] [-basesize ?]
+
+fcelf.exe -M -input ap_bootloader.bin -addrname BL_IMG_MERGE_ADDR -flashsize BOOTLOADER_FLASH_LOAD_SIZE \
+             -input ap.bin -addrname  AP_IMG_MERGE_ADDR -flashsize AP_FLASH_LOAD_SIZE \
+             -input cp-demo-flash.bin -addrname CP_IMG_MERGE_ADDR -flashsize CP_FLASH_LOAD_SIZE \
+             -def mem_map.h -outfile Air780_micropython.binpkg
+
+3) test binpkg (-T or -t)
+fcelf.exe -T [bin ?] [size ?] [h ?] [pm?]
+fcelf.exe -T -bin Air780_micropython.binpkg 
+
+4) Unzip file (not ordinary zip) (-X or -x)
+fcelf.exe -X
+fcelf.exe -X file.zip file.unzipped
+
+5) get ProjectName from elf file 
+fcelf.exe -f Air780_micropython.elf
+
+6) check elf file for something ?
+fcelf.exe -g Air780_micropython.elf
+

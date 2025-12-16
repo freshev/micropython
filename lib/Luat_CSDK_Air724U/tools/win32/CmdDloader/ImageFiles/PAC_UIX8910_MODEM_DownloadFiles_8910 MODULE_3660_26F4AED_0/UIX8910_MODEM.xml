@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<BMAConfig>
+	<ProductList>
+		<Product name="UIX8910_MODEM">
+			<SchemeName>UIX8910_MODEM</SchemeName>
+			<RebootByAT>1</RebootByAT>
+			<FlashTypeID>1</FlashTypeID>
+			<Mode>0</Mode>
+			<NVBackup backup="1">
+				<NVItem backup="1" name="Calibration">
+					<ID>0xffffffff</ID>
+					<BackupFlag use="1"/>
+				</NVItem>
+				<NVItem backup="1" name="GSM Calibration">
+					<ID>0x26d</ID>
+					<BackupFlag use="1">
+						<NVFlag check="1" name="Continue"/>
+					</BackupFlag>
+				</NVItem>
+				<NVItem backup="1" name="LTE Calibration">
+					<ID>0x26e</ID>
+					<BackupFlag use="1"/>
+				</NVItem>
+				<NVItem backup="1" name="IMEI">
+					<ID>0xffffffff</ID>
+					<BackupFlag use="1"/>
+				</NVItem>
+			</NVBackup>
+			<Chips enable="0">
+				<ChipItem id="0x2222" name="L2"/>
+				<ChipItem id="0x7777" name="L7"/>
+			</Chips>
+		</Product>
+	</ProductList>
+	<SchemeList>
+		<Scheme name="UIX8910_MODEM">
+			<File>
+				<ID>HOST_FDL</ID>
+				<IDAlias>HOST_FDL</IDAlias>
+				<Type>HOST_FDL</Type>
+				<Block>
+					<Base>0x838000</Base>
+					<Size>0x8000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>1</CheckFlag>
+				<Description>HOST_FDL</Description>
+			</File>
+			<File>
+				<ID>FDL2</ID>
+				<IDAlias>FDL2</IDAlias>
+				<Type>FDL2</Type>
+				<Block>
+					<Base>0x810000</Base>
+					<Size>0x28000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>1</CheckFlag>
+				<Description>FDL2</Description>
+			</File>
+			<File>
+				<ID>PhaseCheck</ID>
+				<IDAlias>PhaseCheck</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0xfe000002</Base>
+					<Size>0x100</Size>
+				</Block>
+				<Flag>0</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>Producting phases information section</Description>
+			</File>
+			<File>
+				<ID>BOOTLOADER</ID>
+				<IDAlias>BOOTLOADER</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0x60000000</Base>
+					<Size>0x10000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>BOOTLOADER</Description>
+			</File>
+			<File>
+				<ID>AP</ID>
+				<IDAlias>AP</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0x60010000</Base>
+					<Size>0x170000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>AP</Description>
+			</File>
+			<File>
+				<ID>APPIMG</ID>
+				<IDAlias>APPIMG</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0x60180000</Base>
+					<Size>0x180000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>APPIMG</Description>
+			</File>
+			<File>
+				<ID>PS</ID>
+				<IDAlias>PS</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0x60560000</Base>
+					<Size>0x280000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>PS</Description>
+			</File>
+			<File>
+				<ID>SFFS</ID>
+				<IDAlias>SFFS</IDAlias>
+				<Type>CODE</Type>
+				<Block>
+					<Base>0x60300000</Base>
+					<Size>0x260000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>SFFS</Description>
+			</File>
+			<File>
+				<ID>FLASH</ID>
+				<IDAlias>FLASH</IDAlias>
+				<Type>EraseFlash</Type>
+				<Block>
+					<Base>0xfe000001</Base>
+					<Size>0x0</Size>
+				</Block>
+				<Flag>0</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>Erase NV</Description>
+			</File>
+			<File>
+				<ID>NV</ID>
+				<IDAlias>NV</IDAlias>
+				<Type>NV</Type>
+				<Block>
+					<Base>0xfe000003</Base>
+					<Size>0x20000</Size>
+				</Block>
+				<Flag>1</Flag>
+				<CheckFlag>0</CheckFlag>
+				<Description>NV</Description>
+			</File>
+		</Scheme>
+	</SchemeList>
+</BMAConfig>

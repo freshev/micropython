@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecfota-ec618-pod
+  namespace: ecfota
+  labels:
+    app: ecfota-ec618-http
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ecfota-ec618-http
+  template:
+    metadata:
+      labels:
+        app: ecfota-ec618-http
+    spec:
+      containers:
+      - image: docker.io/wendal/ecfota-ec618:1.0.4
+        name: ecfota-ec618
+        ports:
+        - containerPort: 9000

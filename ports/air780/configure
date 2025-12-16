@@ -1,0 +1,2 @@
+#!/bin/bash
+~/.local/bin/xmake f --menu $1

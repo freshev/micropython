@@ -1,0 +1,101 @@
+config FW_VERSION
+    string "Firmware version"
+    default "v1.0"
+    help 
+    	Firmware version
+
+config MAIN_STUB_URL
+    string "URL to get main.py from"
+    default ""
+    help 
+    	URL to get main.py from    	
+
+config ZIP_COMPRESS
+    bool "Get main.py from URL in compressed form"
+    default y
+    help 
+    	Get main.py from URL in compressed form
+
+config MAIN_STUB_RESPAWN 
+	bool "Respawned on delete main.py"
+	default y
+	help
+		Respawned on delete main.py
+
+config MAIN_STUB_AUTORUN
+	bool "Auto run main.py on load"
+	default y
+	help
+		Auto run main.py on load
+
+config DHT_MODULE
+    bool "Include DHT module"
+    default y
+    help
+        If this option is enabled, DHT module is included into the board modules.
+
+config CC1101_MODULE
+    bool "Include C1101 module"
+    default y
+    help
+        If this option is enabled, CC1101 module is included into the board modules.
+
+config SMSRESET
+	bool "Reset on SMS 'reset'"
+	default y
+	help
+	    Reset module on incoming SMS 'reset'
+
+config SMSRESETACK
+	bool "Send acknowledge SMS 'Done' on reset"
+	default y
+	help
+		Send acknowledge SMS 'Done' on reset
+
+config SMSCONFIG
+	bool "Set module configiration by SMS" 
+	default y
+	help
+		Set module configiration by SMS
+
+menu "Deploy"
+	config DEPLOY_LOD_FOLDER
+	    string "Deploy LOD to folder"
+        default ""
+		help
+        	Deploy LOD file to folder
+    config DEPLOY_LOD_COMPRESS
+		bool "Deploy LOD in compressed form"
+		default y
+        help
+			Deploy LOD file in compressed form
+	config DEPLOY_FOTA_FOLDER
+	    string "Deploy FOTA pack to folder"
+        default ""
+		help
+        	Deploy FOTA pack to folder
+    config DEPLOY_FOTA_COMPRESS
+		bool "Deploy FOTA pack in compressed form"
+		default n
+        help
+			Deploy FOTA pack file in compressed form
+endmenu
+
+menu "FOTA"
+	config FOTA_USE
+		bool "Use FOTA routines"
+		default y
+		help
+        	Use FOTA routines
+    config FOTA_URL
+        string "FOTA URL"
+        default "https://example.com/firmware_debug_OLDVERSION_to_NEWVERSION.pack"
+        help
+			URL for FOTA
+
+	config FOTA_REMOVE_PY
+	    bool "Remove python files on upgrade"
+	    default y
+		help
+        	Remove python files on upgrade
+endmenu

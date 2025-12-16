@@ -1,0 +1,16 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ecfota-ec618-svc
+  namespace: ecfota
+spec:
+  entryPoints:
+    - websecure
+  routes:
+  - kind: Rule
+    match: Host(`ecfota-ec618.k8s.air32.cn`)
+    services:
+    - name: ecfota-ec618-svc
+      port: 80
+  tls:
+    certResolver: le

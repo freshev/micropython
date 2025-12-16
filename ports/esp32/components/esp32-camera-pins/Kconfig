@@ -1,0 +1,27 @@
+choice
+	prompt "ESP32 Camera Board"
+	default BOARD_ESP32CAM_AITHINKER
+
+	config BOARD_WROVER_KIT
+		bool "ESP32-Wrover CAM Board"
+	config BOARD_ESP32CAM_AITHINKER
+		bool "ESP32CAM AI-Thinker board"
+	config BOARD_ESP32S3_WROOM
+		bool "ESP32-S3 WROOM Board"
+	config BOARD_ESP32S3_GOOUUU
+		bool "GOOUUU ESP32 S3 CAM Board"
+	config BOARD_ESP32CAM_TTGO
+		bool "TTGO T-Journal Board"
+	config BOARD_ESP32CAM_TTGO_PLUS
+		bool "TTGO T-Camera Plus Board"
+	config BOARD_ESP32CAM_TTGO_PIR
+		bool "TTGO T-Camera with PIR Sensor Board"
+	config BOARD_M5_MODEL_A
+		bool "M5-Camera Model A"
+	config BOARD_M5_MODEL_B
+		bool "M5-Camera Model B"
+	config BOARD_M5_STACK
+		bool "M5-Stack ESP32-Camera"
+	config BOARD__ESP_EYE
+		bool "ESP-EYE"
+endchoice

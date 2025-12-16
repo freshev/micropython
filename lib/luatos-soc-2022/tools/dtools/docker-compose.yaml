@@ -1,0 +1,15 @@
+version: '3.2'
+
+services:
+  app:
+    image: wendal/ecfota-ec618:1.0.7
+    # deploy:
+    #   mode: replicated
+    #   replicas: 1
+    #   labels:
+    #     - "traefik.enable=false"
+    #     - "traefik.http.routers.adsb.rule=Host(`ecfota-ec618.wendal.cn`)"
+    #     - "traefik.http.services.adsb.loadbalancer.server.port=9000"
+    ports:
+      - 9000:9000
+      - 8000:8000
