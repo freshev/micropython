@@ -2,9 +2,10 @@
 
 The MicroPython project for A9G, Air780e, Air724UG (v1.26 forked)
 ========================================
-[A9/A9G port](ports/gprs_a9)
-[Air724 port](ports/air724)
-[Air780 port](ports/air780)
+[A9/A9G port](ports/gprs_a9)  
+[Air724 port](ports/air724)  
+[Air780 port](ports/air780)  
+[ESP32 port](ports/esp32)  
 ========================================
 <p align="center">
   <img src="https://github.com/freshev/micropython/blob/master/logo/logo.jpg?raw=true" alt="MicroPython Logo"/>
