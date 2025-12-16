@@ -1,6 +1,10 @@
 [![Unix CI badge](https://github.com/micropython/micropython/actions/workflows/ports_unix.yml/badge.svg)](https://github.com/micropython/micropython/actions?query=branch%3Amaster+event%3Apush) [![STM32 CI badge](https://github.com/micropython/micropython/actions/workflows/ports_stm32.yml/badge.svg)](https://github.com/micropython/micropython/actions?query=branch%3Amaster+event%3Apush) [![Docs CI badge](https://github.com/micropython/micropython/actions/workflows/docs.yml/badge.svg)](https://docs.micropython.org/) [![codecov](https://codecov.io/gh/micropython/micropython/branch/master/graph/badge.svg?token=I92PfD05sD)](https://codecov.io/gh/micropython/micropython)
 
-The MicroPython project for A9/A9G, Air780e, Air724 Soc (v1.26 forked)
+The MicroPython project for A9G, Air780e, Air724UG (v1.26 forked)
+========================================
+[A9/A9G port](ports/gprs_a9)
+[Air724 port](ports/air724)
+[Air780 port](ports/air780)
 ========================================
 <p align="center">
   <img src="https://github.com/freshev/micropython/blob/master/logo/logo.jpg?raw=true" alt="MicroPython Logo"/>
@@ -156,6 +160,7 @@ Main contrubutions:
 * Cut unused libs and binaries from Linux and Windows SDK-s
 * Added new features (and of course bugs). See [A9/A9G](ports/gprs_a9)
 * Added new port for Hezhou 4G Cat.1 Air780e (EC618) SoC. See [Air780](ports/air780) for more details
+* Added new port for Hezhou 4G Cat.1 Air724UG (RDA8910) SoC. See [Air724](ports/air724) for more details
 
 Others:
 * Add ESP-32-CAM module support (with I2C slave mode) to [esp32 port](ports/esp32)
