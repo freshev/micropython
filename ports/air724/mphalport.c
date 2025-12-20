@@ -53,7 +53,7 @@ uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
 }
 
 
-//luat_rtos_task_handle replTimeoutTaskHandle;
+//HANDLE replTimeoutTaskHandle;
 //void mp_repl_timeout_task(void *param) {
 //    while(1);
 //}
@@ -62,16 +62,16 @@ uintptr_t mp_hal_stdio_poll(uintptr_t poll_flags) {
 int mp_hal_stdin_rx_chr(void) {
 
     //if(replTimeoutTaskFlag) {
-    //    // LUAT_DEBUG_PRINT("Start repl timeout task");
-    //    luat_rtos_task_create(&replTimeoutTaskHandle, 1024, 10, "repl_timeout_task", mp_repl_timeout_task, NULL, NULL);
+    //    // iot_debug_print("Start repl timeout task");
+    //    iot_os_create_task(&replTimeoutTaskHandle, NULL, MICROPY_TASK_STACK_SIZE, MICROPYTHON_TASK_PRIORITY, OPENAT_OS_CREATE_DEFAULT, "repl_timeout_task");
     //}
     for (;;) {
         int c = ringbuf_get(&stdin_ringbuf);
         if (c != -1) {
             //if(replTimeoutTaskFlag)  {
             //    if(replTimeoutTaskHandle) {
-            //        // LUAT_DEBUG_PRINT("Stop repl timeout task");
-            //        luat_rtos_task_delete(replTimeoutTaskHandle);
+            //        // iot_debug_print("Stop repl timeout task");
+            //        iot_os_delete_task(replTimeoutTaskHandle);
             //    }
             //}
             return c;
@@ -97,7 +97,6 @@ uint32_t mp_hal_ticks_ms(void)    { return (uint32_t)(iot_os_get_system_tick());
 uint32_t mp_hal_ticks_us(void)    { return (uint32_t)(iot_os_get_system_tick()) * 1000; } 
 uint64_t mp_hal_ticks_ms_64(void) { return (uint64_t)(iot_os_get_system_tick()); }
 uint64_t mp_hal_ticks_us_64(void) { return (uint64_t)(iot_os_get_system_tick()) * 1000; }
-//uint64_t mp_hal_time_ns(void)     { return (uint64_t)(luat_mcu_ticks() * 1000.0 / luat_mcu_us_period()); }
 
 void mp_hal_delay_ms(uint32_t ms) {
     uint64_t start = iot_os_get_system_tick();
@@ -124,14 +123,14 @@ void mp_hal_wake_main_task_from_isr(void) {
 }
 
 //#if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
-/*int luat_crypto_trng(char* buff, size_t len);
+int iot_crypto_trng(char* buff, size_t len);
 int mbedtls_hardware_poll( void *data,
                            unsigned char *output, size_t len, size_t *olen ){
 
     if (data != NULL)
         data = NULL;
     *olen = 0;
-    int rnd = luat_crypto_trng((char *)output, len);
+    int rnd = iot_crypto_trng((char *)output, len);
     if (rnd != 0)
     {
         return -1;
@@ -139,5 +138,4 @@ int mbedtls_hardware_poll( void *data,
     *olen = len;   
     return( 0 );
 }
-*/
 //#endif

@@ -5,7 +5,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2024 freshev
+ * Copyright (c) 2025 freshev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,7 +45,7 @@
 // refactoring need
 //{ MP_OBJ_NEW_QSTR(MP_QSTR_RTC), (mp_obj_t)&modmachine_rtc_obj },
 
-// extern luat_rtos_task_handle microPyTaskHandle;
+// extern HANDLE microPyTaskHandle;
 
 static long cpu_frequency = CONFIG_DEFAULT_CPU_FREQ;
 
@@ -119,7 +119,7 @@ static mp_obj_t mp_machine_unique_id(void) {
     //char imei[22] = {0};    
     char final[64] = {0};
     //soc_get_model_name(model, 1);
-    //luat_mobile_get_imei(0, imei, 22);
+    //iot_mobile_get_imei(0, imei, 22);
     strcat(final, MICROPY_HW_MCU_NAME);
     //strcat(final, "_");
     //strcat(final, imei);
@@ -202,7 +202,7 @@ int modmachine_endswith(const char *str, const char *suffix) {
 }
 
 void modmachine_remove_files(char *suffix) {
-    luat_fs_dirent_t *fs_entry = (luat_fs_dirent_t*)luat_heap_malloc(sizeof(luat_fs_dirent_t));
+    iot_fs_dirent_t *fs_entry = (luat_fs_dirent_t*)luat_heap_malloc(sizeof(luat_fs_dirent_t));
     memset(fs_entry, 0, sizeof(luat_fs_dirent_t));
     int res = 1;
     int start = 2; // skip "." and ".." folders
@@ -212,12 +212,12 @@ void modmachine_remove_files(char *suffix) {
         // iot_debug_print("res = %d, d_type = %d, d_name = %s", res, fs_entry->d_type, fs_entry->d_name);
         if(modmachine_endswith(fs_entry->d_name, suffix)) {
             mp_printf(&mp_plat_print, "Remove %s ... ", fs_entry->d_name);
-            int res = luat_fs_remove(fs_entry->d_name);
+            int res = iot_fs_remove(fs_entry->d_name);
             if(res == 0) mp_printf(&mp_plat_print, "success\n");
             else mp_printf(&mp_plat_print, "failed\n");
         } else start++;
     }
-    luat_heap_free(fs_entry);
+    iot_heap_free(fs_entry);
 }
 #endif
 

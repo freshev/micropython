@@ -1,0 +1,342 @@
+[2025-12-17 00:16:36:776][BMCommand   ][3 - Information] Create receive thread
+[2025-12-17 00:16:36:776][BMCommand   ][3 - Information] Create receive thread success.
+[2025-12-17 00:16:36:776][BMCommand   ][3 - Information] Connect Channel +++
+[2025-12-17 00:16:36:778][BMCommand   ][3 - Information] Connect Channel ---
+[2025-12-17 00:16:36:778][BMCommand   ][3 - Information] [INFO] FileID=HOST_FDL, operations for file type HOST_FDL 
+[2025-12-17 00:16:36:779][BMCommand   ][3 - Information] HostConnect +++
+[2025-12-17 00:16:36:779][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:780][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:782][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:782][BMCommand   ][3 - Information] HostConnect ---
+[2025-12-17 00:16:36:782][BMCommand   ][3 - Information] HostDownload +++
+[2025-12-17 00:16:36:782][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:783][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:786][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:786][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:788][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:788][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:788][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:790][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:790][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:790][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:792][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:792][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:792][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:794][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:794][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:794][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:797][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:797][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:797][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:800][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:800][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:800][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:36:801][BMCommand   ][3 - Information] HostDownload ---
+[2025-12-17 00:16:36:802][BMCommand   ][3 - Information] HostExcute +++
+[2025-12-17 00:16:36:802][BMCommand   ][3 - Information] Start to write host data.
+[2025-12-17 00:16:36:802][BMCommand   ][3 - Information] Write host data end.
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] Read host ack end.
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] Excute downloaded file
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] HostExcute ---
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] ResetCRC +++
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] ResetCRC ---
+[2025-12-17 00:16:38:805][BMCommand   ][3 - Information] Connect +++
+[2025-12-17 00:16:38:806][BMCommand   ][3 - Information] Checkbaud append result: bCrcError(0),bNoTail(0),bInvalidLen(0)
+[2025-12-17 00:16:38:806][BMCommand   ][3 - Information] Check Baudrate: Success.
+[2025-12-17 00:16:38:807][BMCommand   ][3 - Information] Connect to Module: Success.
+[2025-12-17 00:16:38:807][BMCommand   ][3 - Information] Connect ---
+[2025-12-17 00:16:38:807][BMCommand   ][3 - Information] ChangeBaud +++
+[2025-12-17 00:16:38:808][BMCommand   ][3 - Information] FDL:Change Baudrate( 921600 To 115200 ): Success.
+[2025-12-17 00:16:39:321][BMCommand   ][3 - Information] BMPlatform:Change Baudrate( 115200 ): Success.
+[2025-12-17 00:16:39:321][BMCommand   ][3 - Information] ChangeBaud ---
+[2025-12-17 00:16:39:321][BMCommand   ][3 - Information] [INFO] FileID=FDL2, operations for file type FDL2 
+[2025-12-17 00:16:39:321][BMCommand   ][3 - Information] Connect2 +++
+[2025-12-17 00:16:39:323][BMCommand   ][3 - Information] Connect to Module: Success.
+[2025-12-17 00:16:39:323][BMCommand   ][3 - Information] Connect2 ---
+[2025-12-17 00:16:39:323][BMCommand   ][3 - Information] ChangeBaud +++
+[2025-12-17 00:16:39:323][BMCommand   ][3 - Information] ChangeBaud ---
+[2025-12-17 00:16:39:323][BMCommand   ][3 - Information] Download +++
+[2025-12-17 00:16:39:325][BMCommand   ][3 - Information] Start Data( Base:0x00810000, Size:0x0000CBE0): Success.
+[2025-12-17 00:16:39:337][BMCommand   ][3 - Information] Download (0x00000210): Success.
+[2025-12-17 00:16:39:338][BMCommand   ][3 - Information] Download (0x00000420): Success.
+[2025-12-17 00:16:39:339][BMCommand   ][3 - Information] Download (0x00000630): Success.
+[2025-12-17 00:16:39:339][BMCommand   ][3 - Information] Download (0x00000840): Success.
+[2025-12-17 00:16:39:340][BMCommand   ][3 - Information] Download (0x00000A50): Success.
+[2025-12-17 00:16:39:341][BMCommand   ][3 - Information] Download (0x00000C60): Success.
+[2025-12-17 00:16:39:342][BMCommand   ][3 - Information] Download (0x00000E70): Success.
+[2025-12-17 00:16:39:343][BMCommand   ][3 - Information] Download (0x00001080): Success.
+[2025-12-17 00:16:39:344][BMCommand   ][3 - Information] Download (0x00001290): Success.
+[2025-12-17 00:16:39:345][BMCommand   ][3 - Information] Download (0x000014A0): Success.
+[2025-12-17 00:16:39:347][BMCommand   ][3 - Information] Download (0x000016B0): Success.
+[2025-12-17 00:16:39:348][BMCommand   ][3 - Information] Download (0x000018C0): Success.
+[2025-12-17 00:16:39:349][BMCommand   ][3 - Information] Download (0x00001AD0): Success.
+[2025-12-17 00:16:39:349][BMCommand   ][3 - Information] Download (0x00001CE0): Success.
+[2025-12-17 00:16:39:349][BMCommand   ][3 - Information] Download (0x00001EF0): Success.
+[2025-12-17 00:16:39:350][BMCommand   ][3 - Information] Download (0x00002100): Success.
+[2025-12-17 00:16:39:351][BMCommand   ][3 - Information] Download (0x00002310): Success.
+[2025-12-17 00:16:39:353][BMCommand   ][3 - Information] Download (0x00002520): Success.
+[2025-12-17 00:16:39:354][BMCommand   ][3 - Information] Download (0x00002730): Success.
+[2025-12-17 00:16:39:355][BMCommand   ][3 - Information] Download (0x00002940): Success.
+[2025-12-17 00:16:39:355][BMCommand   ][3 - Information] Download (0x00002B50): Success.
+[2025-12-17 00:16:39:356][BMCommand   ][3 - Information] Download (0x00002D60): Success.
+[2025-12-17 00:16:39:357][BMCommand   ][3 - Information] Download (0x00002F70): Success.
+[2025-12-17 00:16:39:358][BMCommand   ][3 - Information] Download (0x00003180): Success.
+[2025-12-17 00:16:39:359][BMCommand   ][3 - Information] Download (0x00003390): Success.
+[2025-12-17 00:16:39:360][BMCommand   ][3 - Information] Download (0x000035A0): Success.
+[2025-12-17 00:16:39:361][BMCommand   ][3 - Information] Download (0x000037B0): Success.
+[2025-12-17 00:16:39:362][BMCommand   ][3 - Information] Download (0x000039C0): Success.
+[2025-12-17 00:16:39:363][BMCommand   ][3 - Information] Download (0x00003BD0): Success.
+[2025-12-17 00:16:39:364][BMCommand   ][3 - Information] Download (0x00003DE0): Success.
+[2025-12-17 00:16:39:365][BMCommand   ][3 - Information] Download (0x00003FF0): Success.
+[2025-12-17 00:16:39:366][BMCommand   ][3 - Information] Download (0x00004200): Success.
+[2025-12-17 00:16:39:366][BMCommand   ][3 - Information] Download (0x00004410): Success.
+[2025-12-17 00:16:39:367][BMCommand   ][3 - Information] Download (0x00004620): Success.
+[2025-12-17 00:16:39:368][BMCommand   ][3 - Information] Download (0x00004830): Success.
+[2025-12-17 00:16:39:369][BMCommand   ][3 - Information] Download (0x00004A40): Success.
+[2025-12-17 00:16:39:370][BMCommand   ][3 - Information] Download (0x00004C50): Success.
+[2025-12-17 00:16:39:371][BMCommand   ][3 - Information] Download (0x00004E60): Success.
+[2025-12-17 00:16:39:372][BMCommand   ][3 - Information] Download (0x00005070): Success.
+[2025-12-17 00:16:39:372][BMCommand   ][3 - Information] Download (0x00005280): Success.
+[2025-12-17 00:16:39:373][BMCommand   ][3 - Information] Download (0x00005490): Success.
+[2025-12-17 00:16:39:374][BMCommand   ][3 - Information] Download (0x000056A0): Success.
+[2025-12-17 00:16:39:375][BMCommand   ][3 - Information] Download (0x000058B0): Success.
+[2025-12-17 00:16:39:376][BMCommand   ][3 - Information] Download (0x00005AC0): Success.
+[2025-12-17 00:16:39:377][BMCommand   ][3 - Information] Download (0x00005CD0): Success.
+[2025-12-17 00:16:39:378][BMCommand   ][3 - Information] Download (0x00005EE0): Success.
+[2025-12-17 00:16:39:379][BMCommand   ][3 - Information] Download (0x000060F0): Success.
+[2025-12-17 00:16:39:379][BMCommand   ][3 - Information] Download (0x00006300): Success.
+[2025-12-17 00:16:39:380][BMCommand   ][3 - Information] Download (0x00006510): Success.
+[2025-12-17 00:16:39:381][BMCommand   ][3 - Information] Download (0x00006720): Success.
+[2025-12-17 00:16:39:382][BMCommand   ][3 - Information] Download (0x00006930): Success.
+[2025-12-17 00:16:39:384][BMCommand   ][3 - Information] Download (0x00006B40): Success.
+[2025-12-17 00:16:39:384][BMCommand   ][3 - Information] Download (0x00006D50): Success.
+[2025-12-17 00:16:39:385][BMCommand   ][3 - Information] Download (0x00006F60): Success.
+[2025-12-17 00:16:39:386][BMCommand   ][3 - Information] Download (0x00007170): Success.
+[2025-12-17 00:16:39:386][BMCommand   ][3 - Information] Download (0x00007380): Success.
+[2025-12-17 00:16:39:387][BMCommand   ][3 - Information] Download (0x00007590): Success.
+[2025-12-17 00:16:39:388][BMCommand   ][3 - Information] Download (0x000077A0): Success.
+[2025-12-17 00:16:39:389][BMCommand   ][3 - Information] Download (0x000079B0): Success.
+[2025-12-17 00:16:39:390][BMCommand   ][3 - Information] Download (0x00007BC0): Success.
+[2025-12-17 00:16:39:392][BMCommand   ][3 - Information] Download (0x00007DD0): Success.
+[2025-12-17 00:16:39:393][BMCommand   ][3 - Information] Download (0x00007FE0): Success.
+[2025-12-17 00:16:39:393][BMCommand   ][3 - Information] Download (0x000081F0): Success.
+[2025-12-17 00:16:39:394][BMCommand   ][3 - Information] Download (0x00008400): Success.
+[2025-12-17 00:16:39:395][BMCommand   ][3 - Information] Download (0x00008610): Success.
+[2025-12-17 00:16:39:396][BMCommand   ][3 - Information] Download (0x00008820): Success.
+[2025-12-17 00:16:39:397][BMCommand   ][3 - Information] Download (0x00008A30): Success.
+[2025-12-17 00:16:39:398][BMCommand   ][3 - Information] Download (0x00008C40): Success.
+[2025-12-17 00:16:39:399][BMCommand   ][3 - Information] Download (0x00008E50): Success.
+[2025-12-17 00:16:39:399][BMCommand   ][3 - Information] Download (0x00009060): Success.
+[2025-12-17 00:16:39:400][BMCommand   ][3 - Information] Download (0x00009270): Success.
+[2025-12-17 00:16:39:401][BMCommand   ][3 - Information] Download (0x00009480): Success.
+[2025-12-17 00:16:39:403][BMCommand   ][3 - Information] Download (0x00009690): Success.
+[2025-12-17 00:16:39:403][BMCommand   ][3 - Information] Download (0x000098A0): Success.
+[2025-12-17 00:16:39:404][BMCommand   ][3 - Information] Download (0x00009AB0): Success.
+[2025-12-17 00:16:39:404][BMCommand   ][3 - Information] Download (0x00009CC0): Success.
+[2025-12-17 00:16:39:405][BMCommand   ][3 - Information] Download (0x00009ED0): Success.
+[2025-12-17 00:16:39:406][BMCommand   ][3 - Information] Download (0x0000A0E0): Success.
+[2025-12-17 00:16:39:407][BMCommand   ][3 - Information] Download (0x0000A2F0): Success.
+[2025-12-17 00:16:39:408][BMCommand   ][3 - Information] Download (0x0000A500): Success.
+[2025-12-17 00:16:39:409][BMCommand   ][3 - Information] Download (0x0000A710): Success.
+[2025-12-17 00:16:39:409][BMCommand   ][3 - Information] Download (0x0000A920): Success.
+[2025-12-17 00:16:39:410][BMCommand   ][3 - Information] Download (0x0000AB30): Success.
+[2025-12-17 00:16:39:411][BMCommand   ][3 - Information] Download (0x0000AD40): Success.
+[2025-12-17 00:16:39:412][BMCommand   ][3 - Information] Download (0x0000AF50): Success.
+[2025-12-17 00:16:39:413][BMCommand   ][3 - Information] Download (0x0000B160): Success.
+[2025-12-17 00:16:39:414][BMCommand   ][3 - Information] Download (0x0000B370): Success.
+[2025-12-17 00:16:39:415][BMCommand   ][3 - Information] Download (0x0000B580): Success.
+[2025-12-17 00:16:39:416][BMCommand   ][3 - Information] Download (0x0000B790): Success.
+[2025-12-17 00:16:39:417][BMCommand   ][3 - Information] Download (0x0000B9A0): Success.
+[2025-12-17 00:16:39:418][BMCommand   ][3 - Information] Download (0x0000BBB0): Success.
+[2025-12-17 00:16:39:419][BMCommand   ][3 - Information] Download (0x0000BDC0): Success.
+[2025-12-17 00:16:39:420][BMCommand   ][3 - Information] Download (0x0000BFD0): Success.
+[2025-12-17 00:16:39:421][BMCommand   ][3 - Information] Download (0x0000C1E0): Success.
+[2025-12-17 00:16:39:422][BMCommand   ][3 - Information] Download (0x0000C3F0): Success.
+[2025-12-17 00:16:39:423][BMCommand   ][3 - Information] Download (0x0000C600): Success.
+[2025-12-17 00:16:39:424][BMCommand   ][3 - Information] Download (0x0000C810): Success.
+[2025-12-17 00:16:39:425][BMCommand   ][3 - Information] Download (0x0000CA20): Success.
+[2025-12-17 00:16:39:426][BMCommand   ][3 - Information] Download (0x0000CBE0): Success.
+[2025-12-17 00:16:39:427][BMCommand   ][3 - Information] End Data: Success.
+[2025-12-17 00:16:39:427][BMCommand   ][3 - Information] Download ---
+[2025-12-17 00:16:39:427][BMCommand   ][3 - Information] ExecNandInit +++
+[2025-12-17 00:16:39:430][BMCommand   ][3 - Information] Excute downloaded file: Success.
+[2025-12-17 00:16:39:430][BMCommand   ][3 - Information] ExecNandInit ---
+[2025-12-17 00:16:39:431][BMCommand   ][3 - Information] [INFO] FileID=CUS_ReadFlash_FDL2, operations for file type ReadFlash2 
+[2025-12-17 00:16:39:431][BMCommand   ][3 - Information] ReadFlashByID +++
+[2025-12-17 00:16:39:735][BMCommand   ][1 - Error      ] Start Read( Partition:"miscdata", Size:0x00010000): Fail. [130:[DL1130]Invalid command]
+[2025-12-17 00:16:39:735][BMCommand   ][3 - Information] ReadFlashByID ---
+[2025-12-17 00:16:39:736][BMCommand   ][3 - Information] [INFO] FileID=CUS_ReadFlash_FDL2, operations for file type ReadFlash2 
+[2025-12-17 00:16:39:736][BMCommand   ][3 - Information] ReadFlashByID +++
+[2025-12-17 00:16:39:738][BMCommand   ][1 - Error      ] Start Read( Partition:"uboot_log", Size:0x00040000): Fail. [130:[DL1130]Invalid command]
+[2025-12-17 00:16:39:738][BMCommand   ][3 - Information] ReadFlashByID ---
+[2025-12-17 00:16:39:739][BMCommand   ][3 - Information] [INFO] FileID=_BKF_NV, operations for file type ReadFlash 
+[2025-12-17 00:16:39:739][BMCommand   ][3 - Information] ReadFlash +++
+[2025-12-17 00:16:39:828][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00000000 ): Success.
+[2025-12-17 00:16:39:841][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00003000 ): Success.
+[2025-12-17 00:16:39:854][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00006000 ): Success.
+[2025-12-17 00:16:39:868][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00009000 ): Success.
+[2025-12-17 00:16:39:881][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x0000C000 ): Success.
+[2025-12-17 00:16:39:895][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x0000F000 ): Success.
+[2025-12-17 00:16:39:908][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00012000 ): Success.
+[2025-12-17 00:16:39:922][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00015000 ): Success.
+[2025-12-17 00:16:39:937][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x00018000 ): Success.
+[2025-12-17 00:16:39:952][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00003000, Offset:0x0001B000 ): Success.
+[2025-12-17 00:16:39:961][BMCommand   ][3 - Information] Read Flash( Base:0xFE000003, Size:0x00002000, Offset:0x0001E000 ): Success.
+[2025-12-17 00:16:39:961][BMCommand   ][3 - Information] ReadFlash ---
+[2025-12-17 00:16:39:962][BMCommand   ][3 - Information] [INFO] FileID=_REPARTITION_, operations for file type REPARTITION 
+[2025-12-17 00:16:39:963][BMCommand   ][3 - Information] Repartition +++
+[2025-12-17 00:16:39:963][BMCommand   ][3 - Information] Repartition ---
+[2025-12-17 00:16:39:963][BMCommand   ][3 - Information] [INFO] FileID=BOOTLOADER, operations for file type DONOTHING 
+[2025-12-17 00:16:39:964][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:39:964][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:39:964][BMCommand   ][3 - Information] [INFO] FileID=AP, operations for file type DONOTHING 
+[2025-12-17 00:16:39:964][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:39:964][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:39:965][BMCommand   ][3 - Information] [INFO] FileID=APPIMG, operations for file type CODE 
+[2025-12-17 00:16:39:965][BMCommand   ][3 - Information] Download +++
+[2025-12-17 00:16:39:966][BMCommand   ][3 - Information] Start Data( Base:0x60180000, Size:0x0003B3E0): Success.
+[2025-12-17 00:16:39:974][BMCommand   ][3 - Information] Download (0x00000800): Success.
+[2025-12-17 00:16:39:976][BMCommand   ][3 - Information] Download (0x00001000): Success.
+[2025-12-17 00:16:39:978][BMCommand   ][3 - Information] Download (0x00001800): Success.
+[2025-12-17 00:16:39:980][BMCommand   ][3 - Information] Download (0x00002000): Success.
+[2025-12-17 00:16:39:983][BMCommand   ][3 - Information] Download (0x00002800): Success.
+[2025-12-17 00:16:39:985][BMCommand   ][3 - Information] Download (0x00003000): Success.
+[2025-12-17 00:16:39:987][BMCommand   ][3 - Information] Download (0x00003800): Success.
+[2025-12-17 00:16:39:989][BMCommand   ][3 - Information] Download (0x00004000): Success.
+[2025-12-17 00:16:39:991][BMCommand   ][3 - Information] Download (0x00004800): Success.
+[2025-12-17 00:16:39:994][BMCommand   ][3 - Information] Download (0x00005000): Success.
+[2025-12-17 00:16:39:996][BMCommand   ][3 - Information] Download (0x00005800): Success.
+[2025-12-17 00:16:39:998][BMCommand   ][3 - Information] Download (0x00006000): Success.
+[2025-12-17 00:16:40:000][BMCommand   ][3 - Information] Download (0x00006800): Success.
+[2025-12-17 00:16:40:003][BMCommand   ][3 - Information] Download (0x00007000): Success.
+[2025-12-17 00:16:40:006][BMCommand   ][3 - Information] Download (0x00007800): Success.
+[2025-12-17 00:16:40:008][BMCommand   ][3 - Information] Download (0x00008000): Success.
+[2025-12-17 00:16:40:010][BMCommand   ][3 - Information] Download (0x00008800): Success.
+[2025-12-17 00:16:40:012][BMCommand   ][3 - Information] Download (0x00009000): Success.
+[2025-12-17 00:16:40:014][BMCommand   ][3 - Information] Download (0x00009800): Success.
+[2025-12-17 00:16:40:017][BMCommand   ][3 - Information] Download (0x0000A000): Success.
+[2025-12-17 00:16:40:020][BMCommand   ][3 - Information] Download (0x0000A800): Success.
+[2025-12-17 00:16:40:022][BMCommand   ][3 - Information] Download (0x0000B000): Success.
+[2025-12-17 00:16:40:024][BMCommand   ][3 - Information] Download (0x0000B800): Success.
+[2025-12-17 00:16:40:026][BMCommand   ][3 - Information] Download (0x0000C000): Success.
+[2025-12-17 00:16:40:028][BMCommand   ][3 - Information] Download (0x0000C800): Success.
+[2025-12-17 00:16:40:031][BMCommand   ][3 - Information] Download (0x0000D000): Success.
+[2025-12-17 00:16:40:033][BMCommand   ][3 - Information] Download (0x0000D800): Success.
+[2025-12-17 00:16:40:035][BMCommand   ][3 - Information] Download (0x0000E000): Success.
+[2025-12-17 00:16:40:037][BMCommand   ][3 - Information] Download (0x0000E800): Success.
+[2025-12-17 00:16:40:040][BMCommand   ][3 - Information] Download (0x0000F000): Success.
+[2025-12-17 00:16:40:043][BMCommand   ][3 - Information] Download (0x0000F800): Success.
+[2025-12-17 00:16:40:045][BMCommand   ][3 - Information] Download (0x00010000): Success.
+[2025-12-17 00:16:40:047][BMCommand   ][3 - Information] Download (0x00010800): Success.
+[2025-12-17 00:16:40:049][BMCommand   ][3 - Information] Download (0x00011000): Success.
+[2025-12-17 00:16:40:051][BMCommand   ][3 - Information] Download (0x00011800): Success.
+[2025-12-17 00:16:40:053][BMCommand   ][3 - Information] Download (0x00012000): Success.
+[2025-12-17 00:16:40:056][BMCommand   ][3 - Information] Download (0x00012800): Success.
+[2025-12-17 00:16:40:058][BMCommand   ][3 - Information] Download (0x00013000): Success.
+[2025-12-17 00:16:40:060][BMCommand   ][3 - Information] Download (0x00013800): Success.
+[2025-12-17 00:16:40:062][BMCommand   ][3 - Information] Download (0x00014000): Success.
+[2025-12-17 00:16:40:065][BMCommand   ][3 - Information] Download (0x00014800): Success.
+[2025-12-17 00:16:40:067][BMCommand   ][3 - Information] Download (0x00015000): Success.
+[2025-12-17 00:16:40:070][BMCommand   ][3 - Information] Download (0x00015800): Success.
+[2025-12-17 00:16:40:071][BMCommand   ][3 - Information] Download (0x00016000): Success.
+[2025-12-17 00:16:40:074][BMCommand   ][3 - Information] Download (0x00016800): Success.
+[2025-12-17 00:16:40:076][BMCommand   ][3 - Information] Download (0x00017000): Success.
+[2025-12-17 00:16:40:078][BMCommand   ][3 - Information] Download (0x00017800): Success.
+[2025-12-17 00:16:40:080][BMCommand   ][3 - Information] Download (0x00018000): Success.
+[2025-12-17 00:16:40:083][BMCommand   ][3 - Information] Download (0x00018800): Success.
+[2025-12-17 00:16:40:085][BMCommand   ][3 - Information] Download (0x00019000): Success.
+[2025-12-17 00:16:40:087][BMCommand   ][3 - Information] Download (0x00019800): Success.
+[2025-12-17 00:16:40:089][BMCommand   ][3 - Information] Download (0x0001A000): Success.
+[2025-12-17 00:16:40:091][BMCommand   ][3 - Information] Download (0x0001A800): Success.
+[2025-12-17 00:16:40:094][BMCommand   ][3 - Information] Download (0x0001B000): Success.
+[2025-12-17 00:16:40:096][BMCommand   ][3 - Information] Download (0x0001B800): Success.
+[2025-12-17 00:16:40:098][BMCommand   ][3 - Information] Download (0x0001C000): Success.
+[2025-12-17 00:16:40:100][BMCommand   ][3 - Information] Download (0x0001C800): Success.
+[2025-12-17 00:16:40:102][BMCommand   ][3 - Information] Download (0x0001D000): Success.
+[2025-12-17 00:16:40:163][BMCommand   ][3 - Information] Download (0x0001D800): Success.
+[2025-12-17 00:16:40:169][BMCommand   ][3 - Information] Download (0x0001E000): Success.
+[2025-12-17 00:16:40:174][BMCommand   ][3 - Information] Download (0x0001E800): Success.
+[2025-12-17 00:16:40:179][BMCommand   ][3 - Information] Download (0x0001F000): Success.
+[2025-12-17 00:16:40:184][BMCommand   ][3 - Information] Download (0x0001F800): Success.
+[2025-12-17 00:16:40:189][BMCommand   ][3 - Information] Download (0x00020000): Success.
+[2025-12-17 00:16:40:195][BMCommand   ][3 - Information] Download (0x00020800): Success.
+[2025-12-17 00:16:40:199][BMCommand   ][3 - Information] Download (0x00021000): Success.
+[2025-12-17 00:16:40:206][BMCommand   ][3 - Information] Download (0x00021800): Success.
+[2025-12-17 00:16:40:211][BMCommand   ][3 - Information] Download (0x00022000): Success.
+[2025-12-17 00:16:40:216][BMCommand   ][3 - Information] Download (0x00022800): Success.
+[2025-12-17 00:16:40:221][BMCommand   ][3 - Information] Download (0x00023000): Success.
+[2025-12-17 00:16:40:226][BMCommand   ][3 - Information] Download (0x00023800): Success.
+[2025-12-17 00:16:40:231][BMCommand   ][3 - Information] Download (0x00024000): Success.
+[2025-12-17 00:16:40:237][BMCommand   ][3 - Information] Download (0x00024800): Success.
+[2025-12-17 00:16:40:242][BMCommand   ][3 - Information] Download (0x00025000): Success.
+[2025-12-17 00:16:40:247][BMCommand   ][3 - Information] Download (0x00025800): Success.
+[2025-12-17 00:16:40:252][BMCommand   ][3 - Information] Download (0x00026000): Success.
+[2025-12-17 00:16:40:258][BMCommand   ][3 - Information] Download (0x00026800): Success.
+[2025-12-17 00:16:40:263][BMCommand   ][3 - Information] Download (0x00027000): Success.
+[2025-12-17 00:16:40:268][BMCommand   ][3 - Information] Download (0x00027800): Success.
+[2025-12-17 00:16:40:273][BMCommand   ][3 - Information] Download (0x00028000): Success.
+[2025-12-17 00:16:40:278][BMCommand   ][3 - Information] Download (0x00028800): Success.
+[2025-12-17 00:16:40:284][BMCommand   ][3 - Information] Download (0x00029000): Success.
+[2025-12-17 00:16:40:289][BMCommand   ][3 - Information] Download (0x00029800): Success.
+[2025-12-17 00:16:40:295][BMCommand   ][3 - Information] Download (0x0002A000): Success.
+[2025-12-17 00:16:40:300][BMCommand   ][3 - Information] Download (0x0002A800): Success.
+[2025-12-17 00:16:40:305][BMCommand   ][3 - Information] Download (0x0002B000): Success.
+[2025-12-17 00:16:40:310][BMCommand   ][3 - Information] Download (0x0002B800): Success.
+[2025-12-17 00:16:40:316][BMCommand   ][3 - Information] Download (0x0002C000): Success.
+[2025-12-17 00:16:40:321][BMCommand   ][3 - Information] Download (0x0002C800): Success.
+[2025-12-17 00:16:40:326][BMCommand   ][3 - Information] Download (0x0002D000): Success.
+[2025-12-17 00:16:40:511][BMCommand   ][3 - Information] Download (0x0002D800): Success.
+[2025-12-17 00:16:40:516][BMCommand   ][3 - Information] Download (0x0002E000): Success.
+[2025-12-17 00:16:40:521][BMCommand   ][3 - Information] Download (0x0002E800): Success.
+[2025-12-17 00:16:40:526][BMCommand   ][3 - Information] Download (0x0002F000): Success.
+[2025-12-17 00:16:40:532][BMCommand   ][3 - Information] Download (0x0002F800): Success.
+[2025-12-17 00:16:40:537][BMCommand   ][3 - Information] Download (0x00030000): Success.
+[2025-12-17 00:16:40:542][BMCommand   ][3 - Information] Download (0x00030800): Success.
+[2025-12-17 00:16:40:548][BMCommand   ][3 - Information] Download (0x00031000): Success.
+[2025-12-17 00:16:40:553][BMCommand   ][3 - Information] Download (0x00031800): Success.
+[2025-12-17 00:16:40:558][BMCommand   ][3 - Information] Download (0x00032000): Success.
+[2025-12-17 00:16:40:563][BMCommand   ][3 - Information] Download (0x00032800): Success.
+[2025-12-17 00:16:40:569][BMCommand   ][3 - Information] Download (0x00033000): Success.
+[2025-12-17 00:16:40:574][BMCommand   ][3 - Information] Download (0x00033800): Success.
+[2025-12-17 00:16:40:579][BMCommand   ][3 - Information] Download (0x00034000): Success.
+[2025-12-17 00:16:40:584][BMCommand   ][3 - Information] Download (0x00034800): Success.
+[2025-12-17 00:16:40:590][BMCommand   ][3 - Information] Download (0x00035000): Success.
+[2025-12-17 00:16:40:595][BMCommand   ][3 - Information] Download (0x00035800): Success.
+[2025-12-17 00:16:40:600][BMCommand   ][3 - Information] Download (0x00036000): Success.
+[2025-12-17 00:16:40:605][BMCommand   ][3 - Information] Download (0x00036800): Success.
+[2025-12-17 00:16:40:610][BMCommand   ][3 - Information] Download (0x00037000): Success.
+[2025-12-17 00:16:40:616][BMCommand   ][3 - Information] Download (0x00037800): Success.
+[2025-12-17 00:16:40:620][BMCommand   ][3 - Information] Download (0x00038000): Success.
+[2025-12-17 00:16:40:626][BMCommand   ][3 - Information] Download (0x00038800): Success.
+[2025-12-17 00:16:40:631][BMCommand   ][3 - Information] Download (0x00039000): Success.
+[2025-12-17 00:16:40:636][BMCommand   ][3 - Information] Download (0x00039800): Success.
+[2025-12-17 00:16:40:641][BMCommand   ][3 - Information] Download (0x0003A000): Success.
+[2025-12-17 00:16:40:647][BMCommand   ][3 - Information] Download (0x0003A800): Success.
+[2025-12-17 00:16:40:653][BMCommand   ][3 - Information] Download (0x0003B000): Success.
+[2025-12-17 00:16:40:655][BMCommand   ][3 - Information] Download (0x0003B3E0): Success.
+[2025-12-17 00:16:41:497][BMCommand   ][3 - Information] End Data: Success.
+[2025-12-17 00:16:41:497][BMCommand   ][3 - Information] Download ---
+[2025-12-17 00:16:41:498][BMCommand   ][3 - Information] [INFO] FileID=PS, operations for file type DONOTHING 
+[2025-12-17 00:16:41:498][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:41:498][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:41:498][BMCommand   ][3 - Information] [INFO] FileID=SFFS, operations for file type DONOTHING 
+[2025-12-17 00:16:41:499][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:41:499][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:41:500][BMCommand   ][3 - Information] [INFO] FileID=FLASH, operations for file type DONOTHING 
+[2025-12-17 00:16:41:500][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:41:500][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:41:501][BMCommand   ][3 - Information] [INFO] FileID=NV, operations for file type DONOTHING 
+[2025-12-17 00:16:41:502][BMCommand   ][3 - Information] DoNothing +++
+[2025-12-17 00:16:41:502][BMCommand   ][3 - Information] DoNothing ---
+[2025-12-17 00:16:41:502][BMCommand   ][3 - Information] [INFO] FileID=_RESET_, operations for file type Reset 
+[2025-12-17 00:16:41:502][BMCommand   ][3 - Information] Reset +++
+[2025-12-17 00:16:41:504][BMCommand   ][3 - Information] Reset: Success.
+[2025-12-17 00:16:41:504][BMCommand   ][3 - Information] Reset ---
+[2025-12-17 00:16:41:504][BMCommand   ][3 - Information] Disconnect Channel +++
+[2025-12-17 00:16:41:504][BMCommand   ][3 - Information] Disconnect Channel ---
+[2025-12-17 00:16:41:505][BMCommand   ][3 - Information] Finish Successful.

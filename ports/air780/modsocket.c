@@ -421,7 +421,7 @@ static mp_obj_t socket_connect(const mp_obj_t arg0, const mp_obj_t arg1) {
 
         int result = network_wait_link_up(self->ctrl, 15000);
         if (result) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("network_wait_link_up failed. Network status: %d"), network_status);
+            mp_raise_RuntimeError("network_wait_link_up failed");
             raise_err = errno;
         }
         luat_rtos_task_sleep(100);

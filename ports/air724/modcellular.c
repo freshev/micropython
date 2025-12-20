@@ -5,8 +5,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 pulkin
- * Copyright (c) 2024 freshev
+ * Copyright (c) 2025 freshev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,9 +27,10 @@
  */
 
 
-#include "luat_network_adapter.h"
-#include "sockets.h"
-#include "ps_lib_api.h"
+#include "py/runtime.h"
+
+#include "iot_network.h"
+#include "iot_socket.h"
 #include "modcellular.h"
 
 uint8_t network_status = 0;
@@ -42,13 +42,10 @@ static mp_obj_t network_status_callback = mp_const_none;
 static int8_t activate_flag = 0;
 static int8_t deactivate_flag = 0;
 
+//#include "modcellsms.c"
 
-#define REQUIRES_NETWORK_REGISTRATION do {if (!network_status) {mp_raise_RuntimeError(MP_ERROR_TEXT("Network is not available: is SIM card inserted?")); return mp_const_none;}} while(0)
-
-#include "modcellsms.c"
-
-static ip_addr_t ipv4 = {0};
-static ip_addr_t ipv6 = {0};
+// static ip_addr_t ipv4 = {0};
+// static ip_addr_t ipv6 = {0};
 
 // Tracks the status on the network
 
@@ -61,140 +58,193 @@ void modcellular_network_status_update(uint8_t new_status, uint16_t new_exceptio
     }
 }
 
-static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t status) {
-    luat_mobile_cell_info_t cell_info;
+// AT+CTEC? -> AT+CTEC=4,4 KTE only, does not change
+// AT+CCED=0,1
+// AT+CCED=2,1 // close periodic reporting
+// AT^SYSCONFIG=2,3,2,2 Automatic selection
+// AT^SYSCONFIG=13,3,2,2 GSM only, CS_PS      // worked, not registred
+// AT^SYSCONFIG=13,3,2,1 GSM only, PS_ONLY    // worked, not registred
+// AT^SYSCONFIG=14,3,2,2 WCDMA only           // failed
+// AT^SYSCONFIG=15,3,2,2 TCDMA only           // failed
+// AT^SYSCONFIG=16,3,2,2 LTE+UTRAN+GSM        // worked
+// AT^SYSINFO  -> 0,0,0,0,255,7
+// AT+CREG? -> CREG:1,1/3 - "1" - registered, "3" - registration rejected
+
+// AT+CGDCONT=5,"IP","internet"
+// AT+CGDCONT? -> IP address
+// AT+CGPADDR
+
+// AT+CGACT=1,5 // activate PDP context even in LTE
+// AT+CGACT=0,5 // deactivate PDP context even in LTE
+
+
+// NWGetStackRat - two diapasons ?
+// CFW_GetLETRealTimeInfo
+// CFW_GetNetinfo
+// CFW_NwGetQualReport
+// CFW_NWGetStackRat
+
+// CFW_GprsGetPdpIpv4Addr
+// CFW_GprsGetPdpIpv6Addr
+// CFW_GprsGetDynamicIP
+
+// CFW_SimGetSmsTotalNum
+// CFW_CfgSetSmsCB
+// CFW_CfgGetPbkStrorageInfo
+// CFW_CfgGetSmsStorageInfo
+// CFW_SsSendUSSD
+// CFW_SmsDeleteMessage
+// CFW_SmsSetUnRead2Read
+// CFW_SmsListMessages
+// CFW_SmsReadMessage
+// CFW_SmsSendPduMessage
+// CFW_SmsListFree
+
+// CFW_GetSimPHYType
+// CFW_GetSimStatus // !!!
+// CFW_GetSimType
+
+// CFW_CfgNwSetNetWorkMode
+// CFW_CfgNwGetNetWorkMode
+// CFW_CfgNwGetOperatorInfo
+// CFW_CfgNwGetOperatorId
+// CFW_CfgNwGetOperatorName
+// CFW_SimGetOperatorName
+
+// CFW_CheckSupportLteBand
+// CFW_CheckSupportLteFreq
+// CFW_NWGetRat
+// CFW_NwGetAvailableOperators
+// CFW_NwGetCurrentOperator
+// CFW_NwGetSignalQuality
+// CFW_NwGetLteSignalQuality
+// CFW_NwGetStatus
+// CFW_GprsGetDefaultPdnInfo
+// CFW_GprsGetstatus // !!!
+// CFW_GetGprsAttState
+// CFW_GetGprsAttState
+// CFW_GetGprsActState
+// CFW_GetCellInfo
+// CFW_GetBandFromFreq
+// CFW_GetStatusInfo
+
+// CFW_CfgGetIMSI
+// CFW_ImsIsSet
+// CFW_SimGetICCID
+// CFW_GetICCID
+// CFW_GprsGetDynamicIP
+
+
+
+
+static void network_connect(void)
+{
+    T_OPENAT_NETWORK_CONNECT networkparam;
+    
+    memset(&networkparam, 0, sizeof(T_OPENAT_NETWORK_CONNECT));
+    // memcpy(networkparam.apn, "internet", strlen("internet"));
+    iot_network_connect(&networkparam);
+}
+
+
+static void mobile_event_cb(E_OPENAT_NETWORK_STATE state) {
+    
+    /*luat_mobile_cell_info_t cell_info;
     luat_mobile_signal_strength_info_t signal_info;
     uint8_t csq, i;
     char imsi[20];
     char iccid[24] = {0};
     char apn[32] = {0};    
+    */
 
-    // if(event != LUAT_MOBILE_EVENT_CELL_INFO) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
-    // if(event == 7) mp_printf(&mp_plat_print, "Event %d, status: %d, index: %d\n", event, status, index);
+    switch(state) {
 
-    switch(event) {
-        case LUAT_MOBILE_EVENT_CFUN: // 0
-            // LUAT_DEBUG_PRINT("CFUN message, status %d", status);
+        case OPENAT_NETWORK_READY:
+            iot_debug_print("network connecting...");
+            modcellular_network_status_update(NTW_REG_BIT, 0);
+            network_connect();
             break;
-        
-        case LUAT_MOBILE_EVENT_SIM: // 1
-            //if (status != LUAT_MOBILE_SIM_NUMBER) {  LUAT_DEBUG_PRINT("SIM card message, card slot %d", index); }
-            switch(status) {
-                case LUAT_MOBILE_SIM_READY:
-                    //LUAT_DEBUG_PRINT("SIM card works normally");
-                    //luat_mobile_get_iccid(index, iccid, sizeof(iccid));
-                    //LUAT_DEBUG_PRINT("ICCID %s", iccid);
-                    //luat_mobile_get_imsi(index, imsi, sizeof(imsi));
-                    //LUAT_DEBUG_PRINT("IMSI %s", imsi);
-                    break;
-                case LUAT_MOBILE_NO_SIM:
-                    //LUAT_DEBUG_PRINT("SIM card does not exist");
-                    modcellular_network_status_update(0, NTW_EXC_NOSIM);
-                    break;
-                case LUAT_MOBILE_SIM_NEED_PIN:
-                    LUAT_DEBUG_PRINT("SIM card requires PIN code");
-                    break;
-                }
+        case OPENAT_NETWORK_LINKING:
+            iot_debug_print("PDP activating...");
             break;
+
+        case OPENAT_NETWORK_LINKED:
+            iot_debug_print("PDP activated");
+            // int cellid;
+            // int lac;
+            // int mcc;
+            // int mnc;
+            // gsmGetCellInfo(&mcc, &mnc, &lac, &cellid);
+            // iot_debug_print("mnc: %d, mcc: %d, la:%d, ci:%d",mcc, mnc, lac, cellid);
+
+            break;
+        case OPENAT_NETWORK_DISCONNECT:
+            iot_debug_print("network disconnect...");
+            break;
+        case OPENAT_NETWORK_GOING_DOWN:
+            iot_debug_print("network going down...");
+            break;
+
+         // case LUAT_MOBILE_NO_SIM:modcellular_network_status_update(0, NTW_EXC_NOSIM);
+        /*
         case LUAT_MOBILE_EVENT_REGISTER_STATUS: // 2
             
             switch(status) {
                 case LUAT_MOBILE_STATUS_UNREGISTER: // 0
-                    LUAT_DEBUG_PRINT("Mobile status unregistered");
+                    iot_debug_print("Mobile status unregistered");
                     modcellular_network_status_update(0, 0);
                     break;
                 case LUAT_MOBILE_STATUS_REGISTERED: // 1
-                    LUAT_DEBUG_PRINT("Mobile status registered home", status);
+                    iot_debug_print("Mobile status registered home", status);
                     modcellular_network_status_update(NTW_REG_BIT, 0);
                     break;  
                 case LUAT_MOBILE_STATUS_INSEARCH:
-                    LUAT_DEBUG_PRINT("Mobile status searching");
+                    iot_debug_print("Mobile status searching");
                     modcellular_network_status_update(NTW_REG_PROGRESS_BIT, 0);
                     break;
                 case LUAT_MOBILE_STATUS_DENIED:
-                    LUAT_DEBUG_PRINT("Mobile status registration denied");
+                    iot_debug_print("Mobile status registration denied");
                     modcellular_network_status_update(0, NTW_EXC_REG_DENIED);
                     break;
                 case LUAT_MOBILE_STATUS_UNKNOW:
-                    LUAT_DEBUG_PRINT("Mobile status unknown");                  
+                    iot_debug_print("Mobile status unknown");                  
                     break;
                 case LUAT_MOBILE_STATUS_REGISTERED_ROAMING:
-                    LUAT_DEBUG_PRINT("Mobile status registered roaming");
+                    iot_debug_print("Mobile status registered roaming");
                     modcellular_network_status_update(NTW_REG_BIT | NTW_ROAM_BIT, 0);
                     break;
                 case LUAT_MOBILE_STATUS_EMERGENCY_REGISTERED:
-                    LUAT_DEBUG_PRINT("Mobile status registered emergency only");
+                    iot_debug_print("Mobile status registered emergency only");
                     break;              
                 default:
-                    LUAT_DEBUG_PRINT("Mobile status %d", status);
+                    iot_debug_print("Mobile status %d", status);
                     break;
             }
             break;
+            */
 
-        case LUAT_MOBILE_EVENT_CELL_INFO: // 3
-            //LUAT_DEBUG_PRINT("LUAT_MOBILE_EVENT_CELL_INFO with status %d", status);
-            switch(status) {                
-                case LUAT_MOBILE_CELL_INFO_UPDATE:
-                    //LUAT_DEBUG_PRINT("Periodic search for cell information is completed once");
-                    luat_mobile_get_last_notify_cell_info(&cell_info);
-                    if (cell_info.lte_service_info.cid)
-                    {
-                        //LUAT_DEBUG_PRINT("Service cell information mcc %x mnc %x cellid %u band %d tac %u pci %u earfcn %u is_tdd %d rsrp %d rsrq %d snr %d rssi %d",
-                        //      cell_info.lte_service_info.mcc, cell_info.lte_service_info.mnc, cell_info.lte_service_info.cid,
-                        //      cell_info.lte_service_info.band, cell_info.lte_service_info.tac, cell_info.lte_service_info.pci, cell_info.lte_service_info.earfcn,
-                        //      cell_info.lte_service_info.is_tdd, cell_info.lte_service_info.rsrp, cell_info.lte_service_info.rsrq,
-                        //      cell_info.lte_service_info.snr, cell_info.lte_service_info.rssi);
-                    }
-                    for (i = 0; i < cell_info.lte_neighbor_info_num; i++)
-                    {
-                        if (cell_info.lte_info[i].cid)
-                        {
-                            //LUAT_DEBUG_PRINT("Neighboring cell %d mcc %x mnc %x cellid %u tac %u pci %u", i + 1, cell_info.lte_info[i].mcc,
-                            //      cell_info.lte_info[i].mnc, cell_info.lte_info[i].cid, cell_info.lte_info[i].tac, cell_info.lte_info[i].pci);
-                            //LUAT_DEBUG_PRINT("Neighboring cell %d earfcn %u rsrp %d rsrq %d snr %d", i + 1, cell_info.lte_info[i].earfcn, cell_info.lte_info[i].rsrp,
-                            //      cell_info.lte_info[i].rsrq, cell_info.lte_info[i].snr);
-                        }
-                    }
-                    break;
-                case LUAT_MOBILE_SIGNAL_UPDATE:
-                    //LUAT_DEBUG_PRINT("Service cell signal status changes");
-                    luat_mobile_get_last_notify_signal_strength_info(&signal_info);
-                    luat_mobile_get_last_notify_signal_strength(&csq);
-                    if (signal_info.luat_mobile_lte_signal_strength_vaild)
-                    {
-                        //LUAT_DEBUG_PRINT("rsrp %d, rsrq %d, snr %d, rssi %d, csq %d %d", signal_info.lte_signal_strength.rsrp,
-                        //      signal_info.lte_signal_strength.rsrq, signal_info.lte_signal_strength.snr,
-                        //      signal_info.lte_signal_strength.rssi, csq, luat_mobile_rssi_to_csq(signal_info.lte_signal_strength.rssi));
-
-                        network_signal_quality = luat_mobile_rssi_to_csq(signal_info.lte_signal_strength.rssi);
-                        network_signal_rx_level = signal_info.lte_signal_strength.rssi;
-                        network_signal_snr = signal_info.lte_signal_strength.snr;
-                    }
-                
-                    break;
-            }
-            break;
-
-        case LUAT_MOBILE_EVENT_PDP: // 4
-            // LUAT_DEBUG_PRINT("CID %d PDP activation status changed to %d", index, status);
+        /*case LUAT_MOBILE_EVENT_PDP: // 4
+            // iot_debug_print("CID %d PDP activation status changed to %d", index, status);
             // mp_printf(&mp_plat_print, "CID %d PDP activation status changed to %d\n", index, status);
             break;
+        */
 
+        /*
         case LUAT_MOBILE_EVENT_NETIF: // 5
             switch (status) {
                 case LUAT_MOBILE_NETIF_LINK_ON: {
-                    // LUAT_DEBUG_PRINT("Can access the Internet (index=%d)", index);                    
+                    // iot_debug_print("Can access the Internet (index=%d)", index);                    
                     // here index is NW_ADAPTER_INDEX_LWIP_GPRS
                     // uint8_t is_ipv6;
                     // luat_socket_check_ready(index, &is_ipv6); // adding this leads to reboot while mobile searching! 
 
                     luat_mobile_get_local_ip(0, 1, &ipv4, &ipv6);
-                    if (ipv4.type != 0xff) { LUAT_DEBUG_PRINT("IPV4 %s", ip4addr_ntoa(&ipv4.u_addr.ip4)); }
-                    if (ipv6.type != 0xff) { LUAT_DEBUG_PRINT("IPV6 %s", ip6addr_ntoa(&ipv4.u_addr.ip6)); }
+                    if (ipv4.type != 0xff) { iot_debug_print("IPV4 %s", ip4addr_ntoa(&ipv4.u_addr.ip4)); }
+                    if (ipv6.type != 0xff) { iot_debug_print("IPV6 %s", ip6addr_ntoa(&ipv4.u_addr.ip6)); }
                     modcellular_network_status_update(network_status | NTW_ACT_BIT, 0);
                     break;
                 default:
-                    LUAT_DEBUG_PRINT("Can't access the Internet");
+                    iot_debug_print("Can't access the Internet");
                     mp_warning(NULL, "Can't access the Internet");
                     modcellular_network_status_update(network_status & ~NTW_ACT_BIT, deactivate_flag ? 0:NTW_EXC_ACT_FAILED);
                     break;
@@ -203,33 +253,33 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             break;
         case LUAT_MOBILE_EVENT_TIME_SYNC: // 6
             //if (status == 0) {
-            //  LUAT_DEBUG_PRINT("Time synchronized");
+            //  iot_debug_print("Time synchronized");
             //} else {
-            //  LUAT_DEBUG_PRINT("Time NOT synchronized");
+            //  iot_debug_print("Time NOT synchronized");
             //}
             break;
 
         case LUAT_MOBILE_EVENT_CSCON: // 7, RRC status: 0 idle 1 active 
-            //LUAT_DEBUG_PRINT("LUAT_MOBILE_EVENT_CSCON with status %d", status);
+            //iot_debug_print("LUAT_MOBILE_EVENT_CSCON with status %d", status);
             if(status == 0) {
-                //LUAT_DEBUG_PRINT("RRC status detached");
+                //iot_debug_print("RRC status detached");
                 modcellular_network_status_update(network_status & ~NTW_ATT_BIT, 0);
             }
             if(status == 1) {
-                //LUAT_DEBUG_PRINT("RRC status attached");
+                //iot_debug_print("RRC status attached");
                 modcellular_network_status_update(network_status | NTW_ATT_BIT, 0);
             }
             // modcellular_network_status_update(network_status & ~NTW_ATT_BIT, NTW_EXC_ATT_FAILED);
             break;
 
         case LUAT_MOBILE_EVENT_BEARER: // 8
-            // LUAT_DEBUG_PRINT("BEARER status %d", status);
+            // iot_debug_print("BEARER status %d", status);
             // mp_printf(&mp_plat_print, "BEARER status %d\n", status);
-            // LUAT_MOBILE_BEARER_GET_DEFAULT_APN = 0, /**< Get the default APN*/
-            // LUAT_MOBILE_BEARER_APN_SET_DONE    = 1, /**< Set APN information completed*/
-            // LUAT_MOBILE_BEARER_AUTH_SET_DONE   = 2, /**< Set APN encryption status completed*/
-            // LUAT_MOBILE_BEARER_DEL_DONE        = 3, /**< Deletion of APN information completed*/
-            // LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE = 4, /**< APN activation/deactivation completed*/
+            // LUAT_MOBILE_BEARER_GET_DEFAULT_APN = 0, 
+            // LUAT_MOBILE_BEARER_APN_SET_DONE    = 1, 
+            // LUAT_MOBILE_BEARER_AUTH_SET_DONE   = 2, 
+            // LUAT_MOBILE_BEARER_DEL_DONE        = 3, 
+            // LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE = 4, 
             if(status == LUAT_MOBILE_BEARER_AUTH_SET_DONE) luat_mobile_active_apn(0, 1, 1);
             if(status == LUAT_MOBILE_BEARER_SET_ACT_STATE_DONE) {
                 if(activate_flag == 1) { // cellular.gprs("apn", "user", "pass")
@@ -244,78 +294,41 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
             break;
 
         case LUAT_MOBILE_EVENT_NAS_ERROR:
-            LUAT_DEBUG_PRINT("NAS exception type %d, rejection reason %d", index, status);
+            iot_debug_print("NAS exception type %d, rejection reason %d", index, status);
             // NAS exception type 6, rejection reason 17 - (Mobile status registration denied) Registration may be rejected. Please contact the SIM card provider to check whether the SIM card is in arrears or the device and card are separated. 
             modcellular_network_status_update(0, NTW_EXC_REG_FAILED);
             break;
 
         case LUAT_MOBILE_EVENT_FATAL_ERROR:
-            LUAT_DEBUG_PRINT("The network needs serious failure. It is recommended to restart the protocol stack after 5 seconds.");
+            iot_debug_print("The network needs serious failure. It is recommended to restart the protocol stack after 5 seconds.");
             modcellular_network_status_update(0, NTW_EXC_REG_FAILED);
             break;
         default:
-            LUAT_DEBUG_PRINT("No handler: event=%d, status=%d", event, status);
+            iot_debug_print("No handler: event=%d, status=%d", event, status);
             break;
+            */
     }
 }
 
+
+
 void delete_config_file(char * file) {
-    if (luat_fs_fexist(file)) {
-        int res = luat_fs_remove(file);
-        if (res != 0) LUAT_DEBUG_PRINT("Can not delete %s", file);
-        else LUAT_DEBUG_PRINT("Deleted %s", file);
-    } // else LUAT_DEBUG_PRINT("File not exists: %s", file);
+    if (iot_fs_fexist(file)) {
+        int res = iot_fs_delete_file(file);
+        if (res < 0) iot_debug_print("Can not delete %s", file);
+        else iot_debug_print("Deleted %s", file);
+    } 
 }
 
 void modcellular_init0(void) {
     network_status_callback = mp_const_none;
-    sms_callback = mp_const_none;
-    ussd_callback = mp_const_none;
-
-    // Remove unused files. They can lock bootup for certain SIM cards
-    // Commented files are respawned each time SoC bootup
-
-    //delete_config_file("cemmcomminfo.nvm");
-    //delete_config_file("cemmemminfo.nvm");
-    //delete_config_file("cemmplmninfo.nvm");
-    //delete_config_file("cerrcinfo.nvm");
-    //delete_config_file("cesmpdpauthconfig.nvm");
-    //delete_config_file("cesmpdpconfig.nvm");
-    //delete_config_file("mwconfig.nvm");
-    //delete_config_file("mwinfo.nvm");
-    delete_config_file("mwsms.nvm");
-    delete_config_file("npiconfig.nvm");
-    //delete_config_file("plat_config");
-    delete_config_file("rfTestFile");
-    delete_config_file("sim_audo_on.txt");
-    delete_config_file("sim_csdt_cfg_on.txt");
-    //delete_config_file("timer_values");
-    //delete_config_file("uepsconfig.nvm");
-    //delete_config_file("uiccctrlconfig.nvm");
-    delete_config_file("AMNV_CT01_000");
-    delete_config_file("AMNV_CT02_000");
-    delete_config_file("AMNV_CT08_001");
-    delete_config_file("AMNV_CT11_000");
-    delete_config_file("AMNV_CT13_000");
-    delete_config_file("AMNV_CT28_000");
-    delete_config_file("AMNV_CT46_000");
-    delete_config_file("AMNV_CT48_000");
-    // delete_config_file("GPS"); // this hangs Air780EG module
+    // sms_callback = mp_const_none;
+    // ussd_callback = mp_const_none;
 
     // Reset statuses
     network_exception = NTW_NO_EXC;
-    // set RRC release time to 1 sec and "idle timeout" to 55 secs
-    luat_mobile_set_auto_rrc_default();
-
-    // luat_mobile_set_sync_time(1);
-
-    luat_mobile_event_register_handler(mobile_event_cb); 
-    modcellular_init_sms(); // set SMS storage to SM
-
-    luat_mobile_set_period_work(90000, 5000, 4);
-    luat_mobile_set_check_network_period(120000);
-    luat_mobile_set_sim_id(2);
-    luat_mobile_set_sim_detect_sim0_first();
+    iot_network_set_cb(mobile_event_cb); 
+    // modcellular_init_sms(); // set SMS storage to SM
 }
 
 
@@ -346,13 +359,10 @@ static mp_obj_t modcellular_get_imei(size_t n_args, const mp_obj_t *args) {
     // Returns:
     //     IMEI number as a string.
     // ========================================
-    int index = 0;
-    if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char imei[16];
-    memset(imei,0,sizeof(imei));
-    int res = luat_mobile_get_imei(index, imei, sizeof(imei));
-    if (res > 0) return mp_obj_new_str(imei, strlen(imei));
-    else return mp_obj_new_str("", 0);
+    char imei[64] = {0};
+    uint8_t len;
+    CFW_EmodGetIMEI(imei, &len, 0);
+    return mp_obj_new_str(imei, len);
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imei_obj, 0, 1, modcellular_get_imei);
@@ -361,9 +371,12 @@ static mp_obj_t modcellular_get_ipv4() {
     // ========================================
     // Retrieves IP v4.
     // ========================================
+    /*
     char ip_string_buffer[INET_ADDRSTRLEN];     
     inet_ntop(AF_INET, &ipv4.u_addr.ip4, ip_string_buffer, sizeof(ip_string_buffer));
     return mp_obj_new_str(ip_string_buffer, strlen(ip_string_buffer));
+    */
+    return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv4_obj, modcellular_get_ipv4);
 
@@ -371,9 +384,12 @@ static mp_obj_t modcellular_get_ipv6() {
     // ========================================
     // Retrieves IP v6.
     // ========================================
+    /*
     char ip_string_buffer[INET6_ADDRSTRLEN]; 
     inet_ntop(AF_INET6, &ipv6.u_addr.ip6, ip_string_buffer, sizeof(ip_string_buffer));
     return mp_obj_new_str(ip_string_buffer, strlen(ip_string_buffer));
+    */
+    return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_get_ipv6_obj, modcellular_get_ipv6);
 
@@ -386,11 +402,14 @@ static mp_obj_t modcellular_is_sim_present(size_t n_args, const mp_obj_t *args) 
     // Returns:
     //     True if SIM present.
     // ========================================
+    /*
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
     int res = luat_mobile_get_sim_ready(index);
     if(res == 1) return mp_obj_new_bool(true);
     else return mp_obj_new_bool(false);
+    */
+    return mp_obj_new_bool(true); // TODO
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_is_sim_present_obj, 0, 1, modcellular_is_sim_present);
@@ -458,6 +477,7 @@ static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     // Returns:
     //     ICCID number as a string.
     // ========================================
+    /*
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
     char iccid[21];
@@ -468,9 +488,22 @@ static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
         mp_raise_RuntimeError("No ICCID data available");
         return mp_const_none;
     }
+    */
+    return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_iccid_obj, 0, 1, modcellular_get_iccid);
+
+static void CFW_IMSItoASC(char *src, char *dest, uint8_t *len) {
+    uint8_t i;
+    dest[0] = ((src[1] & 0xF0) >> 4) + 0x30;
+    for (i = 2; i < src[0] + 1; i++) {
+        dest[2 * (i - 1) - 1] = (src[i] & 0x0F) + 0x30;
+        dest[2 * (i - 1)] = ((src[i] & 0xF0) >> 4) + 0x30;
+    }
+    dest[2 * src[0] - 1] = 0x00;
+    *len = 2 * src[0] - 1;
+}
 
 
 static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
@@ -483,10 +516,16 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     // ========================================
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char imsi[21];
-    memset(imsi, 0, sizeof(imsi));
-    int res = luat_mobile_get_imsi(index, imsi, sizeof(imsi));
-    if(res > 0) return mp_obj_new_str(imsi, strlen(imsi));
+    char imsibin[21];
+    char imsiasc[21];
+    uint8_t len = 0;
+    memset(imsibin, 0, sizeof(imsibin));
+    memset(imsiasc, 0, sizeof(imsiasc));
+    int res = CFW_CfgGetIMSI(imsibin, index);
+    if(res >= 0) {
+        CFW_IMSItoASC(imsibin, imsiasc, &len);
+    	return mp_obj_new_str(imsiasc, len);
+   	}
     else {
         mp_raise_RuntimeError("No IMSI data available");
         return mp_const_none;
@@ -495,8 +534,12 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imsi_obj, 0, 1, modcellular_get_imsi);
 
+
+extern void atSetFlightModeFlag(uint8_t flag, uint32_t nSimID);
+extern uint8_t atGetFlightModeFlag(uint32_t nSimID);
+
 bool get_flight_mode(int index) {
-    int res = luat_mobile_get_flymode(index);
+    int res = atGetFlightModeFlag(index);
     if (res < 0) mp_raise_RuntimeError("Failed to retrieve flight mode status");
     return res == 0;
 }
@@ -515,11 +558,7 @@ static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     if (n_args > 0) {
         if (n_args == 2) index = mp_obj_get_int(args[1]);
         mp_int_t set_flag = mp_obj_get_int(args[0]);
-        int res = luat_mobile_set_flymode(index, set_flag);
-        if(res != 0){
-            mp_raise_RuntimeError("Failed to set flight mode status");
-            return mp_const_none;
-        }
+        atSetFlightModeFlag(set_flag, index);
         WAIT_UNTIL(set_flag == get_flight_mode(index), TIMEOUT_FLIGHT_MODE, 100, mp_raise_OSError(MP_ETIMEDOUT));
     }
     return mp_obj_new_bool(get_flight_mode(index));
@@ -528,6 +567,7 @@ static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_flight_mode_obj, 0, 2, modcellular_flight_mode);
 
 static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
+    /*
     // ========================================
     // Sets 4G bands the module operates at.
     // Args:
@@ -539,7 +579,7 @@ static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
         // uint8_t default_count;
         // get all supported bands (for info only)
         // luat_mobile_get_band(default_bands, &default_count);
-        // for(int i = 0; i < default_count; i++) LUAT_DEBUG_PRINT("Use band %d", default_bands[i]);
+        // for(int i = 0; i < default_count; i++) iot_debug_print("Use band %d", default_bands[i]);
         uint8_t default_bands[] = {
             #ifdef NETWORK_FREQ_BAND_1
             1,
@@ -584,8 +624,10 @@ static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
             return mp_const_none;
         }
     }
+    */
     return mp_const_none;
 }
+
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_set_bands_obj, 0, 1, modcellular_set_bands);
 
@@ -598,27 +640,20 @@ static mp_obj_t modcellular_reset_wto(int timeout) {
     //     Only one can be used within a certain period of time.
     // ========================================    
     modcellular_init0();
-    // do not use luat_mobile_reset_stack, use fly_mode instead
-    // luat_mobile_reset_stack(); 
+    // WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
 
-    /*char apn[64] = {0};
-    luat_mobile_set_flymode(0, 1);    // Delete the advanced flight mode saved by the system            
-    luat_rtos_task_sleep(100);
-    luat_mobile_set_flymode(0, 0);    // Exit airplane mode
-    */
-    luat_mobile_reset_stack();
-    WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
+    // uint8_t is_ipv6;
+    // //  net_lwip_init(); // should be run only once, see modsocket.c
 
-    uint8_t is_ipv6;
-    // net_lwip_init(); // should be run only once, see modsocket.c
-    net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
-    network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
-    luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket
+    //net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
+    //network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);        
+    //luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, &is_ipv6); // important for network socket
 
     return mp_const_none;
 }
 static mp_obj_t modcellular_reset(void) {
     modcellular_reset_wto(TIMEOUT_NETWORK_ACTIVATION);
+    return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_reset_obj, modcellular_reset);
@@ -638,6 +673,7 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
     //     True if GPRS is active, False
     //     otherwise.
     // ========================================
+    /*
     REQUIRES_NETWORK_REGISTRATION; // checks network_status
 
     if (n_args == 1 || n_args == 2) {
@@ -651,7 +687,7 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 
         if(flag == 0)  {
             deactivate_flag = 1;
-            luat_mobile_active_apn(0, 1, 0);
+            // luat_mobile_active_apn(0, 1, 0);
             WAIT_UNTIL((network_status & NTW_ACT_BIT) == 0, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
         }
         return mp_obj_new_bool(network_status & NTW_ACT_BIT);
@@ -670,15 +706,9 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             mp_raise_ValueError(MP_ERROR_TEXT("Network is already on"));
             return mp_const_none;
         } else {
-            /*
-            deactivate_flag = 1;
-            activate_flag = 1;
-            modcellular_reset_wto(timeout);
-            WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
-            */
 
             activate_flag = 1;
-            luat_mobile_user_apn_auto_active(0, 1, 3, 3, (uint8_t*)c_apn, strlen(c_apn), (uint8_t*)c_user, strlen(c_user), (uint8_t*)c_pass, strlen(c_pass));
+            // luat_mobile_user_apn_auto_active(0, 1, 3, 3, (uint8_t*)c_apn, strlen(c_apn), (uint8_t*)c_user, strlen(c_user), (uint8_t*)c_pass, strlen(c_pass));
             WAIT_UNTIL((network_status & NTW_ACT_BIT) == NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
             modcellular_poll_network_exception();
 
@@ -691,6 +721,8 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
         mp_raise_ValueError(MP_ERROR_TEXT("Unexpected number of argument: 0, 1 or 3 required"));
     }
     return mp_obj_new_bool(network_status & NTW_ACT_BIT);
+    */
+    return mp_obj_new_bool(0);
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_gprs_obj, 0, 4, modcellular_gprs);
@@ -701,7 +733,7 @@ static mp_obj_t modcellular_scan(void) {
     // ========================================
     // Lists network operators.
     // ========================================
-
+    /*
     mp_obj_t plmn_list = mp_obj_new_list(0, NULL);
     ManualPlmnSearchInfo * pManualPlmnSearchInfo = (ManualPlmnSearchInfo*)m_new(uint8_t, sizeof(ManualPlmnSearchInfo));
     if(pManualPlmnSearchInfo != NULL) {
@@ -711,31 +743,12 @@ static mp_obj_t modcellular_scan(void) {
     
         if (ret == CMS_RET_SUCC) {            
             for (int i = 0; i < pManualPlmnSearchInfo->plmnNum; i++) {
-                /*
-                UINT8  plmn[PLMN_STR_MAX_LENGTH];
-                UINT8  plmnState;   //CmiMmPlmnStateEnum, cops <stat>
-                UINT8  longPlmn[CMI_MM_STR_PLMN_MAX_LENGTH]; // end with '\0' // 32 chars
-                UINT8  shortPlmn[CMI_MM_SHORT_STR_PLMN_MAX_LENGTH]; // end with '\0'
-                UINT8  act; //CmiCregActEnum, cops <act>
-                typedef enum CmiCregActEnum_Tag {
-                    CMI_MM_GSM = 0,
-                    CMI_MM_GSM_COMPACT = 1,
-                    CMI_MM_UMTS = 2,
-                    CMI_MM_GSM_EGPRS = 3,
-                    CMI_MM_HSDPA = 4,
-                    CMI_MM_HSUPA = 5,
-                    CMI_MM_HSDPA_HSUPA = 6,
-                    CMI_MM_LTE = 7,
-                    CMI_MM_EC_GSM = 8,
-                    CMI_NB_IOT = 9 //NB only
-                }CmiCregActEnum; 
-                */
                 PlmnSearchInfo plmn = pManualPlmnSearchInfo->plmnList[i];
-                //LUAT_DEBUG_PRINT("PLMN: plmn=%s, plmnState=%d, longPlmn=%s, shortPlmn=%s, act=%d", plmn.plmn, plmn.plmnState, plmn.longPlmn, plmn.shortPlmn, plmn.act);
+                //iot_debug_print("PLMN: plmn=%s, plmnState=%d, longPlmn=%s, shortPlmn=%s, act=%d", plmn.plmn, plmn.plmnState, plmn.longPlmn, plmn.shortPlmn, plmn.act);
     
                 modcellular_get_operator_name(plmn.plmn, (char*)plmn.longPlmn);
                 if(strlen((char*)plmn.longPlmn) != 0) {
-                    //LUAT_DEBUG_PRINT("Operator=%s", (char*)plmn.longPlmn);
+                    //iot_debug_print("Operator=%s", (char*)plmn.longPlmn);
                     mp_obj_t tuple[3] = {
                         mp_obj_new_str((char*)plmn.plmn, strlen((char*)plmn.plmn)),
                         mp_obj_new_str((char*)plmn.longPlmn, strlen((char*)plmn.longPlmn)),
@@ -748,6 +761,8 @@ static mp_obj_t modcellular_scan(void) {
         m_del(uint8_t, pManualPlmnSearchInfo, sizeof(ManualPlmnSearchInfo));
     }
     return plmn_list;
+    */
+    return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_0(modcellular_scan_obj, modcellular_scan);
@@ -764,6 +779,7 @@ static mp_obj_t modcellular_stations(void) {
     // ========================================
     // Returns base stations cells.
     // ========================================
+    /*
     luat_mobile_cell_info_t info = {0};
     if (luat_mobile_get_cell_info(&info) != 0) {
         // mp_raise_RuntimeError("Failed to poll base stations");
@@ -799,11 +815,13 @@ static mp_obj_t modcellular_stations(void) {
                 mp_obj_new_int(ncell.snr),
                 mp_obj_new_int(ncell.earfcn),
             };
-            //LUAT_DEBUG_PRINT("neighbour cell[%d]: mcc=%d, mnc=%d, tac=%d, cid=%d, rsrq=%d, snr=%d, earfcn=%d", i, ncell.mcc, ncell.mnc, ncell.tac, ncell.cid, ncell.rsrq, ncell.snr, ncell.earfcn);
+            //iot_debug_print("neighbour cell[%d]: mcc=%d, mnc=%d, tac=%d, cid=%d, rsrq=%d, snr=%d, earfcn=%d", i, ncell.mcc, ncell.mnc, ncell.tac, ncell.cid, ncell.rsrq, ncell.snr, ncell.earfcn);
             mp_obj_list_append(cell_list, mp_obj_new_tuple(8, tuple));
         }
     }
     return cell_list;
+    */
+    return mp_const_none;
     
 }
 
@@ -826,7 +844,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(modcellular_on_status_event_obj, modcellular_on
 static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_cellular) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_SMS), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_type) },
+    // { MP_OBJ_NEW_QSTR(MP_QSTR_SMS), (mp_obj_t)MP_ROM_PTR(&modcellular_sms_type) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_imei), (mp_obj_t)&modcellular_get_imei_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_get_ipv4), (mp_obj_t)&modcellular_get_ipv4_obj },
@@ -844,12 +862,12 @@ static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_set_bands), (mp_obj_t)&modcellular_set_bands_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_gprs), (mp_obj_t)&modcellular_gprs_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_scan), (mp_obj_t)&modcellular_scan_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_ussd), (mp_obj_t)&modcellular_ussd_obj },
+    // { MP_OBJ_NEW_QSTR(MP_QSTR_ussd), (mp_obj_t)&modcellular_ussd_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_stations), (mp_obj_t)&modcellular_stations_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_reset), (mp_obj_t)&modcellular_reset_obj },
     { MP_OBJ_NEW_QSTR(MP_QSTR_on_status_event), (mp_obj_t)&modcellular_on_status_event_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_on_sms), (mp_obj_t)&modcellular_on_sms_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_on_ussd), (mp_obj_t)&modcellular_on_ussd_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_on_sms), (mp_obj_t)&modcellular_on_sms_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_on_ussd), (mp_obj_t)&modcellular_on_ussd_obj },
 
     #ifdef NETWORK_FREQ_BAND_1
     { MP_ROM_QSTR(MP_QSTR_NETWORK_FREQ_BAND_1),  MP_ROM_INT(1)  },
@@ -893,12 +911,12 @@ static const mp_map_elem_t mp_module_cellular_globals_table[] = {
     //{ MP_ROM_QSTR(MP_QSTR_EATTACHMENT), MP_ROM_INT(NTW_EXC_ATT_FAILED) },
     { MP_ROM_QSTR(MP_QSTR_EACTIVATION), MP_ROM_INT(NTW_EXC_ACT_FAILED) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_delete_by_index), (mp_obj_t)&modcellular_sms_delete_by_index_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_delete_all_read), (mp_obj_t)&modcellular_sms_delete_all_read_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_read_all), (mp_obj_t)&modcellular_sms_read_all_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_list_read), (mp_obj_t)&modcellular_sms_list_read_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_list), (mp_obj_t)&modcellular_sms_list_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_sms_get_storage_size), (mp_obj_t)&modcellular_sms_get_storage_size_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_delete_by_index), (mp_obj_t)&modcellular_sms_delete_by_index_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_delete_all_read), (mp_obj_t)&modcellular_sms_delete_all_read_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_read_all), (mp_obj_t)&modcellular_sms_read_all_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_list_read), (mp_obj_t)&modcellular_sms_list_read_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_list), (mp_obj_t)&modcellular_sms_list_obj },
+    //{ MP_OBJ_NEW_QSTR(MP_QSTR_sms_get_storage_size), (mp_obj_t)&modcellular_sms_get_storage_size_obj },
     
 };
 
@@ -911,12 +929,13 @@ const mp_obj_module_t cellular_module = {
 
 MP_REGISTER_MODULE(MP_QSTR_cellular, cellular_module);
 
-
+/*
 typedef struct _OPER_INFO
 {
     uint8_t OperatorId[6];
     const char *OperatorName;
 } OPER_INFO;
+
 
 static OPER_INFO _OperatorInfo[] =
 {
@@ -1166,7 +1185,7 @@ static void modcellular_get_operator_name(uint8_t in_plmn[PLMN_STR_MAX_LENGTH], 
         pName = _OperatorInfo[index].OperatorName;        
         if((int)strlen(pName) > maxlen) {
             maxlen = strlen(pName);
-            LUAT_DEBUG_PRINT("name=%s, maxlen=%d", pName, maxlen);
+            iot_debug_print("name=%s, maxlen=%d", pName, maxlen);
         }
         
         int8_t res = 1;
@@ -1186,3 +1205,4 @@ static void modcellular_get_operator_name(uint8_t in_plmn[PLMN_STR_MAX_LENGTH], 
     strcpy(pOperatorName, pName);
     
 }
+*/

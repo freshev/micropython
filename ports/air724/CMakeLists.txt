@@ -591,6 +591,7 @@ list(APPEND MICROPY_SOURCE_PORT
     gccollect.c 
     modair.c 
     mphalport.c
+    modcellular.c
 )
 
 list(TRANSFORM MICROPY_SOURCE_PORT PREPEND ${MICROPY_PORT_DIR}/)

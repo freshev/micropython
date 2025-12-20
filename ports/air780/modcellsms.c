@@ -78,7 +78,7 @@ void modcellular_get_storage_info_cb(uint16_t param_size, void* p_param) {
 BOOL modcellular_get_storage_info() {
     storage_flag = 0;
     cmsNonBlockApiCall(modcellular_get_storage_info_cb, 0, NULL);
-    WAIT_UNTIL(storage_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Can not get SIM storage info"));); // wait for CMI_SMS_GET_SMS_STORAGE_STATUS_CNF
+    WAIT_UNTIL(storage_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SIM storage info");); // wait for CMI_SMS_GET_SMS_STORAGE_STATUS_CNF
     // LUAT_DEBUG_PRINT("SMS storage info:");
     // LUAT_DEBUG_PRINT("usedNumOfSim %d", storage.usedNumOfSim);
     // LUAT_DEBUG_PRINT("totalNumOfSim %d", storage.totalNumOfSim);
@@ -107,7 +107,7 @@ BOOL modcellular_get_sms_list(CmiSmsRecStorStatus in_status) {
     uint8_t status = in_status;
     for(int i = 0; i < 10; i++) sms_list_buffer[i] = NULL;
     cmsNonBlockApiCall(modcellular_get_sms_list_cb, sizeof(uint8_t), &status);
-    WAIT_UNTIL(sms_list_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Can not get SMS list"));); // wait for CMI_SMS_LIST_SMS_MSG_RECORD_CNF
+    WAIT_UNTIL(sms_list_flag, TIMEOUT_SMS_LIST, 100, mp_raise_RuntimeError("Can not get SMS list");); // wait for CMI_SMS_LIST_SMS_MSG_RECORD_CNF
     // LUAT_DEBUG_PRINT("SMS list with status %d:", status, sms_list_buffer_len);
     //for(int i = 0; i < sms_list_buffer_len; i++) LUAT_DEBUG_PRINT("%d: %p", i, sms_list_buffer[i]);
     return true;
@@ -122,7 +122,7 @@ void modcellular_sms_delete_internal_cb(uint16_t param_size, void* p_param) {
 BOOL modcellular_sms_delete_internal(uint8_t index) {
     sms_delete_flag = 0;
     cmsNonBlockApiCall(modcellular_sms_delete_internal_cb, sizeof(uint8_t), &index);
-    WAIT_UNTIL(sms_delete_flag, TIMEOUT_SMS_DELETE, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Can not delete SMS"));); // wait for CMI_SMS_DEL_SMS_MSG_RECORD_CNF
+    WAIT_UNTIL(sms_delete_flag, TIMEOUT_SMS_DELETE, 100, mp_raise_RuntimeError("Can not delete SMS");); // wait for CMI_SMS_DEL_SMS_MSG_RECORD_CNF
     return true;
 }
 

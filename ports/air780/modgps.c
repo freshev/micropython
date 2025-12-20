@@ -263,7 +263,7 @@ STATIC mp_obj_t modgps_on(size_t n_args, const mp_obj_t *arg) {
     if(GPS_Init()) {
         WAIT_UNTIL(gpsInfo.rmc.latitude.value, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
     } else {
-       mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to activate GPS"));
+       mp_raise_RuntimeError("Failed to activate GPS");
     }
     return MP_OBJ_NEW_SMALL_INT(1);
 }

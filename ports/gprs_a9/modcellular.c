@@ -607,12 +607,12 @@ mp_obj_t decode_ussd(API_Event_t* event) {
               }
               break;
             default:
-              mp_raise_RuntimeError(MP_ERROR_TEXT("Unsupported data coding scheme"));
+              mp_raise_RuntimeError("Unsupported data coding scheme");
               tuple[0] = mp_const_none;
               tuple[1] = mp_const_none;
               break;
         }
-    } else mp_raise_RuntimeError(MP_ERROR_TEXT("Unsupported data coding scheme"));
+    } else mp_raise_RuntimeError("Unsupported data coding scheme");
 
     return mp_obj_new_tuple(2, tuple);
 }
@@ -1055,7 +1055,7 @@ static mp_obj_t modcellular_get_iccid(void) {
     if (SIM_GetICCID((uint8_t*)iccid))
         return mp_obj_new_str(iccid, strlen(iccid));
     else {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("No ICCID data available"));
+        mp_raise_RuntimeError("No ICCID data available");
         return mp_const_none;
     }
 }
@@ -1073,7 +1073,7 @@ static mp_obj_t modcellular_get_imsi(void) {
     if (SIM_GetIMSI((uint8_t*)imsi))
         return mp_obj_new_str(imsi, strlen(imsi));
     else {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("No IMSI data available"));
+        mp_raise_RuntimeError("No IMSI data available");
         return mp_const_none;
     }
 }
@@ -1084,7 +1084,7 @@ bool get_flight_mode(void) {
     // Polls flight mode
     bool flag;
     if (!Network_GetFlightMode(&flag)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to retrieve flight mode status"));
+        mp_raise_RuntimeError("Failed to retrieve flight mode status");
     }
     return !flag;  // By fact, the meaning of the output is inverse
 }
@@ -1099,7 +1099,7 @@ static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     if (n_args == 1) {
         mp_int_t set_flag = mp_obj_get_int(args[0]);
         if (!Network_SetFlightMode(set_flag)) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set flight mode status"));
+            mp_raise_RuntimeError("Failed to set flight mode status");
             return mp_const_none;
         }
         WAIT_UNTIL(set_flag == get_flight_mode(), TIMEOUT_FLIGHT_MODE, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1118,12 +1118,12 @@ static mp_obj_t modcellular_set_bands(size_t n_args, const mp_obj_t *args) {
     // ========================================
     if (n_args == 0) {
         if (!Network_SetFrequencyBand(BANDS_ALL)) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to reset 2G GSM bands"));
+            mp_raise_RuntimeError("Failed to reset 2G GSM bands");
             return mp_const_none;
         }
     } else if (n_args == 1) {
         if (!Network_SetFrequencyBand(mp_obj_get_int(args[0]))) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set 2G GSM bands"));
+            mp_raise_RuntimeError("Failed to set 2G GSM bands");
             return mp_const_none;
         }
     }
@@ -1167,7 +1167,7 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 
         if (network_status & NTW_ACT_BIT) {
             if (!Network_StartDeactive(1)) {
-                mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot initiate context deactivation"));
+                mp_raise_RuntimeError("Cannot initiate context deactivation");
                 return mp_const_none;
             }
             WAIT_UNTIL(!(network_status & NTW_ACT_BIT), timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1192,12 +1192,12 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             // mp_printf(&mp_plat_print, "Attach... ");
             ret = Network_StartAttach();
             // mp_printf(&mp_plat_print, " ret1=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
-            WAIT_UNTIL((network_status & NTW_ATT_BIT), timeout, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Not attached: try resetting")));
+            WAIT_UNTIL((network_status & NTW_ATT_BIT), timeout, 100, mp_raise_RuntimeError("Not attached: try resetting"));
             //mp_printf(&mp_plat_print, "           ret2=%d attached=%d active=%d\n", ret, (network_status & NTW_ATT_BIT) != 0, (network_status & NTW_ACT_BIT) != 0);
         }
         // mp_printf(&mp_plat_print, "Wait attach...\n");
 
-        WAIT_UNTIL(__is_attached(), timeout, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Not attached: try resetting")));
+        WAIT_UNTIL(__is_attached(), timeout, 100, mp_raise_RuntimeError("Not attached: try resetting"));
         OS_Sleep(100);
 
         if (!(network_status & NTW_ACT_BIT)) {
@@ -1207,7 +1207,7 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
 
             ret = Network_StartActive(context);
-            WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError(MP_ERROR_TEXT("Not activated: try resetting")));
+            WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not activated: try resetting"));
         }
     } else if (n_args != 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("Unexpected number of argument: 0, 1 or 3 required"));
@@ -1224,7 +1224,7 @@ static mp_obj_t modcellular_scan(void) {
     // ========================================
     network_list_buffer = NULL;
     if (!Network_GetAvailableOperatorReq()) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll available operators"));
+        mp_raise_RuntimeError("Failed to poll available operators");
         return mp_const_none;
     }
     WAIT_UNTIL(network_list_buffer != NULL, TIMEOUT_LIST_OPERATORS, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1235,7 +1235,7 @@ static mp_obj_t modcellular_scan(void) {
         // Name
         uint8_t *op_name;
         if (!Network_GetOperatorNameById(network_list_buffer[i].operatorId, &op_name)) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll operator name"));
+            mp_raise_RuntimeError("Failed to poll operator name");
             return mp_const_none;
         }
 
@@ -1266,7 +1266,7 @@ static mp_obj_t modcellular_register(size_t n_args, const mp_obj_t *args) {
         }
 
         if (!Network_DeRegister()) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to request deregistration"));
+            mp_raise_RuntimeError("Failed to request deregistration");
             return mp_const_none;
         }
         WAIT_UNTIL(!(network_status & NTW_REG_BIT), TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1291,7 +1291,7 @@ static mp_obj_t modcellular_register(size_t n_args, const mp_obj_t *args) {
         }
 
         if (!Network_Register((uint8_t*) op_id->items, (Network_Register_Mode_t) op_mode)) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to request network registration"));
+            mp_raise_RuntimeError("Failed to request network registration");
             return mp_const_none;
         }
         WAIT_UNTIL(network_status & NTW_REG_BIT, TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1301,13 +1301,13 @@ static mp_obj_t modcellular_register(size_t n_args, const mp_obj_t *args) {
     Network_Register_Mode_t op_mode;
 
     if (!Network_GetCurrentOperator(op_id, &op_mode)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll current operator"));
+        mp_raise_RuntimeError("Failed to poll current operator");
         return mp_const_none;
     }
 
     uint8_t *op_name;
     if (!Network_GetOperatorNameById(op_id, &op_name)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll operator name"));
+        mp_raise_RuntimeError("Failed to poll operator name");
         return mp_const_none;
     }
 
@@ -1332,13 +1332,13 @@ static mp_obj_t modcellular_dial(mp_obj_t tn_in) {
     if (mp_obj_is_str(tn_in)) {
         const char* tn = mp_obj_str_get_str(tn_in);
         if (!CALL_Dial(tn)) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to initiate an outgoing call"));
+            mp_raise_RuntimeError("Failed to initiate an outgoing call");
         }
         return mp_const_none;
     } else {
         if (!mp_obj_is_true(tn_in)) {
             if (!CALL_HangUp()) {
-                mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to hangup call"));
+                mp_raise_RuntimeError("Failed to hangup call");
             }
         } else {
             mp_raise_ValueError(MP_ERROR_TEXT("The argument must be a string or False"));
@@ -1366,7 +1366,7 @@ static mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
 
     const char* code = mp_obj_str_get_str(args[0]);
     if(strlen(code) == 0) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("USSD string should not be empty"));
+        mp_raise_RuntimeError("USSD string should not be empty");
         return mp_const_none;
     }
     uint8_t code7[2 * strlen(code) + 1];
@@ -1384,7 +1384,7 @@ static mp_obj_t modcellular_ussd(size_t n_args, const mp_obj_t *args) {
     int result = SS_SendUSSD(ussd);
     if (result) {
         mp_printf(&mp_plat_print, "Failed to submit USSD: 0x%02x\n", result);
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to submit USSD"));
+        mp_raise_RuntimeError("Failed to submit USSD");
     }
 
     if (timeout == 0)
@@ -1405,7 +1405,7 @@ static mp_obj_t modcellular_stations(void) {
     // ========================================
     cells_n = -1;
     if (!Network_GetCellInfoRequst()) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll base stations"));
+        mp_raise_RuntimeError("Failed to poll base stations");
         return mp_const_none;
     }
     WAIT_UNTIL(cells_n >= 0, TIMEOUT_STATIONS, 100, mp_raise_OSError(MP_ETIMEDOUT));
@@ -1437,13 +1437,13 @@ static mp_obj_t modcellular_agps_station_data(void) {
     // ========================================
     cells_n = -1;
     if (!Network_GetCellInfoRequst()) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to poll base stations"));
+        mp_raise_RuntimeError("Failed to poll base stations");
         return mp_const_none;
     }
     WAIT_UNTIL(cells_n >= 0, TIMEOUT_STATIONS, 100, mp_raise_OSError(MP_ETIMEDOUT));
 
     if (cells_n == 0) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("No station data available"));
+        mp_raise_RuntimeError("No station data available");
         return mp_const_none;
     }
 

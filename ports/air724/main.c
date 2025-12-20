@@ -5,7 +5,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2024 freshev
+ * Copyright (c) 2025 freshev
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -101,13 +101,6 @@ void* mp_allocate_heap(uint32_t* size) {
     if(counter == 0) iot_debug_print("MICROPY_HEAP_MAX_SIZE can be increased!");
     iot_debug_print("Final heap size: %d ", h_size);
 
-    /*uint8_t IMEI[64] = {0};
-    uint8_t len;
-    iot_debug_print("Try to get imei");
-    CFW_EmodGetIMEI(IMEI, &len, 0);
-    iot_debug_print("IMEI: %s ", IMEI);
-    */
-   
     return ptr;
 }
 
@@ -134,7 +127,7 @@ soft_reset:
     
     modmachine_init0();  // iot_debug_print("machine inited");
     readline_init0();    // iot_debug_print("readline inited");
-    //modcellular_init0(); // iot_debug_print("cellular inited");
+    modcellular_init0(); // iot_debug_print("cellular inited");
 #ifdef GPS_MODULE
     //modgps_init0(); iot_debug_print("GPS inited");
 #endif
@@ -249,7 +242,7 @@ int appimg_enter(void *param) {
     // param2: 0 - disable, 1 - enable
     // param3: port -  0("LUAT USB Device 0 Modem"), 1("LUAT USB Device 1 AT"?), 2(uart3 "LUAT USB Device 2 AP Diag"), 3("LUAT USB Device 1 AT"?)
        iot_vat_send_cmd((uint8_t*)"AT^TRACECTRL=0,1,2\r\n", sizeof("AT^TRACECTRL=0,1,2\r\n")); // enable OSI trace to AP Diag
-    // iot_vat_send_cmd((uint8_t*)"AT^TRACECTRL=1,1,2\r\n", sizeof("AT^TRACECTRL=1,1,2\r\n")); // enable Modem trace to AP Diag
+       iot_vat_send_cmd((uint8_t*)"AT^TRACECTRL=1,1,2\r\n", sizeof("AT^TRACECTRL=1,1,2\r\n")); // enable Modem trace to AP Diag
     // iot_vat_send_cmd((uint8_t*)"AT^TRACECTRL=0,0,2\r\n", sizeof("AT^TRACECTRL=0,1,2\r\n")); // enable OSI trace to AP Diag
     // iot_vat_send_cmd((uint8_t*)"AT^TRACECTRL=1,0,2\r\n", sizeof("AT^TRACECTRL=1,1,2\r\n")); // enable Modem trace to AP Diag
 
