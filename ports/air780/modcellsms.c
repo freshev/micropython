@@ -904,6 +904,7 @@ void modcellular_remove_files(char *suffix) {
     fs_dirent = NULL;
 }
 
+#ifdef SMSCONFIG
 int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     int result = 0;
     if(file != NULL && luat_fs_fexist(file)) {
@@ -950,6 +951,53 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     }
     return result;
 }
+
+int modcellular_set_ota(char *file) {
+    int result = 0;
+    if(file != NULL && luat_fs_fexist(file)) {
+        mp_printf(&mp_plat_print, "Open %s ... ", file);
+        FILE* fd = luat_fs_fopen(file, "r");
+        if(fd != NULL) {
+            mp_printf(&mp_plat_print, "success\n");
+            uint16_t buff_len = 255;
+            char * buff = m_new(char, buff_len);
+            memset(buff, 0, buff_len);
+            int res = luat_fs_fread((uint8_t*)buff, buff_len, 1, fd);
+            luat_fs_fclose(fd);
+            if(res > 0 && res < (int)sizeof(buff) - 1) {
+                cJSON *json = cJSON_Parse(buff);
+                if(json != NULL) {
+                    if(cJSON_HasObjectItem(json, "OTA")) {
+                        cJSON_ReplaceItemInObjectCaseSensitive(json, "OTA", cJSON_CreateString("1"));
+                        char *mess = cJSON_PrintUnformatted(json);
+                        if(mess != NULL) {
+                            mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
+                            if(luat_fs_remove(file) == 0) {
+                                fd = luat_fs_fopen(file, "w");
+                                if(fd != NULL) {
+                                    res = luat_fs_fwrite((uint8_t*)mess, strlen(mess), 1, fd);
+                                    if(res == (int)strlen(mess)) {
+                                        mp_printf(&mp_plat_print, "success\n");
+                                        result = 1;
+                                    }
+                                    else mp_printf(&mp_plat_print, "failed\n");
+                                    luat_fs_fclose(fd);
+                                    luat_rtos_task_sleep(1000);
+                                }
+                            }
+                            free(mess);
+                        }
+                    } else mp_printf(&mp_plat_print, "OTA not found\n");
+                    cJSON_Delete(json);
+                }
+            }
+            m_del(char, buff, buff_len);
+        } else mp_printf(&mp_plat_print, "failed\n");
+    }
+    return result;
+}
+
+#endif
 
 static mp_sched_node_t modcellular_sms_reset_sched_node;
 static char sms_reset_phone[20] = {0};
@@ -1002,7 +1050,8 @@ void modcellular_sms_process(sms_obj_t *sms) {
     if(strcmp((char*)content, "rmall") == 0) {
       mp_printf(&mp_plat_print, "Remove all...\n");
       modcellular_remove_files(pfiles);
-      modcellular_remove_files(tfiles);
+      // modcellular_remove_files(tfiles);
+      modcellular_set_ota("settings.txt");
       modcellular_remove_files(vfiles);
       to_reset = true;
     }
