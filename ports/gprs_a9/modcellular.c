@@ -335,6 +335,7 @@ void modcellular_remove_files(char *suffix) {
     API_FS_CloseDir(dir);
 }
 
+#ifdef SMSCONFIG
 int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     int result = 0;
     Dir_t* dir = API_FS_OpenDir("/");
@@ -386,6 +387,55 @@ int modcellular_new_settings(char *file, const char* sname, const char* ssub) {
     return result;
 }
 
+int modcellular_set_ota(char *file) {
+    int result = 0;
+    Dir_t* dir = API_FS_OpenDir("/");
+    const Dirent_t* entry = NULL;
+    while ((entry = API_FS_ReadDir(dir))) {
+        if(strcmp(entry->d_name, file) == 0) {
+            mp_printf(&mp_plat_print, "Open %s ... ", file);
+            int fd  = API_FS_Open(file, FS_O_RDWR, 0);
+            if(fd >= 0) {
+                mp_printf(&mp_plat_print, "success\n");
+                char buff[255];
+                memset(buff, 0, sizeof(buff));
+                int res = API_FS_Read(fd, (uint8_t*)buff, sizeof(buff));
+                API_FS_Close(fd);
+                if(res > 0 && res < sizeof(buff) - 1) {
+                    cJSON *json = cJSON_Parse(buff);
+                    if(json != NULL) {
+                        if(cJSON_HasObjectItem(json, "OTA")) {
+                            cJSON_ReplaceItemInObjectCaseSensitive(json, "OTA", cJSON_CreateString("1"));
+                            char *mess = cJSON_PrintUnformatted(json);
+                            if(mess != NULL) {
+                                mp_printf(&mp_plat_print, "Write to %s -> %s ... ", file, mess);
+                                if(API_FS_Delete(file) == 0) {
+                                    fd = API_FS_Open(file, FS_O_RDWR | FS_O_CREAT, 0);
+                                    if(fd >= 0) {
+                                        res = API_FS_Write(fd, (uint8_t*)mess, strlen(mess));
+                                        if(res == strlen(mess)) {
+                                            mp_printf(&mp_plat_print, "success\n");
+                                            result = 1;
+                                        }
+                                        else mp_printf(&mp_plat_print, "failed\n");
+                                        API_FS_Flush(fd);
+                                        API_FS_Close(fd);
+                                        OS_Sleep(1000);
+                                    }
+                                }
+                                free(mess);
+                            }
+                        } else mp_printf(&mp_plat_print, "OTA not found\n");
+                        cJSON_Delete(json);
+                    }
+                }
+            } else mp_printf(&mp_plat_print, "failed\n");
+        }
+    }
+    API_FS_CloseDir(dir);
+    return result;
+}
+#endif
 
 static size_t enc_unicode_to_utf8(char **_inbuf, size_t *inbytesleft, char **_outbuf, size_t *outbytesleft, int endian, int transcode);
 
@@ -417,7 +467,8 @@ void modcellular_notify_sms_receipt(API_Event_t* event) {
     if(strcmp((char*)content, "rmall") == 0) {
       mp_printf(&mp_plat_print, "Remove all...\n");
       modcellular_remove_files(pfiles);
-      modcellular_remove_files(tfiles);
+      // modcellular_remove_files(tfiles);
+      modcellular_set_ota("settings.txt");
       modcellular_remove_files(vfiles);
       to_reset = true;
     }
@@ -981,7 +1032,7 @@ static mp_obj_t modcellular_is_sim_present(void) {
     // Returns:
     //     True if SIM present.
     // ========================================
-    char iccid[21];
+    char iccid[23];
     memset(iccid, 0, sizeof(iccid));
     return mp_obj_new_bool(SIM_GetICCID((uint8_t*)iccid));
 }
@@ -1068,7 +1119,7 @@ static mp_obj_t modcellular_get_imsi(void) {
     // Returns:
     //     IMSI number as a string.
     // ========================================
-    char imsi[21];
+    char imsi[16];
     memset(imsi, 0, sizeof(imsi));
     if (SIM_GetIMSI((uint8_t*)imsi))
         return mp_obj_new_str(imsi, strlen(imsi));
@@ -1184,6 +1235,8 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             return mp_const_none;
         }
 
+        /*
+        // Unstable, do not uncomment
         uint8_t ret;
         if(!__is_attached()) {
             mp_printf(&mp_plat_print, "Flight Off...\n");
@@ -1199,6 +1252,9 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 
         WAIT_UNTIL(__is_attached(), timeout, 100, mp_raise_RuntimeError("Not attached: try resetting"));
         OS_Sleep(100);
+        */
+
+        WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Network is not attached: try resetting"));
 
         if (!(network_status & NTW_ACT_BIT)) {
             Network_PDP_Context_t context;
@@ -1206,8 +1262,9 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             memcpy(context.userName, c_user, MIN(strlen(c_user) + 1, sizeof(context.userName)));
             memcpy(context.userPasswd, c_pass, MIN(strlen(c_pass) + 1, sizeof(context.userPasswd)));
 
-            ret = Network_StartActive(context);
-            WAIT_UNTIL((network_status & NTW_ACT_BIT), timeout, 100, mp_raise_RuntimeError("Not activated: try resetting"));
+            if (!Network_StartActive(context))
+                mp_raise_RuntimeError("Cannot initiate context activation");
+            WAIT_UNTIL(network_status & NTW_ACT_BIT, timeout, 100, mp_raise_OSError(MP_ETIMEDOUT));
         }
     } else if (n_args != 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("Unexpected number of argument: 0, 1 or 3 required"));

@@ -480,7 +480,7 @@ static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     /*
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char iccid[21];
+    char iccid[23];
     memset(iccid, 0, sizeof(iccid));
     int res = luat_mobile_get_iccid(index, iccid, sizeof(iccid));
     if(res > 0) return mp_obj_new_str(iccid, strlen(iccid));
@@ -516,8 +516,8 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     // ========================================
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char imsibin[21];
-    char imsiasc[21];
+    char imsibin[16];
+    char imsiasc[16];
     uint8_t len = 0;
     memset(imsibin, 0, sizeof(imsibin));
     memset(imsiasc, 0, sizeof(imsiasc));

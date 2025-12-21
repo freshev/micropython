@@ -65,7 +65,7 @@ static void mobile_event_cb(LUAT_MOBILE_EVENT_E event, uint8_t index, uint8_t st
     luat_mobile_cell_info_t cell_info;
     luat_mobile_signal_strength_info_t signal_info;
     uint8_t csq, i;
-    char imsi[20];
+    char imsi[16] = {0};
     char iccid[24] = {0};
     char apn[32] = {0};    
 
@@ -460,7 +460,7 @@ static mp_obj_t modcellular_get_iccid(size_t n_args, const mp_obj_t *args) {
     // ========================================
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char iccid[21];
+    char iccid[24];
     memset(iccid, 0, sizeof(iccid));
     int res = luat_mobile_get_iccid(index, iccid, sizeof(iccid));
     if(res > 0) return mp_obj_new_str(iccid, strlen(iccid));
@@ -483,7 +483,7 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
     // ========================================
     int index = 0;
     if(n_args == 1) index = mp_obj_get_int(args[0]);
-    char imsi[21];
+    char imsi[16];
     memset(imsi, 0, sizeof(imsi));
     int res = luat_mobile_get_imsi(index, imsi, sizeof(imsi));
     if(res > 0) return mp_obj_new_str(imsi, strlen(imsi));
