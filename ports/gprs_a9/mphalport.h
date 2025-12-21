@@ -57,8 +57,10 @@ uint64_t mp_hal_time_ns(void);
 void mp_hal_delay_ms(uint32_t ms);
 void mp_hal_delay_us(uint32_t us);
 void mp_hal_delay_us_fast(uint32_t us);
+uint64_t reset_clock();
+
 __attribute__((always_inline)) static inline uint32_t mp_hal_ticks_cpu(void) {
-  return clock();
+  return reset_clock();
 }
 
 mp_hal_pin_obj_t mp_hal_get_pin_obj(mp_obj_t pin_in);

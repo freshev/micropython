@@ -88,6 +88,8 @@ void modmachine_init0(void) {
     modmachine_uart_init0();
     modmachine_pwm_init0();
     modmachine_adc_init0();
+    // LUAT_DEBUG_PRINT("sizeof(long): %d", sizeof(long)); // -> 4
+    // LUAT_DEBUG_PRINT("sizeof(uint64_t): %d", sizeof(uint64_t)); // -> 8
 
     luat_fs_info_t fs_info = {0};
     luat_fs_info("/", &fs_info);

@@ -80,24 +80,35 @@ mp_uint_t mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
     }
 }
 
-uint32_t mp_hal_ticks_ms(void)    { return (uint32_t)(clock() / CLOCKS_PER_MSEC            ); }
-uint32_t mp_hal_ticks_us(void)    { return (uint32_t)(clock() / CLOCKS_PER_MSEC * 1000.0   ); }
-uint64_t mp_hal_ticks_ms_64(void) { return (uint64_t)(clock() / CLOCKS_PER_MSEC            ); }
-uint64_t mp_hal_ticks_us_64(void) { return (uint64_t)(clock() / CLOCKS_PER_MSEC * 1000.0   ); }
-uint64_t mp_hal_time_ns(void)     { return (uint64_t)(clock() / CLOCKS_PER_MSEC * 1000000.0); }
+#define CLOCKSIN48DAYS (CLOCKS_PER_SEC * 3600 * 24 * 48)
+uint64_t reset_clock() {
+    uint64_t c = clock();
+    if(c > CLOCKSIN48DAYS) {
+        // Reset module to restart clock() counter
+        PM_Restart();
+        while(1) OS_Sleep(1000);
+    }
+    return c;
+}
+
+uint32_t mp_hal_ticks_ms(void)    { return (uint32_t)(reset_clock() / CLOCKS_PER_MSEC            ); }
+uint32_t mp_hal_ticks_us(void)    { return (uint32_t)(reset_clock() / CLOCKS_PER_MSEC * 1000.0   ); }
+uint64_t mp_hal_ticks_ms_64(void) { return (uint64_t)(reset_clock() / CLOCKS_PER_MSEC            ); }
+uint64_t mp_hal_ticks_us_64(void) { return (uint64_t)(reset_clock() / CLOCKS_PER_MSEC * 1000.0   ); }
+uint64_t mp_hal_time_ns(void)     { return (uint64_t)(reset_clock() / CLOCKS_PER_MSEC * 1000000.0); }
 
 
 void mp_hal_delay_ms(uint32_t ms) {
-    uint64_t start = clock();
-    while ((uint64_t)clock() - start < ms * CLOCKS_PER_MSEC) {
+    uint64_t start = reset_clock();
+    while ((uint64_t)reset_clock() - start < ms * CLOCKS_PER_MSEC) {
         OS_Sleep(1);
         MICROPY_EVENT_POLL_HOOK
     }
 }
 
 void mp_hal_delay_us(uint32_t us) {
-    /*uint64_t start = clock();
-    while (((uint64_t)clock() - start) * 1000 < us * CLOCKS_PER_MSEC) {
+    /*uint64_t start = reset_clock();
+    while (((uint64_t)reset_clock() - start) * 1000 < us * CLOCKS_PER_MSEC) {
         MICROPY_EVENT_POLL_HOOK
         OS_SleepUs(1);
     }*/

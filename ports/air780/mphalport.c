@@ -98,10 +98,10 @@ mp_uint_t mp_hal_stdout_tx_strn(const char *str, uint32_t len) {
 
 
 uint32_t mp_hal_ticks_ms(void)    { return (uint32_t)(luat_mcu_tick64_ms()); }
-uint32_t mp_hal_ticks_us(void)    { return (uint32_t)(luat_mcu_ticks() / luat_mcu_us_period()); }
+uint32_t mp_hal_ticks_us(void)    { return (uint32_t)(luat_mcu_tick64() / luat_mcu_us_period()); }
 uint64_t mp_hal_ticks_ms_64(void) { return (uint64_t)(luat_mcu_tick64_ms()); }
-uint64_t mp_hal_ticks_us_64(void) { return (uint64_t)(luat_mcu_ticks() / luat_mcu_us_period()); }
-uint64_t mp_hal_time_ns(void)     { return (uint64_t)(luat_mcu_ticks() * 1000.0 / luat_mcu_us_period()); }
+uint64_t mp_hal_ticks_us_64(void) { return (uint64_t)(luat_mcu_tick64() / luat_mcu_us_period()); }
+uint64_t mp_hal_time_ns(void)     { return (uint64_t)(luat_mcu_tick64() * 1000.0 / luat_mcu_us_period()); }
 
 
 void mp_hal_delay_ms(uint32_t ms) {
