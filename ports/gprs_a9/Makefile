@@ -284,14 +284,14 @@ ota:
 	$(info Be patient !...)
 	$(Q)${MKDIR} -p ${FOTA_PATH}
 	@echo $(shell ./build-fota.sh \"${CONFIG_FW_VERSION}\" \"${CONFIG_DEPLOY_FOTA_COMPRESS}\" \"${CONFIG_DEPLOY_FOTA_FOLDER}\")	
-	@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} = "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
-		echo "Deflating version..."; \
-		echo ${CONFIG_FW_VERSION} | zlib-flate -compress > ${CONFIG_DEPLOY_FOTA_FOLDER}/version; \
-	fi
-	@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} != "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
-		echo "Copy version..."; \
-		echo ${CONFIG_FW_VERSION} > ${CONFIG_DEPLOY_FOTA_FOLDER}/version;	\
-	fi
+	#@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} = "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
+	#	echo "Deflating version..."; \
+	#	echo ${CONFIG_FW_VERSION} | zlib-flate -compress > ${CONFIG_DEPLOY_FOTA_FOLDER}/version; \
+	#fi
+	#@if [ ${CONFIG_DEPLOY_FOTA_COMPRESS} != "y" -a -d "${CONFIG_DEPLOY_FOTA_FOLDER}" ] ; then \
+	#	echo "Copy version..."; \
+	#	echo ${CONFIG_FW_VERSION} > ${CONFIG_DEPLOY_FOTA_FOLDER}/version;	\
+	#fi
 	@echo "Deploy FOTA OK"
 
 modules:
