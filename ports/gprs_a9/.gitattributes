@@ -1,0 +1,38 @@
+# Per default everything gets normalized and gets LF line endings on checkout.
+# * text eol=lf
+* -text
+*.* text=auto
+
+# These are binary so should never be modified by git.
+*.a binary
+*.o binary
+*.dll binary
+*.ico binary
+*.cat binary
+*.inf binary
+*.sys binary
+*.png binary
+*.jpg binary
+*.dxf binary
+*.mpy binary
+*.der binary
+*.exe binary
+*.map binary
+*.7z binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.pyd binary
+*.pyc binary
+*.pm binary
+*.pl binary
+*.PLS binary
+*.md binary
+*.rb binary
+*.xmd binary
+*.pdf binary
+*.rc binary
+*.cer binary
+*.svn-base binary
+*.chm
+*.chw
