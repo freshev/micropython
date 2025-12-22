@@ -270,12 +270,14 @@ deploy:
 	@if [ ${CONFIG_DEPLOY_LOD_COMPRESS} = "y" -a -d "${CONFIG_DEPLOY_LOD_FOLDER}" ] ; then \
 		echo "Deflating files..."; \
 		zlib-flate -compress < $(WITH_PLT_LOD_FILE) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_full_${CONFIG_FW_VERSION}.lod; \
-		zlib-flate -compress < $(BIN) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}.elf; \
-		zlib-flate -compress < $(MAP_FILE) > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}.map; \
+		zlib-flate -compress < $(BIN_PATH)/${FIRMWARE_NAME}_final.elf > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_final.elf; \
+		zlib-flate -compress < $(BIN_PATH)/${FIRMWARE_NAME}_final.map > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_final.map; \
 	fi
 	@if [ ${CONFIG_DEPLOY_LOD_COMPRESS} != "y" -a -d "${CONFIG_DEPLOY_LOD_FOLDER}" ] ; then \
 		echo "Copy files..."; \
 		$(CP) $(WITH_PLT_LOD_FILE) $(CONFIG_DEPLOY_LOD_FOLDER); \
+		$(CP) $(BIN_PATH)/${FIRMWARE_NAME}_final.elf $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_final.elf; \
+		$(CP) $(BIN_PATH)/${FIRMWARE_NAME}_final.map > $(CONFIG_DEPLOY_LOD_FOLDER)/${FIRMWARE_NAME}_final.map; \
 		$(CP) $(BIN) $(CONFIG_DEPLOY_LOD_FOLDER); \
 	fi
 	@echo "Deploy OK"
