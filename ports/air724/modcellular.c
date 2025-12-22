@@ -535,15 +535,6 @@ static mp_obj_t modcellular_get_imsi(size_t n_args, const mp_obj_t *args) {
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_get_imsi_obj, 0, 1, modcellular_get_imsi);
 
 
-extern void atSetFlightModeFlag(uint8_t flag, uint32_t nSimID);
-extern uint8_t atGetFlightModeFlag(uint32_t nSimID);
-
-bool get_flight_mode(int index) {
-    int res = atGetFlightModeFlag(index);
-    if (res < 0) mp_raise_RuntimeError("Failed to retrieve flight mode status");
-    return res == 0;
-}
-
 static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     // ========================================
     // Retrieves and switches the flight mode
@@ -554,14 +545,15 @@ static mp_obj_t modcellular_flight_mode(size_t n_args, const mp_obj_t *args) {
     // Returns:
     //     The new flight mode status.
     // ========================================
-    int index = 0;
+    // For LTE mode does nothing
+    // For 2G - deactivates PDP
+    // see ../lib/Luat_CSDK_Air724U/api/src/iot_network.c 
+    // ========================================
+    mp_int_t set_flag = 0;
     if (n_args > 0) {
-        if (n_args == 2) index = mp_obj_get_int(args[1]);
-        mp_int_t set_flag = mp_obj_get_int(args[0]);
-        atSetFlightModeFlag(set_flag, index);
-        WAIT_UNTIL(set_flag == get_flight_mode(index), TIMEOUT_FLIGHT_MODE, 100, mp_raise_OSError(MP_ETIMEDOUT));
+        set_flag = mp_obj_get_int(args[0]);        
     }
-    return mp_obj_new_bool(get_flight_mode(index));
+    return mp_obj_new_bool(iot_network_disconnect(set_flag));
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(modcellular_flight_mode_obj, 0, 2, modcellular_flight_mode);
