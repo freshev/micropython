@@ -570,7 +570,7 @@ Helper class to make http/https requests (GET, PUT, HEAD, etc)
 
 ## Notes ##
 
-* The size of micropython heap is roughly 512 Kb. 400k can be realistically allocated right after hard reset.
+* The size of micropython heap is roughly 880 kB. 680 kB can be realistically allocated right after hard reset.
 * The external memory card is [mounted under `/t`](https://ai-thinker-open.github.io/GPRS_C_SDK_DOC/en/c-sdk/function-api/file-system.html).
 * Firmware removes *.txt files in SOC file system by SMS 'rmconfig' (configurable)
 * Firmware removes *.py files in SOC file system by SMS 'rmcode' (configurable)

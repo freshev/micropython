@@ -65,10 +65,12 @@
 #define AppMain_TASK_PRIORITY        (0)
 #define MICROPYTHON_TASK_STACK_SIZE  (2048 * 4)
 #define MICROPYTHON_TASK_PRIORITY    (1)
-#define MICROPYTHON_HEAP_MAX_SIZE    (1024 * 2048)
-#define MICROPYTHON_HEAP_MIN_SIZE    (2048)
+//#define MICROPYTHON_HEAP_MAX_SIZE    (2048 * 1024)
+#define MICROPYTHON_HEAP_MAX_SIZE    (880  * 1024)
+#define MICROPYTHON_HEAP_MIN_SIZE    (16   * 1024)
+#define MICROPYTHON_FOTA_MAX_SIZE    (45   * 1024)
 
-static void* heap;
+void* heap;
 HANDLE mainTaskHandle  = NULL;
 HANDLE microPyTaskHandle = NULL;
 static void *stack_top;
@@ -91,16 +93,34 @@ void NORETURN nlr_jump_fail(void *val) {
 void* mp_allocate_heap(uint32_t* size) {
     uint32_t h_size = MICROPYTHON_HEAP_MAX_SIZE;
     void* ptr = NULL;
+    int counter = 0;
     while (!ptr) {
+        // Trace(1, "FOTA Try %d heap size", h_size);
         if (h_size < MICROPYTHON_HEAP_MIN_SIZE) {
             mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
         }
         ptr = OS_Malloc(h_size);
         if (!ptr) {
-            h_size = h_size >> 1;
+            h_size = h_size - MICROPYTHON_HEAP_MIN_SIZE;
+            counter++;
         }
     }
+
+    #ifdef FOTA_USE
+    { 
+    // leave buffer for SDK FOTA subroutines
+    // MICROPYTHON_FOTA_MAX_SIZE * 4 is the minimum memory size
+    // because of SDK reallocations during FOTA pack HTTP "GET" subroutine
+    OS_Free(ptr);
+    h_size -=  4 * MICROPYTHON_FOTA_MAX_SIZE; 
+    ptr = OS_Malloc(h_size);
+    if (!ptr) mp_fatal_error(MP_FATAL_REASON_HEAP_INIT, NULL);
+    }
+    #endif
+
     size[0] = h_size;
+    if(counter == 0) Trace(1, "MICROPYTHON_HEAP_MAX_SIZE can be increased!");
+    Trace(1, "Final heap size: %d ", h_size);
     return ptr;
 }
 
@@ -125,7 +145,7 @@ soft_reset:
     modgps_init0();
     modmachine_init0();
     readline_init0();
-
+    
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_lib));
@@ -133,6 +153,8 @@ soft_reset:
     mp_obj_list_init(mp_sys_argv, 0);
 
     // Startup scripts
+    OS_Sleep(3000); // Magically increases stability on "old" flashes, preventing cycle reboot. 3000 ms is the minimum.
+
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {

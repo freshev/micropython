@@ -32,17 +32,18 @@
 #include "modmachine.h"
 #include "api_os.h"
 #include "api_fota.h"
+#include "api_debug.h"
+#include "api_event.h"
+#include "api_hal_pm.h"
+#include "api_hal_adc.h"
+#include "api_fs.h"
 
 #include "mpconfigport.h"
 #include "stdint.h"
 #include "py/mpconfig.h"
 #include "py/obj.h"
 #include "py/runtime.h"
-
-#include "api_event.h"
-#include "api_hal_pm.h"
-#include "api_hal_adc.h"
-#include "api_fs.h"
+#include "py/gc.h"
 
 uint8_t machine_hw_watchdog_active = 1;
 uint8_t machine_hw_watchdog_pin_level = GPIO_LEVEL_LOW;
@@ -273,8 +274,8 @@ void modmachine_remove_files(char *suffix) {
 static uint8_t _fota_result = 0;
 static void processFota(const unsigned char *data, int len) {
     Trace(1,"FOTA total length:%d, data:%s", len, data);
-    if(len) {
-        MEMBLOCK_Trace(1, (uint8_t*)data, (uint16_t)len, 16);
+    if(len > 0 && data != NULL) {
+        // MEMBLOCK_Trace(1, (uint8_t*)data, (uint16_t)len, 16);
         if(API_FotaInit(len)) {
             Trace(1, "FOTA inited");
             //mp_printf(&mp_plat_print, "FOTA inited\n");            
@@ -295,9 +296,12 @@ static void processFota(const unsigned char *data, int len) {
         }
     } // else mp_printf(&mp_plat_print, "FOTA len = 0\n");
     Trace(1,"FOTA failed");
-    //mp_printf(&mp_plat_print, "FOTA failed\n");
+    // mp_printf(&mp_plat_print, "FOTA failed\n");    
     API_FotaClean();
 }
+
+
+extern void* heap;
 
 static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // ========================================
@@ -323,9 +327,8 @@ static mp_obj_t modmachine_ota(size_t n_args, const mp_obj_t *pos_args, mp_map_t
             sprintf(url, FOTA_URL, FW_VERSION, newv);
             if(query != NULL && mp_obj_is_str(query)) strcat(url, mp_obj_str_get_str(query));
             Trace(1,"FOTA URL %s", url);
-            mp_printf(&mp_plat_print, "FOTA URL %s.\n", url);
             if(API_FotaByServer(url, processFota) == 0) {
-               return mp_obj_new_int(_fota_result);
+            	return mp_obj_new_int(_fota_result);
             } else mp_printf(&mp_plat_print, "FOTA failed. Check internet connection.\n");
         } else mp_printf(&mp_plat_print, "FOTA versions equals. Skip updating.\n");
     } else mp_raise_ValueError(MP_ERROR_TEXT("FOTA requested version should be string."));
