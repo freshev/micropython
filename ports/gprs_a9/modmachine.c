@@ -147,7 +147,7 @@ static mp_obj_t mp_machine_unique_id(void) {
 NORETURN static void mp_machine_reset(void) {
     // ========================================
     // Resets the module.
-    // ========================================
+    // ========================================    
     PM_Restart();
     OS_Sleep(10000);
     while(1) {}

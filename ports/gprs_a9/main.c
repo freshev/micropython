@@ -52,6 +52,7 @@
 #include "api_network.h"
 #include "time.h"
 #include "api_fs.h"
+#include "api_fota.h"
 #include "fatal.h"
 
 #include "modos.h"
@@ -65,7 +66,6 @@
 #define AppMain_TASK_PRIORITY        (0)
 #define MICROPYTHON_TASK_STACK_SIZE  (2048 * 4)
 #define MICROPYTHON_TASK_PRIORITY    (1)
-//#define MICROPYTHON_HEAP_MAX_SIZE    (2048 * 1024)
 #define MICROPYTHON_HEAP_MAX_SIZE    (880  * 1024)
 #define MICROPYTHON_HEAP_MIN_SIZE    (16   * 1024)
 #define MICROPYTHON_FOTA_MAX_SIZE    (45   * 1024)
@@ -77,7 +77,6 @@ static void *stack_top;
 
 extern mp_uint_t gc_helper_get_regs_and_sp(mp_uint_t* regs);
 void gc_collect(void) {
-    //ESP8266-style
     gc_collect_start();
     mp_uint_t regs[8];
     mp_uint_t sp = gc_helper_get_regs_and_sp(regs);
@@ -133,10 +132,10 @@ soft_reset:
     mp_stack_ctrl_init();
     stack_top = (void*) info.stackTop + info.stackSize * 4;
     mp_stack_set_top((void *) stack_top);
-    mp_stack_set_limit(MICROPYTHON_TASK_STACK_SIZE * 4 - 1024);
+    mp_stack_set_limit(MICROPYTHON_TASK_STACK_SIZE * 4 - 1024);    
 
     uint32_t heap_size;
-    heap = mp_allocate_heap(&heap_size);
+    heap = mp_allocate_heap(&heap_size);    
     gc_init(heap, heap + heap_size);
 
     mp_init();
@@ -145,7 +144,7 @@ soft_reset:
     modgps_init0();
     modmachine_init0();
     readline_init0();
-    
+
     mp_obj_list_init(mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_lib));
@@ -153,8 +152,7 @@ soft_reset:
     mp_obj_list_init(mp_sys_argv, 0);
 
     // Startup scripts
-    OS_Sleep(3000); // Magically increases stability on "old" flashes, preventing cycle reboot. 3000 ms is the minimum.
-
+    // OS_Sleep(3000); 
     pyexec_frozen_module("_boot.py", false);
     pyexec_file_if_exists("boot.py");
     if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
@@ -227,7 +225,6 @@ void EventDispatch(API_Event_t* pEvent)
             break;
 
         case API_EVENT_ID_NETWORK_REGISTER_NO:
-            // TODO: WTF is this?
             modcellular_notify_reg_denied(pEvent);
             break;
 

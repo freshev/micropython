@@ -186,6 +186,8 @@ extern const struct _mp_print_t mp_debug_print;
 #define MP_UNREACHABLE for (;;);
 
 // This may work only with a particular SDK version. At least this adress is valid for SW_V2129 to SW_V2131
-//#define errno (*((volatile int *) 0x820a0cb0))
 #define errno (*((int *) 0x820a0cb0))
 
+// struct FOTA_CONTEXT_T;
+// typedef struct FOTA_CONTEXT_T FOTA_CONTEXT_T; // context length 0x94 bytes
+// FOTA_CONTEXT_T * gFotaCtx = (FOTA_CONTEXT_T *)((int *) 0x820ab41c);
