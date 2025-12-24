@@ -175,7 +175,7 @@ soft_reset:
     mp_deinit();
 
     OS_Free(heap);
-    mp_hal_stdout_tx_str("PYB: soft reboot\r\n");
+    mp_hal_stdout_tx_str("Soft reboot\r\n");
     mp_hal_delay_us(10000); // allow UART to flush output
 
     goto soft_reset;
