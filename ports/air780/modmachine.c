@@ -129,8 +129,14 @@ static mp_obj_t mp_machine_unique_id(void) {
 }
 
 NORETURN static void mp_machine_reset(void) {
+    // Prevents cycle reboot due to main.py early machine.reset()
+    if(mp_hal_ticks_ms_64() < 10 * 1000) {
+        mp_printf(&mp_plat_print, "Remove faulty main.py\n");
+        luat_fs_remove("main.py");
+        luat_rtos_task_sleep(100);
+    }
     luat_pm_reboot();
-    while(1) luat_rtos_task_sleep(1000);
+    while(1) {}
 }
 
 static mp_int_t mp_machine_reset_cause(void) {
@@ -228,7 +234,7 @@ static int luatos_fota_http_task(char *url) {
     net_lwip_register_adapter(NW_ADAPTER_INDEX_LWIP_GPRS);
     network_register_set_default(NW_ADAPTER_INDEX_LWIP_GPRS);
     luat_socket_check_ready(NW_ADAPTER_INDEX_LWIP_GPRS, NULL); 
-   
+
     test_luat_fota_handle = luat_fota_init();
     if(!test_luat_fota_handle) {
         LUAT_DEBUG_PRINT("FOTA init failed");
@@ -273,7 +279,7 @@ static int luatos_fota_http_task(char *url) {
             LUAT_DEBUG_PRINT("FOTA image not found (%d)", fota_http_client.httpResponseCode);
             return 0;
         }
-        
+
         int verify = luat_fota_done(test_luat_fota_handle);
         if(verify != 0) {
             LUAT_DEBUG_PRINT("FOTA image verify error");

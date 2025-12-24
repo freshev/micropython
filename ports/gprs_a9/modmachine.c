@@ -147,7 +147,13 @@ static mp_obj_t mp_machine_unique_id(void) {
 NORETURN static void mp_machine_reset(void) {
     // ========================================
     // Resets the module.
-    // ========================================    
+    // Prevents cycle reboot due to main.py early machine.reset()
+    // ========================================
+    if(mp_hal_ticks_ms_64() < 10 * 1000) {
+        mp_printf(&mp_plat_print, "Remove faulty main.py\n");
+        API_FS_Delete("main.py");
+        OS_Sleep(100);
+    }
     PM_Restart();
     OS_Sleep(10000);
     while(1) {}
