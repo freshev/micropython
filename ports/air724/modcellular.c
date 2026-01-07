@@ -27,6 +27,9 @@
  */
 
 
+// Air724UG-L: supports LTE-FDD, LTE-TDD, WCDMA, GSM
+// Air724UG-N: supports LTE-FDD and LTE-TDD (without 2G/3G)
+
 #include "py/runtime.h"
 
 #include "iot_network.h"

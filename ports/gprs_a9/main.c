@@ -68,7 +68,7 @@
 #define MICROPYTHON_TASK_PRIORITY    (1)
 #define MICROPYTHON_HEAP_MAX_SIZE    (880  * 1024)
 #define MICROPYTHON_HEAP_MIN_SIZE    (16   * 1024)
-#define MICROPYTHON_FOTA_MAX_SIZE    (45   * 1024)
+#define MICROPYTHON_FOTA_MAX_SIZE    (55   * 1024)
 
 void* heap;
 HANDLE mainTaskHandle  = NULL;
