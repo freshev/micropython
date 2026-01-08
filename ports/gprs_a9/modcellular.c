@@ -1237,10 +1237,9 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
 
         
         // Unstable
-        uint8_t ret;
         if(!__is_attached()) {
             // mp_printf(&mp_plat_print, "Attach... ");
-            ret = Network_StartAttach();
+            Network_StartAttach();
             uint64_t t = mp_hal_ticks_ms_64(); 
             while (mp_hal_ticks_ms_64() - t < TIMEOUT_GPRS_ATTACHMENT && !(network_status & NTW_ATT_BIT)) mp_hal_delay_ms(100);
 
@@ -1256,6 +1255,10 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             		mp_raise_RuntimeError("Failed to request network registration");
         		}
         		WAIT_UNTIL(network_status & NTW_REG_BIT, TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
+        		
+        		if (!Network_StartAttach()) {
+                    mp_raise_RuntimeError("Network is not attached: try resetting");
+                }
             }            
         }
         WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Network is not attached: try resetting"));
