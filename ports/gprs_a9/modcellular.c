@@ -1244,22 +1244,22 @@ static mp_obj_t modcellular_gprs(size_t n_args, const mp_obj_t *args) {
             while (mp_hal_ticks_ms_64() - t < TIMEOUT_GPRS_ATTACHMENT && !(network_status & NTW_ATT_BIT)) mp_hal_delay_ms(100);
 
             if(!__is_attached()) {
-            	mp_printf(&mp_plat_print, "Deregister... ");
-            	if (!Network_DeRegister()) {
-            		mp_raise_RuntimeError("Failed to request network deregistration");            		
-        		}
-        		WAIT_UNTIL(!(network_status & NTW_REG_BIT), TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
-        		mp_printf(&mp_plat_print, "Register... ");
-        		uint8_t autoId[] = {0,0,0,0,0,0};
-        		if (!Network_Register((uint8_t *)autoId, NETWORK_REGISTER_MODE_AUTO)) {
-            		mp_raise_RuntimeError("Failed to request network registration");
-        		}
-        		WAIT_UNTIL(network_status & NTW_REG_BIT, TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
-        		
-        		if (!Network_StartAttach()) {
+                mp_printf(&mp_plat_print, "Deregister... ");
+                if (!Network_DeRegister()) {
+                    mp_raise_RuntimeError("Failed to request network deregistration");            		
+                }
+                WAIT_UNTIL(!(network_status & NTW_REG_BIT), TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
+                mp_printf(&mp_plat_print, "Register... ");
+                uint8_t autoId[] = {0,0,0,0,0,0};
+                if (!Network_Register((uint8_t *)autoId, NETWORK_REGISTER_MODE_AUTO)) {
+                    mp_raise_RuntimeError("Failed to request network registration");
+                }
+                WAIT_UNTIL(network_status & NTW_REG_BIT, TIMEOUT_REG, 100, mp_raise_OSError(MP_ETIMEDOUT));
+
+                if (!Network_StartAttach()) {
                     mp_raise_RuntimeError("Network is not attached: try resetting");
                 }
-            }            
+            }
         }
         WAIT_UNTIL(__is_attached(), TIMEOUT_GPRS_ATTACHMENT, 100, mp_raise_RuntimeError("Network is not attached: try resetting"));
 

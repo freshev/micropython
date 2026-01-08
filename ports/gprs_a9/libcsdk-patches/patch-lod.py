@@ -111,10 +111,10 @@ patch_list = {
     0x08023514: ("Set correct SPI params diDelay = 2 for phase = 0 (part 1)", bytearray.fromhex('16921072'), bytearray.fromhex('19920072')),
     0x08023518: ("Set correct SPI params diDelay = 2 for phase = 0 (part 2)", bytearray.fromhex('0261106C'), bytearray.fromhex('0261026C')),
     0x0802351C: ("Set correct SPI params diDelay = 2 for phase = 0 (part 3)", bytearray.fromhex('0BD42837'), bytearray.fromhex('08D42837')),
-   	#	if (config.dataBits == 16) hal_config.frameSize = 16; 
-    #		replace with --------------->
-  	#	if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
-  	#
+    #if (config.dataBits == 16) hal_config.frameSize = 16;
+    # replace with --------------->
+    #if (in_config.cpha == 0x0) hal_config.diDelay = 2; // correct diDelay for cpha=0
+    #
     #    820087d4 16  92           lw         dataBits ,hal_config +0x48 (sp)
     #    820087d6 10  72           cmpi       dataBits ,16
     #    820087d8 02  61           btnez      LAB_820087de
